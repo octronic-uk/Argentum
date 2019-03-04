@@ -12,7 +12,7 @@ OBJ = $(SRC:.c=.o)
 
 
 all : Boot/kmain_c.o Boot/kmain_asm.o OBJECTS 
-	$(LD) -m elf_i386 -T Boot/link.ld -o TaskieKernel Boot/kasm.o Boot/kc.o $(OBJ)	
+	$(LD) -m elf_i386 -T Boot/link.ld -o TaskieKernel Boot/kmain_asm.o Boot/kmain_c.o $(OBJ)	
 
 Boot/kmain_asm.o : 
 	$(NASM) -f elf32 Boot/kmain.asm -o Boot/kmain_asm.o

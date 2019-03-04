@@ -8,7 +8,7 @@
 
 void kmain(void)
 {
-    const char* WelcomeString = "TaskieKernel Version -1";
+    const char* WelcomeString = "Taskie Version 1, Copyright Ash Thompson 2019 This is on some lines down";
 
     tkCoreClearScreen();
     tkCorePrint(WelcomeString);
