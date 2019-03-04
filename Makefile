@@ -4,22 +4,27 @@ NASM    = nasm
 LDFLAGS = -nostdlib -nostartfiles
 
 SRC  = $(wildcard *.c)
+SRC += $(wildcard Core/*.c)
 SRC += $(wildcard Scheduler/*.c)
 SRC += $(wildcard Task/*.c)
 
 OBJ = $(SRC:.c=.o)
 
-all : Boot/kc.o Boot/kasm.o OBJECTS 
-	$(LD) -m elf_i386 -T Boot/link.ld -o kernel Boot/kasm.o Boot/kc.o $(OBJ)	
 
-Boot/kasm.o : 
-	$(NASM) -f elf32 Boot/kernel.asm -o Boot/kasm.o
+all : Boot/kmain_c.o Boot/kmain_asm.o OBJECTS 
+	$(LD) -m elf_i386 -T Boot/link.ld -o TaskieKernel Boot/kasm.o Boot/kc.o $(OBJ)	
 
-Boot/kc.o : 
-	$(CC) -m32 -c Boot/kernel.c -o Boot/kc.o
+Boot/kmain_asm.o : 
+	$(NASM) -f elf32 Boot/kmain.asm -o Boot/kmain_asm.o
+
+Boot/kmain_c.o : 
+	$(CC) -m32 -c Boot/kmain.c -o Boot/kmain_c.o
 
 OBJECTS : $(OBJ)
     $(CC) -m32 -c $@ -o $@:.c=.o
 
 clean:
-	rm -rf Boot/kc.o Boot/kasm.o $(OBJ)
+	rm -rf TaskieKernel Boot/kmain_c.o Boot/kmain_asm.o $(OBJ)
+
+run : all
+	qemu-system-i386 -kernel TaskieKernel

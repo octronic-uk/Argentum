@@ -1,5 +1,5 @@
 #include "Kernel.h"
-#include "Memory.h"
+#include "Core/Memory.h"
 
 struct tkKernel* tkKernelAllocate()
 {

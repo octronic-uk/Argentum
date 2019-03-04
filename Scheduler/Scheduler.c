@@ -1,5 +1,5 @@
 #include "Scheduler.h"
-#include "../Memory.h"
+#include "../Core/Memory.h"
 
 struct tkScheduler* tkSchedulerAllocate()
 {
