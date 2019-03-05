@@ -4,14 +4,12 @@
 */
 
 #include "../Kernel.h"
-#include "../Core/Screen.h"
+#include "../Core/Screen/Screen.h"
 
 void kmain(void)
 {
-    const char* WelcomeString = "Taskie Version 1, Copyright Ash Thompson 2019 This is on some lines down";
-
-    tkCoreClearScreen();
-    tkCorePrint(WelcomeString);
+    tkScreenClear();
+    tkScreenPrintLine("====[ Taskie Version 1 - 5/3/19 ]====\n    Copyright Ash Thompson 2019\n\n");
 
     struct tkKernel* k = tkKernelAllocate();
     int retval = tkKernelExecute(k);
