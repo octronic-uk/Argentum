@@ -1,5 +1,7 @@
 CC      = i386-elf-gcc
+CFLAGS  = -m32
 LD      = i386-elf-ld
+AS      = i386-elf-as
 NASM    = nasm 
 LDFLAGS = -nostdlib -nostartfiles
 
@@ -17,33 +19,35 @@ SRC += $(wildcard Scheduler/*.c)
 SRC += $(wildcard Task/*.c)
 
 OBJ = $(SRC:.c=.o)
+COMPILE=-c
+OUTPUT=-o
 
 
-all : Boot/kmain_c.o Boot/kmain_asm.o Core/Interrupt/Interrupt_asm.o Core/Keyboard/Keyboard_asm.o OBJECTS 
-	$(LD) -m elf_i386 -T Boot/link.ld -o TaskieKernel \
+all : Boot/kmain_c.o Boot/kmain_asm.o Core/Keyboard/Keyboard_asm.o OBJECTS 
+	$(LD) -T Boot/link.ld -melf_i386 -o TaskieKernel \
 		Boot/kmain_asm.o \
 		Boot/kmain_c.o  \
-		Core/Interrupt/Interrupt_asm.o \
 		Core/Keyboard/Keyboard_asm.o \
 		$(OBJ)	
 
-Core/Interrupt/Interrupt_asm.o :
-	$(NASM) -f elf32 Core/Interrupt/Interrupt.asm -o Core/Interrupt/Interrupt_asm.o
-
 Core/Keyboard/Keyboard_asm.o :
-	$(NASM) -f elf32 Core/Keyboard/Keyboard.asm -o Core/Keyboard/Keyboard_asm.o
+	$(AS) Core/Keyboard/Keyboard.s -o Core/Keyboard/Keyboard_asm.o
 
 Boot/kmain_asm.o : 
-	$(NASM) -f elf32 Boot/kmain.asm -o Boot/kmain_asm.o
+	$(AS) Boot/kmain.s -o Boot/kmain_asm.o
 
 Boot/kmain_c.o : 
-	$(CC) -m32 -c Boot/kmain.c -o Boot/kmain_c.o
+	$(CC) $(CFLAGS) -c Boot/kmain.c -o Boot/kmain_c.o
 
 OBJECTS : $(OBJ)
-    $(CC) -m32 -c $@ -o $@:.c=.o
+    $(CC) $(CFLAGS) $(COMPILE) $@:.o=.c $(OUTPUT) $@
 
 clean:
-	rm -rf TaskieKernel Boot/kmain_c.o Boot/kmain_asm.o Core/Keyboard/Keyboard_asm.o Core/Interrupt_asm.o $(OBJ)
+	rm -rf TaskieKernel \
+	Boot/kmain_c.o \
+	Boot/kmain_asm.o \
+	Core/Keyboard/Keyboard_asm.o \
+	$(OBJ)
 
-run : all
+run :
 	qemu-system-i386 -kernel TaskieKernel

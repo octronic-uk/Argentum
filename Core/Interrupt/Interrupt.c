@@ -1,7 +1,7 @@
 #include "Interrupt.h"
 #include "../Screen/Screen.h"
 
-void tkInterruptInitialiseDescriptorTable()
+void tkInterruptWriteDescriptorTable()
 {
 	tkScreenPrintLine("Initialising Interrupt Description Table");
 
@@ -37,10 +37,46 @@ void tkInterruptInitialiseDescriptorTable()
 	tkInterruptWritePort(0xA1 , 0xff);
 
 	/* fill the InterruptDescriptorTable descriptor */
-	unsigned long idt_address,  idt_ptr[2];
-	idt_address = (unsigned long)InterruptDescriptorTable;
-	idt_ptr[0] = (sizeof (struct tkInterruptDescriptorTableEntry) * IDT_SIZE) + ((idt_address & 0xffff) << 16);
-	idt_ptr[1] = idt_address >> 16 ;
 
-	tkInterruptLoadIDT(idt_ptr);
+	tkInterruptLIDT(InterruptDescriptorTable, sizeof(tkInterruptDescriptorTableEntry)*IDT_SIZE);
+	tkInterruptSTI();
+}
+
+/* Input a byte from a port */
+unsigned char tkInterruptReadPort(unsigned short port)
+{
+   unsigned char ret;
+   asm volatile ( "inb %1, %0"
+                   : "=a"(ret)
+                   : "Nd"(port) );
+   return ret;
+}
+
+/* Output a byte to a port */
+void tkInterruptWritePort(unsigned short port,unsigned char value)
+{
+   asm volatile ("outb %%al,%%dx": :"d" (port), "a" (value));
+}
+
+void tkInterruptLIDT(void* base, unsigned short size)
+{   // This function works in 32 and 64bit mode
+    struct 
+	{
+        unsigned short length;
+        void* base;
+    } __attribute__((packed)) IDTR = { size, base };
+ 
+    __asm__ volatile ( "lidt %0" : : "m"(IDTR) );  // let the compiler choose an addressing mode
+}
+
+void tkInterruptSTI()
+{
+	//Enables the interrupts , set the interrupt flag
+	__asm__ ("sti"); 
+}
+
+void tkInterruptCLI()
+{
+	//Disables interrupts ,clears the interrupt flag
+	__asm__ ("cli");
 }

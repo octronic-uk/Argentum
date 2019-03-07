@@ -16,7 +16,7 @@ void tkKeyboardSetupIDT()
 
 void tkKeyboardHandler()
 {
-	//tkScreenPrintLine("Keyboard Handler Called");
+	tkScreenPrintLine("Keyboard Handler Called");
 	unsigned char status;
 	char keycode;
 

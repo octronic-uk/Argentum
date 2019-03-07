@@ -1,13 +1,16 @@
 #pragma once
+
+#define SCHEDULER_MAX_TASKS 64
+
 #include "../Task/Task.h"
 
-struct tkScheduler
+typedef struct
 {
-    unsigned int mMaximumTasks;
-    struct tkTask* mTaskList;
-};
+    tkTask* mRootTask;
+} tkScheduler;
 
-struct tkScheduler* tkSchedulerAllocate();
-void tkSchedulerFree(struct tkScheduler* s);
+void tkSchedulerConstruct(tkScheduler* s);
+void tkSchedulerDestruct(tkScheduler* s);
 
-struct tkTask* tkSchedulerCreateTask();
+tkTask* tkSchedulerCreateTask(tkScheduler* s, void(*fn)(void));
+void tkSchedulerExecuteTasks(tkScheduler* s);

@@ -12,6 +12,7 @@ void tkScreenClear()
         VideoBasePointer[j++] = ' '; /* blank character */
         VideoBasePointer[j++] = 0x07; /* attribute-byte */
     }
+    screenCursorLocation = 0;
 }
 
 void tkScreenPrint(const char* str)
@@ -41,4 +42,8 @@ void tkScreenPrintLine(const char* str)
 void tkScreenNewLine()
 {
 	screenCursorLocation = screenCursorLocation + (SCREEN_LINE_SIZE - screenCursorLocation % (SCREEN_LINE_SIZE));
+    if (screenCursorLocation >= SCREEN_SIZE)
+    {
+        tkScreenClear();
+    }
 }

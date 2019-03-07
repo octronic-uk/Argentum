@@ -1,12 +1,11 @@
 #pragma once
 #include "Scheduler/Scheduler.h"
 
-struct tkKernel
+typedef struct 
 {
-    struct tkScheduler *mScheduler;
-};
+    tkScheduler mScheduler;
+} tkKernel;
 
-struct tkKernel* tkKernelAllocate();
-void tkKernelFree(struct tkKernel* kernel);
-
-int tkKernelExecute(struct tkKernel* kernel);
+void tkKernelConstruct(tkKernel* k);
+void tkKernelDestruct(tkKernel* k);
+void tkKernelExecute(tkKernel* k);

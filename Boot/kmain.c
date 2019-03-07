@@ -1,20 +1,35 @@
-/*
-* Copyright (C) 2014  Arjun Sreedharan
-* License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
-*/
-
+#include "multiboot.h"
 #include "../Kernel.h"
 #include "../Core/Screen/Screen.h"
+#include "../Core/Utilities.h"
 
-void kmain(void)
+void some_work_1()
+{
+    tkScreenPrintLine(" > Hello, World! From Work 1");
+}
+
+void some_work_2()
+{
+    tkScreenPrintLine(" > Hello, World! From Work 2");
+}
+
+void kmain()
 {
     tkScreenClear();
-    tkScreenPrintLine("====[ Taskie Version 1 - 5/3/19 ]====\n    Copyright Ash Thompson 2019\n\n");
+    tkScreenPrintLine("Taskie Version 1");
 
-    struct tkKernel* k = tkKernelAllocate();
-    int retval = tkKernelExecute(k);
-    tkKernelFree(k);
+    tkKernel k;
+    tkKernelConstruct(&k);
 
-    return;
+    int i;
+    tkTask* task1 = tkSchedulerCreateTask(&k.mScheduler, some_work_1);;
+    tkTask* task2 = tkSchedulerCreateTask(&k.mScheduler, some_work_2);;
+    tkTaskSetName(task1,"T1");
+    tkTaskSetName(task2,"T2");
+
+    tkKernelExecute(&k);
+    // spin
+    while (1) {}
+    tkKernelDestruct(&k);
 }
 
