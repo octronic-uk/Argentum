@@ -1,36 +1,56 @@
 #include "Screen.h"
+#include "../Utilities.h"
 
-static char* VideoBasePointer = (char*)0xb8000;
+void tkScreenInit()
+{
+    memset(ScreenBuffer,0,sizeof(char)*SCREEN_BUFFER_SIZE_BYTES);
+    memset(ScreenVideoBasePointer,0,sizeof(char)*SCREEN_SIZE_BYTES);
+    ScreenScrollOffsetMax = (SCREEN_BUFFER_SIZE_BYTES - SCREEN_SIZE_BYTES) / SCREEN_ROW_SIZE_BYTES;
+    tkScreenUpdate();
+}
 
 void tkScreenClear()
 {
-    /* this loops clears the screen
-    /* video memory begins at address 0xb8000 */
-    unsigned int j;
-    for (j=0; j < SCREEN_SIZE;) 
+    uint32_t j;
+    for (j=0; j < SCREEN_CHAR_SIZE; j++) 
     {
-        VideoBasePointer[j++] = ' '; /* blank character */
-        VideoBasePointer[j++] = 0x07; /* attribute-byte */
+        ScreenBuffer[ScreenBufferWriteOffset++] = ' ';
+        ScreenBuffer[ScreenBufferWriteOffset++] = ScreenCharAttributes;
     }
-    screenCursorLocation = 0;
+    tkScreenUpdate();
+}
+
+void tkScreenUpdate()
+{
+    memcpy(ScreenVideoBasePointer,&ScreenBuffer[ScreenBufferReadOffset],sizeof(char)*SCREEN_SIZE_BYTES);
 }
 
 void tkScreenPrint(const char* str)
 {
-    /* this loop writes the string to video memory */
-    unsigned int j;
-    for (j=0; str[j] != '\0'; ++j) 
+    uint32_t i;
+    for (i=0; str[i] != '\0'; i++) 
     {
-        if (str[j] == '\n')
+        if (str[i] == '\n')
         {
             tkScreenNewLine();
         }
+        else if (str[i] == '\t')
+        {
+            int j;
+            for (j=0;j<4;j++)
+            {
+                ScreenBuffer[ScreenBufferWriteOffset++] = ' ';
+                ScreenBuffer[ScreenBufferWriteOffset++] = ScreenCharAttributes;
+            }
+
+        }
         else
         {
-            VideoBasePointer[screenCursorLocation++] = str[j]; /* the character's ascii */
-            VideoBasePointer[screenCursorLocation++] = 0x07; /* attribute-byte: give character black bg and light grey fg */
+            ScreenBuffer[ScreenBufferWriteOffset++] = str[i];
+            ScreenBuffer[ScreenBufferWriteOffset++] = ScreenCharAttributes;
         }
     }
+    tkScreenUpdate();
 }
 
 void tkScreenPrintLine(const char* str)
@@ -41,9 +61,27 @@ void tkScreenPrintLine(const char* str)
 
 void tkScreenNewLine()
 {
-	screenCursorLocation = screenCursorLocation + (SCREEN_LINE_SIZE - screenCursorLocation % (SCREEN_LINE_SIZE));
-    if (screenCursorLocation >= SCREEN_SIZE)
+    int32_t screenCurrentColumn = ScreenBufferWriteOffset % SCREEN_ROW_SIZE_BYTES;
+    ScreenBufferWriteOffset = ScreenBufferWriteOffset + SCREEN_ROW_SIZE_BYTES - screenCurrentColumn; 
+    tkScreenUpdate();
+}
+
+void tkScreenMoveScrollOffset(int32_t offset)
+{
+    ScreenScrollOffset += offset;
+    if (ScreenScrollOffset < 0) 
     {
-        tkScreenClear();
+        ScreenScrollOffset = 0;
     }
+    if (ScreenScrollOffset > ScreenScrollOffsetMax)
+    {
+        ScreenScrollOffset = ScreenScrollOffsetMax;
+    }
+    ScreenBufferReadOffset = ScreenScrollOffset * SCREEN_ROW_SIZE_BYTES;
+    tkScreenUpdate();
+}
+
+void tkScreenSetCharAttributes(uint8_t attributes)
+{
+    ScreenCharAttributes = attributes;
 }

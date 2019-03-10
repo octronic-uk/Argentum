@@ -1,35 +1,56 @@
-#include "multiboot.h"
 #include "../Kernel.h"
+#include "../Core/Keyboard/Keyboard.h"
 #include "../Core/Screen/Screen.h"
 #include "../Core/Utilities.h"
+#include "../Core/Memory/Memory.h"
 
-void some_work_1()
-{
-    tkScreenPrintLine(" > Hello, World! From Work 1");
-}
+#include "../Core/LinkedList/TestLinkedList.h"
+#include "../Core/LinkedList/TestLinkedListItem.h"
 
-void some_work_2()
+void kmain(multiboot_info_t* mbi)
 {
-    tkScreenPrintLine(" > Hello, World! From Work 2");
-}
-
-void kmain()
-{
-    tkScreenClear();
+    tkMemorySetMultibootInfo(mbi);
+    tkScreenInit();
+    tkKeyboardInit();
     tkScreenPrintLine("Taskie Version 1");
 
     tkKernel k;
-    tkKernelConstruct(&k);
+    tkKernelInit(&k);
 
-    int i;
-    tkTask* task1 = tkSchedulerCreateTask(&k.mScheduler, some_work_1);;
-    tkTask* task2 = tkSchedulerCreateTask(&k.mScheduler, some_work_2);;
-    tkTaskSetName(task1,"T1");
-    tkTaskSetName(task2,"T2");
+    // Test LinkedList Structures
+    tkKernelCreateTask(&k, "Test LinkedList Construct" , testLinkedListConstruct);
+    tkKernelCreateTask(&k, "Test LinkedList Destruct" , testLinkedListDestruct);
+    tkKernelCreateTask(&k, "Test LinkedList Insert" , testLinkedListInsert);
+    tkKernelCreateTask(&k, "Test LinkedList Remove" , testLinkedListRemove);
+    tkKernelCreateTask(&k, "Test LinkedList Count" , testLinkedListCount);
+
+    tkKernelCreateTask(&k, "Test LinkedListItem Construct" , testLinkedListItemConstruct);
+    tkKernelCreateTask(&k, "Test LinkedListItem Destruct" , testLinkedListItemDestruct);
 
     tkKernelExecute(&k);
-    // spin
-    while (1) {}
     tkKernelDestruct(&k);
+
+    tkMemoryBlockCount count = tkMemoryCountUsedBlocks();
+
+    static char countBuf[BUFLEN];
+    static char sizeBuf[BUFLEN];
+
+    memset(countBuf,0,BUFLEN);
+    memset(sizeBuf,0,BUFLEN);
+
+    itoa(count.mBlocksUsed,countBuf,BASE_10);
+    itoa(count.mSizeInBytes,sizeBuf,BASE_10);
+
+    tkScreenPrint(countBuf); 
+    tkScreenPrint(" blocks in use ("); 
+    tkScreenPrint(sizeBuf); 
+    tkScreenPrintLine(" bytes)");
+
+    tkScreenPrintLine("Taskie is Doneskie!");
+
+    // spin
+    while(1);
+    asm("cli");
+    asm("hlt");
 }
 

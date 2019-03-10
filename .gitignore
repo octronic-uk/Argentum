@@ -252,3 +252,7 @@ qrc_*.h
 .vscode
 .Trashes
 .fseventsd
+*.config*
+*.creator
+*.files
+*.includes

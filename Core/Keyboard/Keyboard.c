@@ -1,6 +1,12 @@
 #include "Keyboard.h"
+#include "../Utilities.h"
 #include "../Screen/Screen.h"
 #include "../Interrupt/Interrupt.h"
+
+void tkKeyboardInit()
+{
+	memset(KeyboardBuffer,0,sizeof(tkKeyboardEventData)*KEYBOARD_BUFFER_SIZE);
+}
 
 void tkKeyboardSetupIDT()
 {
@@ -16,7 +22,6 @@ void tkKeyboardSetupIDT()
 
 void tkKeyboardHandler()
 {
-	tkScreenPrintLine("Keyboard Handler Called");
 	unsigned char status;
 	char keycode;
 
@@ -34,13 +39,36 @@ void tkKeyboardHandler()
 		}
 		if (KeyboardBufferLocation < KEYBOARD_BUFFER_SIZE)
 		{
-			KeyboardBuffer[KeyboardBufferLocation++] = KeyboardMap[keycode];
+			KeyboardBuffer[KeyboardBufferLocation].mKeycode = keycode;
+			KeyboardBuffer[KeyboardBufferLocation].mStatus = status;
+			KeyboardBufferLocation++;
 		}
 		else
 		{
 			tkKeyboardBufferOverflow();
 		}
 	}
+	tkKeyboardHandleEvents();
+}
+
+void tkKeyboardHandleEvents()
+{	
+	int i;
+	for (i=0;i<KeyboardBufferLocation; i++)	
+	{
+		switch (KeyboardBuffer[i].mKeycode)
+		{
+			case KEY_UP:
+				tkScreenMoveScrollOffset(-1);
+				break;
+			case KEY_DOWN:
+				tkScreenMoveScrollOffset(1);
+				break;
+			default: 
+				break;
+		}
+	}
+	KeyboardBufferLocation = 0;
 }
 
 void tkKeyboardBufferOverflow()

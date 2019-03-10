@@ -2,15 +2,17 @@
 
 #define SCHEDULER_MAX_TASKS 64
 
-#include "../Task/Task.h"
+#include "../Core/LinkedList/LinkedList.h"
+#include "Task.h"
+
 
 typedef struct
 {
-    tkTask* mRootTask;
+    tkLinkedList* mTasks;
 } tkScheduler;
 
-void tkSchedulerConstruct(tkScheduler* s);
+tkScheduler* tkSchedulerConstruct();
 void tkSchedulerDestruct(tkScheduler* s);
 
-tkTask* tkSchedulerCreateTask(tkScheduler* s, void(*fn)(void));
+tkTask* tkSchedulerCreateTask(tkScheduler* s, const char* name, void(*fn)(void));
 void tkSchedulerExecuteTasks(tkScheduler* s);

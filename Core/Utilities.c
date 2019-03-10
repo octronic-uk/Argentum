@@ -134,7 +134,7 @@ unsigned long strlen(const char* str)
 	return i;
 }
 
-int memcpy(void* dst, void* src, int size)
+int memcpy(void* dst, const void* src, int size)
 {
 	unsigned long i;
 	for (i=0; i<size; i++)

@@ -1,15 +1,27 @@
 #pragma once
+#include "../Types.h"
 
-/* there are 25 lines each of 80 columns; each element takes 2 bytes */
-#define SCREEN_LINES 25
+#define SCREEN_ROWS 25
 #define SCREEN_COLUMNS 80
-#define SCREEN_BYTES_FOR_EACH_ELEMENT 2
-#define SCREEN_LINE_SIZE SCREEN_BYTES_FOR_EACH_ELEMENT * SCREEN_COLUMNS
-#define SCREEN_SIZE SCREEN_BYTES_FOR_EACH_ELEMENT * SCREEN_COLUMNS * SCREEN_LINES
-#define SCREEN_CHAR_SIZE SCREEN_COLUMNS * SCREEN_LINES
+#define SCREEN_BYTES_PER_ELEMENT 2
+#define SCREEN_CHAR_SIZE 2000
+#define SCREEN_ROW_SIZE_BYTES 160
+#define SCREEN_SIZE_BYTES 4000
+#define SCREEN_BUFFER_SIZE_BYTES 4000 * 128 
 
-static unsigned int screenCursorLocation = 0;
+static char ScreenBuffer[SCREEN_BUFFER_SIZE_BYTES];
+static unsigned char* ScreenVideoBasePointer = (unsigned char*)0xb8000;
+static uint32_t ScreenBufferWriteOffset = 0;
+static uint32_t ScreenBufferReadOffset = 0;
+static int32_t ScreenScrollOffset = 0;
+static uint32_t ScreenScrollOffsetMax;
+static uint8_t ScreenCharAttributes = 0x07;
+
+void tkScreenInit();
 void tkScreenPrint(const char* str);
 void tkScreenPrintLine(const char* str);
 void tkScreenClear(void);
 void tkScreenNewLine(void);
+void tkScreenUpdate();
+void tkScreenSetCharAttributes(uint8_t attributes);
+void tkScreenMoveScrollOffset(int32_t offset);

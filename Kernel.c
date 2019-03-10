@@ -4,22 +4,26 @@
 #include "Core/Screen/Screen.h"
 #include "Core/Keyboard/Keyboard.h"
 
-void tkKernelConstruct(tkKernel* k)
+void tkKernelInit(tkKernel* k)
 {
-   tkMemoryInitialise();
-
    tkKeyboardSetupIDT();
    tkInterruptWriteDescriptorTable();
    tkKeyboardIRQInit();
-   tkSchedulerConstruct(&k->mScheduler);
+   tkMemoryInitialise();
+   k->mScheduler = tkSchedulerConstruct();
 }
 
 void tkKernelDestruct(tkKernel* k)
 {
+   tkSchedulerDestruct(k->mScheduler);
 }
 
 void tkKernelExecute(tkKernel* k)
 {
-   tkScreenPrintLine("Entering Task Loop");
-   tkSchedulerExecuteTasks(&k->mScheduler);
+   tkSchedulerExecuteTasks(k->mScheduler);
+}
+
+tkTask* tkKernelCreateTask(tkKernel* k, const char* name, void(*fn)(void))
+{
+   return tkSchedulerCreateTask(k->mScheduler, name , fn);
 }

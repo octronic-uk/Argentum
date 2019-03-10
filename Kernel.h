@@ -3,9 +3,10 @@
 
 typedef struct 
 {
-    tkScheduler mScheduler;
+    tkScheduler* mScheduler;
 } tkKernel;
 
-void tkKernelConstruct(tkKernel* k);
+void tkKernelInit(tkKernel* k);
 void tkKernelDestruct(tkKernel* k);
 void tkKernelExecute(tkKernel* k);
+tkTask* tkKernelCreateTask(tkKernel* k, const char* name, void(*fn)(void));

@@ -3,56 +3,61 @@
 #include "../Core/Screen/Screen.h"
 #include "../Core/Memory/Memory.h"
 
-void tkSchedulerConstruct(tkScheduler* s)
+tkScheduler* tkSchedulerConstruct()
 {
-   tkScreenPrintLine("Constructing Scheduler");
-   s->mRootTask = tkMemoryAllocate(sizeof(tkTask));
-   tkTaskConstruct(s->mRootTask);
-   tkTaskSetName(s->mRootTask, "Root Task");
+   tkScreenPrintLine("Scheduler: Constructing");
+   tkScheduler* s = (tkScheduler*)tkMemoryAllocate(sizeof(tkScheduler));
+   s->mTasks = tkLinkedListConstruct();
+   return s;
 }
 
 void tkSchedulerDestruct(tkScheduler* s)
 {
-   tkScreenPrintLine("Destructing Scheduler");
-   tkTaskDestruct(s->mRootTask);
+   tkScreenPrintLine("Scheduler: Destructing");
+   tkLinkedListFreeAllData(s->mTasks);
+   tkLinkedListDestruct(s->mTasks);
+   tkMemoryFree(s);
 }
 
-tkTask* tkSchedulerCreateTask(tkScheduler* s, void(*fn)(void))
+tkTask* tkSchedulerCreateTask(tkScheduler* s, const char* name, void(*fn)(void))
 {
-   tkScreenPrintLine("Scheduler is creating a new task");
-   tkTask* current = s->mRootTask;
-   tkTask* last;
-   while(current) 
-   {
-      last = current;
-      current = current->mNext;
-   }
-   current = (tkTask*)tkMemoryAllocate(sizeof(tkTask));
-   tkTaskConstruct(current);
-   current->mFunction = fn;
-   last->mNext = current;
-   return current;
+   tkScreenPrintLine("Scheduler: Creating a new task");
+   tkTask* task = (tkTask*)tkTaskConstruct();
+   task->mFunction = fn;
+   tkTaskSetName(task,name);
+   static char addr[BUFLEN];
+   memset(addr,0,BUFLEN);
+   itoa((uint32_t)task,addr,BASE_16);
+   tkScreenPrint("Scheduler: Created task at 0x"); tkScreenPrintLine(addr);
+   tkLinkedListInsert(s->mTasks,task);
+   return task;
 }
 
 void tkSchedulerExecuteTasks(tkScheduler* s)
 {
+   tkScreenPrintLine("Scheduler: Entering Task Loop");
    static char buffer[BUFLEN];
-   tkTask* current = s->mRootTask;
-   while (current)
+   uint32_t numTasks = tkLinkedListSize(s->mTasks);
+   int i;
+   for (i=0;i<numTasks;i++)
    {
+      tkLinkedListItem* currentItem = tkLinkedListAt(s->mTasks,i);
+      tkTask* current = currentItem->mData;
       memset(buffer,0,sizeof(char)*BUFLEN);
       itoa(current->mID,buffer,BASE_10);
 
       if (current->mFunction)
       {
-         tkScreenPrint("Executing Task [");  tkScreenPrint(buffer);  tkScreenPrint("] "); tkScreenPrintLine(current->mName);
+         tkScreenPrint("Scheduler: Executing Task [");  
+         tkScreenPrint(buffer);  
+         tkScreenPrint("] "); 
+         tkScreenPrintLine(current->mName);
          current->mFunction();
       }
       else
       {
-         tkScreenPrint("No function for Task ["); tkScreenPrint(buffer); tkScreenPrint("] "); tkScreenPrintLine(current->mName);
+         tkScreenPrint("Scheduler: No function for Task ["); tkScreenPrint(buffer); tkScreenPrint("] "); tkScreenPrintLine(current->mName);
       }
-      current = current->mNext;
    }
-   tkScreenPrintLine("Reached end of Task list");
+   tkScreenPrintLine("Scheduler: Reached end of Task list");
 }
