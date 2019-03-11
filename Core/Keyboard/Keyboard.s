@@ -1,6 +1,6 @@
-.global tkKeyboardHandlerASM
-.extern tkKeyboardHandler
+.global tkKeyboard_HandlerASM
+.extern tkKeyboard_Handler
 
-tkKeyboardHandlerASM:
-	call    tkKeyboardHandler
+tkKeyboard_HandlerASM:
+	call    tkKeyboard_Handler
 	iret

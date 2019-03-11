@@ -1,23 +1,22 @@
 #pragma once
 
+#include "../Types.h"
+
 #define IDT_SIZE 256
 #define INTERRUPT_GATE 0x8e
 #define KERNEL_CODE_SEGMENT_OFFSET 0x08
 
 typedef struct 
 {
-	unsigned short int mOffsetLowerBits;
-	unsigned short int mSelector;
-	unsigned char mZero;
-	unsigned char mTypeAttribute;
-	unsigned short int mOffsetHigherBits;
-} __attribute__((packed)) tkInterruptDescriptorTableEntry;
+	uint16_t mOffsetLowerBits;
+	uint16_t mSelector;
+	uint8_t  mZero;
+	uint8_t  mTypeAttribute;
+	uint16_t mOffsetHigherBits;
+} __attribute__((packed)) tkInterrupt_DescriptorTableEntry;
 
-tkInterruptDescriptorTableEntry InterruptDescriptorTable[IDT_SIZE];
-
-unsigned char tkInterruptReadPort(unsigned short port);
-void tkInterruptWritePort(unsigned short port,unsigned char value);
-void tkInterruptWriteDescriptorTable();
-void tkInterruptLIDT(void* base, unsigned short size);
-void tkInterruptSTI();
-void tkInterruptCLI();
+tkInterrupt_DescriptorTableEntry InterruptDescriptorTable[IDT_SIZE];
+void tkInterrupt_WriteDescriptorTable();
+void tkInterrupt_LIDT(void* base, uint16_t size);
+void tkInterrupt_STI();
+void tkInterrupt_CLI();

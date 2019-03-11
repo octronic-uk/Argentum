@@ -1,18 +1,19 @@
 #include "Keyboard.h"
 #include "../Utilities.h"
 #include "../Screen/Screen.h"
+#include "../IO/IO.h"
 #include "../Interrupt/Interrupt.h"
 
-void tkKeyboardInit()
+void tkKeyboard_Init()
 {
-	memset(KeyboardBuffer,0,sizeof(tkKeyboardEventData)*KEYBOARD_BUFFER_SIZE);
+	memset(KeyboardBuffer,0,sizeof(tkKeyboard_EventData)*KEYBOARD_BUFFER_SIZE);
 }
 
-void tkKeyboardSetupIDT()
+void tkKeyboard_SetupIDT()
 {
-	tkScreenPrintLine("Setting Keyboard IDT entry.");
+	tkScreen_PrintLine("Setting Keyboard IDT entry.");
     unsigned long keyboard_address;
-	keyboard_address = (unsigned long)tkKeyboardHandlerASM;
+	keyboard_address = (unsigned long)tkKeyboard_HandlerASM;
 	InterruptDescriptorTable[0x21].mOffsetLowerBits = keyboard_address & 0xffff;
 	InterruptDescriptorTable[0x21].mSelector = KERNEL_CODE_SEGMENT_OFFSET;
 	InterruptDescriptorTable[0x21].mZero = 0;
@@ -20,19 +21,19 @@ void tkKeyboardSetupIDT()
 	InterruptDescriptorTable[0x21].mOffsetHigherBits = (keyboard_address & 0xffff0000) >> 16;
 }
 
-void tkKeyboardHandler()
+void tkKeyboard_Handler()
 {
 	unsigned char status;
 	char keycode;
 
 	/* write EOI */
-	tkInterruptWritePort(0x20, 0x20);
+	tkIO_WritePort(0x20, 0x20);
 
-	status = tkInterruptReadPort(KEYBOARD_STATUS_PORT);
+	status = tkIO_ReadPort(KEYBOARD_STATUS_PORT);
 	/* Lowest bit of status will be set if buffer is not empty */
 	if (status & 0x01) 
 	{
-		keycode = tkInterruptReadPort(KEYBOARD_DATA_PORT);
+		keycode = tkIO_ReadPort(KEYBOARD_DATA_PORT);
 		if(keycode < 0)
 		{
 			return;
@@ -45,13 +46,13 @@ void tkKeyboardHandler()
 		}
 		else
 		{
-			tkKeyboardBufferOverflow();
+			tkKeyboard_BufferOverflow();
 		}
 	}
-	tkKeyboardHandleEvents();
+	tkKeyboard_HandleEvents();
 }
 
-void tkKeyboardHandleEvents()
+void tkKeyboard_HandleEvents()
 {	
 	int i;
 	for (i=0;i<KeyboardBufferLocation; i++)	
@@ -59,10 +60,10 @@ void tkKeyboardHandleEvents()
 		switch (KeyboardBuffer[i].mKeycode)
 		{
 			case KEY_UP:
-				tkScreenMoveScrollOffset(-1);
+				tkScreen_MoveScrollOffset(-1);
 				break;
 			case KEY_DOWN:
-				tkScreenMoveScrollOffset(1);
+				tkScreen_MoveScrollOffset(1);
 				break;
 			default: 
 				break;
@@ -71,14 +72,14 @@ void tkKeyboardHandleEvents()
 	KeyboardBufferLocation = 0;
 }
 
-void tkKeyboardBufferOverflow()
+void tkKeyboard_BufferOverflow()
 {
-	tkScreenPrintLine("ERR: Keyboard Buffer Overflow");
+	tkScreen_PrintLine("ERR: Keyboard Buffer Overflow");
 }
 
-void tkKeyboardIRQInit()
+void tkKeyboard_IRQInit()
 {
 	/* 0xFD is 11111101 - enables only IRQ1 (keyboard)*/
-	tkScreenPrintLine("Enabline IRQ1 [ONLY] for Keyboard");
-	tkInterruptWritePort(0x21 , 0xFD);
+	tkScreen_PrintLine("Enabline IRQ1 [ONLY] for Keyboard");
+	tkIO_WritePort(0x21 , 0xFD);
 }

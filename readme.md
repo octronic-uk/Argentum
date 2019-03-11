@@ -4,10 +4,10 @@ Copyright Ashley Thompson 2019
 
 ## Abstract
 This document introduces the reader to the goals and architectural design of the 
-Tasky Operating System.
+Taskie Operating System.
 
 ## Project Goals
-Tasky aims to be a simple object-driven Operating System Kernel that uses scheduled 
+Taskie aims to be a simple object-driven Operating System Kernel that uses scheduled 
 Tasks and Resources objects to manage the computers time and hardware. The Kernel 
 will be exposed through an object-oriented API that allow programmers to write 
 user-space applications.
@@ -15,7 +15,7 @@ user-space applications.
 ## Architecture
 
 ### Scheduler
-Tasky implements a Scheduler class that will be used to manage the lifetime and 
+Taskie implements a Scheduler class that will be used to manage the lifetime and 
 execution of Task objects. The Scheduler will implement task-switching algorithms 
 to determine which Task should execute at what time.
 
@@ -35,7 +35,7 @@ even spawning additional Tasks.
 
 ## Managing Hardware Devices
 
-All hardware devices (aside from the CPU itself) in Tasky will be represented 
+All hardware devices (aside from the CPU itself) in Taskie will be represented 
 by the Resource class. Specialisations will be used when necessary to add specific 
 functionality to a Resource. Some Resource Examples include.
 
@@ -51,7 +51,8 @@ functionality to a Resource. Some Resource Examples include.
 * Asynchronous Execution by design
 
 ##Notes
-* Scheduler type (Initial RoundRobin)
-* Task Resume/Suspend
-* Rollback
+* Scheduler type (Initially RoundRobin)
+* Task Resume/Suspend capability
+* Task execution rollback capability
+* Memory always zero when freed
 

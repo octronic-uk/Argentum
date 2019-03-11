@@ -5,23 +5,23 @@
 #define KEYBOARD_STATUS_PORT 0x64
 #define KEYBOARD_BUFFER_SIZE 16
 
-extern void tkKeyboardHandlerASM();
+extern void tkKeyboard_HandlerASM();
 
 typedef struct 
 {
     uint8_t mKeycode;
     uint8_t mStatus;
-} tkKeyboardEventData;
+} tkKeyboard_EventData;
 
-static tkKeyboardEventData KeyboardBuffer[KEYBOARD_BUFFER_SIZE];
+static tkKeyboard_EventData KeyboardBuffer[KEYBOARD_BUFFER_SIZE];
 static unsigned char KeyboardBufferLocation = 0;
 
-void tkKeyboardInit();
-void tkKeyboardSetupIDT();
-void tkKeyboardHandler();
-void tkKeyboardIRQInit();
-void tkKeyboardBufferOverflow();
-void tkKeyboardHandleEvents();
+void tkKeyboard_Init();
+void tkKeyboard_SetupIDT();
+void tkKeyboard_Handler();
+void tkKeyboard_IRQInit();
+void tkKeyboard_BufferOverflow();
+void tkKeyboard_HandleEvents();
 
 // Keyboard Dey Definitions
 #define KEY_UP 0x48

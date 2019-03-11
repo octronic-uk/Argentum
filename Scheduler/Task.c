@@ -4,47 +4,57 @@
 #include "../Core/Memory/Memory.h"
 
 
-tkTask* tkTaskConstruct()
+tkTask* tkTask_Construct()
 {
-    tkTask *t = (tkTask*)tkMemoryAllocate(sizeof(tkTask));
-    t->mID = tkTaskGetNextID();
+    tkTask *t = (tkTask*)tkMemory_Allocate(sizeof(tkTask));
+    t->mStatus = TASK_STATUS_NEW;
+    t->mID = tkTask_GetNextID();
     t->mNext = 0;
     t->mFunction = 0;
     memset(t->mName,0,TASK_NAME_BUFFER_SIZE);
-    static char buffer[BUFLEN];
-    itoa(t->mID,buffer,BASE_10);
-    tkScreenPrint("Task: Constructed "); tkScreenPrintLine(buffer);
+    #ifdef __DEBUG_TASK
+        static char buffer[BUFLEN];
+        itoa(t->mID,buffer,BASE_10);
+        tkScreen_Print("Task: Constructed "); 
+        tkScreen_PrintLine(buffer);
+    #endif
     return t;
 }
 
-void tkTaskSetName(tkTask* task, const char* name)
+void tkTask_SetName(tkTask* task, const char* name)
 {
-    unsigned long nameLength = strlen(name);
+    uint32_t nameLength = strlen(name);
     // Cap Name Length
     nameLength = nameLength > TASK_NAME_BUFFER_SIZE-1 ? TASK_NAME_BUFFER_SIZE-1 : nameLength;
     memcpy((void*)task->mName, (void*)name, nameLength);
 }
 
-void tkTaskDestruct(tkTask* t)
+void tkTask_Destruct(tkTask* t)
 {
     if (t->mNext != 0)
     {
-        tkTaskDestruct(t->mNext);
+        tkTask_Destruct(t->mNext);
     }
     // Print name of task being destroyed
-    static char taskNumBuf[BUFLEN];
-    memset(taskNumBuf,0,sizeof(char)*BUFLEN);
-    itoa(t->mID,taskNumBuf,BASE_10);
-    tkScreenPrint("Task: Destructing ["); tkScreenPrint(taskNumBuf); tkScreenPrint("] "); tkScreenPrintLine(t->mName);
+    #ifdef __DEBUG_TASK
+        static char taskNumBuf[BUFLEN];
+        memset(taskNumBuf,0,sizeof(char)*BUFLEN);
+        itoa(t->mID,taskNumBuf,BASE_10);
+        tkScreen_Print("Task: Destructing ["); 
+        tkScreen_Print(taskNumBuf); 
+        tkScreen_Print("] "); 
+        tkScreen_PrintLine(t->mName);
+    #endif
     // Clear Variables
     memset((void*)t->mName, 0, TASK_NAME_BUFFER_SIZE);
+    t->mStatus = TASK_STATUS_DESTROYED;
     t->mFunction = 0;
     t->mNext = 0;
     t->mID = 0;
-    tkMemoryFree(t);
+    tkMemory_Free(t);
 }
 
-unsigned long tkTaskGetNextID()
+uint32_t tkTask_GetNextID()
 {
     return TaskCurrentID++;
 }

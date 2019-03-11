@@ -4,33 +4,41 @@
 #include "../Core/Utilities.h"
 #include "../Core/Memory/Memory.h"
 
-#include "../Core/LinkedList/TestLinkedList.h"
-#include "../Core/LinkedList/TestLinkedListItem.h"
+#ifdef __UNIT_TESTS
+    #include "../DataStructures/LinkedList/Test/TestLinkedList.h"
+    #include "../DataStructures/LinkedList/Test/TestLinkedListItem.h"
+#endif
 
 void kmain(multiboot_info_t* mbi)
 {
-    tkMemorySetMultibootInfo(mbi);
-    tkScreenInit();
-    tkKeyboardInit();
-    tkScreenPrintLine("Taskie Version 1");
+    tkMemory_SetMultibootInfo(mbi);
+    tkScreen_Init();
+    tkKeyboard_Init();
+    tkScreen_PrintLine("Taskie Version 1");
 
     tkKernel k;
-    tkKernelInit(&k);
+    tkKernel_Init(&k);
 
-    // Test LinkedList Structures
-    tkKernelCreateTask(&k, "Test LinkedList Construct" , testLinkedListConstruct);
-    tkKernelCreateTask(&k, "Test LinkedList Destruct" , testLinkedListDestruct);
-    tkKernelCreateTask(&k, "Test LinkedList Insert" , testLinkedListInsert);
-    tkKernelCreateTask(&k, "Test LinkedList Remove" , testLinkedListRemove);
-    tkKernelCreateTask(&k, "Test LinkedList Count" , testLinkedListCount);
+    #ifdef __UNIT_TESTS
+        // Test LinkedList Structures
+        tkKernel_CreateTask(&k, "Test LinkedList Construct" , testLinkedList_Construct);
+        tkKernel_CreateTask(&k, "Test LinkedList Destruct" , testLinkedList_Destruct);
+        tkKernel_CreateTask(&k, "Test LinkedList At" , testLinkedList_At);
+        tkKernel_CreateTask(&k, "Test LinkedList GetLast" , testLinkedList_GetLast);
+        tkKernel_CreateTask(&k, "Test LinkedList Find" , testLinkedList_Find);
+        tkKernel_CreateTask(&k, "Test LinkedList Size" , testLinkedList_Size);
+        tkKernel_CreateTask(&k, "Test LinkedList Insert" , testLinkedList_Insert);
+        tkKernel_CreateTask(&k, "Test LinkedList Remove" , testLinkedList_Remove);
+        tkKernel_CreateTask(&k, "Test LinkedList FreeAllData" , testLinkedList_FreeAllData);
 
-    tkKernelCreateTask(&k, "Test LinkedListItem Construct" , testLinkedListItemConstruct);
-    tkKernelCreateTask(&k, "Test LinkedListItem Destruct" , testLinkedListItemDestruct);
+        tkKernel_CreateTask(&k, "Test LinkedListItem Construct" , testLinkedListItem_Construct);
+        tkKernel_CreateTask(&k, "Test LinkedListItem Destruct" , testLinkedListItem_Destruct);
+    #endif
 
-    tkKernelExecute(&k);
-    tkKernelDestruct(&k);
+    tkKernel_Execute(&k);
+    tkKernel_Destruct(&k);
 
-    tkMemoryBlockCount count = tkMemoryCountUsedBlocks();
+    tkMemory_BlockCount count = tkMemory_CountUsedBlocks();
 
     static char countBuf[BUFLEN];
     static char sizeBuf[BUFLEN];
@@ -41,13 +49,11 @@ void kmain(multiboot_info_t* mbi)
     itoa(count.mBlocksUsed,countBuf,BASE_10);
     itoa(count.mSizeInBytes,sizeBuf,BASE_10);
 
-    tkScreenPrint(countBuf); 
-    tkScreenPrint(" blocks in use ("); 
-    tkScreenPrint(sizeBuf); 
-    tkScreenPrintLine(" bytes)");
-
-    tkScreenPrintLine("Taskie is Doneskie!");
-
+    tkScreen_Print(countBuf); 
+    tkScreen_Print(" blocks in use ("); 
+    tkScreen_Print(sizeBuf); 
+    tkScreen_PrintLine(" bytes)");
+    tkScreen_PrintLine("Taskie is Doneskie!");
     // spin
     while(1);
     asm("cli");

@@ -3,61 +3,83 @@
 #include "../Core/Screen/Screen.h"
 #include "../Core/Memory/Memory.h"
 
-tkScheduler* tkSchedulerConstruct()
+tkScheduler* tkScheduler_Construct()
 {
-   tkScreenPrintLine("Scheduler: Constructing");
-   tkScheduler* s = (tkScheduler*)tkMemoryAllocate(sizeof(tkScheduler));
-   s->mTasks = tkLinkedListConstruct();
+   #ifdef __DEBUG_SCHEDULER
+      tkScreen_PrintLine("Scheduler: Constructing");
+   #endif
+   tkScheduler* s = (tkScheduler*)tkMemory_Allocate(sizeof(tkScheduler));
+   s->mTasks = tkLinkedList_Construct();
    return s;
 }
 
-void tkSchedulerDestruct(tkScheduler* s)
+void tkScheduler_Destruct(tkScheduler* s)
 {
-   tkScreenPrintLine("Scheduler: Destructing");
-   tkLinkedListFreeAllData(s->mTasks);
-   tkLinkedListDestruct(s->mTasks);
-   tkMemoryFree(s);
+   #ifdef __DEBUG_SCHEDULER
+      tkScreen_PrintLine("Scheduler: Destructing");
+   #endif
+   tkLinkedList_FreeAllData(s->mTasks);
+   tkLinkedList_Destruct(s->mTasks);
+   tkMemory_Free(s);
 }
 
-tkTask* tkSchedulerCreateTask(tkScheduler* s, const char* name, void(*fn)(void))
+tkTask* tkScheduler_CreateTask(tkScheduler* s, const char* name, void(*fn)(void))
 {
-   tkScreenPrintLine("Scheduler: Creating a new task");
-   tkTask* task = (tkTask*)tkTaskConstruct();
+   #ifdef __DEBUG_SCHEDULER
+      tkScreen_PrintLine("Scheduler: Creating a new task");
+   #endif
+   tkTask* task = (tkTask*)tkTask_Construct();
    task->mFunction = fn;
-   tkTaskSetName(task,name);
-   static char addr[BUFLEN];
-   memset(addr,0,BUFLEN);
-   itoa((uint32_t)task,addr,BASE_16);
-   tkScreenPrint("Scheduler: Created task at 0x"); tkScreenPrintLine(addr);
-   tkLinkedListInsert(s->mTasks,task);
+   tkTask_SetName(task,name);
+   #ifdef __DEBUG_SCHEDULER
+      static char addr[BUFLEN];
+      memset(addr,0,BUFLEN);
+      itoa((uint32_t)task,addr,BASE_16);
+      tkScreen_Print("Scheduler: Created task at 0x"); tkScreen_PrintLine(addr);
+   #endif
+   tkLinkedList_Insert(s->mTasks,task);
    return task;
 }
 
-void tkSchedulerExecuteTasks(tkScheduler* s)
+void tkScheduler_ExecuteTasks(tkScheduler* s)
 {
-   tkScreenPrintLine("Scheduler: Entering Task Loop");
+   #ifdef __DEBUG_SCHEDULER
+   tkScreen_PrintLine("Scheduler: Entering Task Loop");
    static char buffer[BUFLEN];
-   uint32_t numTasks = tkLinkedListSize(s->mTasks);
+   #endif
+   uint32_t numTasks = tkLinkedList_Size(s->mTasks);
    int i;
    for (i=0;i<numTasks;i++)
    {
-      tkLinkedListItem* currentItem = tkLinkedListAt(s->mTasks,i);
+      tkLinkedListItem* currentItem = tkLinkedList_At(s->mTasks,i);
       tkTask* current = currentItem->mData;
+
+      #ifdef __DEBUG_SCHEDULER
       memset(buffer,0,sizeof(char)*BUFLEN);
       itoa(current->mID,buffer,BASE_10);
+      #endif
 
       if (current->mFunction)
       {
-         tkScreenPrint("Scheduler: Executing Task [");  
-         tkScreenPrint(buffer);  
-         tkScreenPrint("] "); 
-         tkScreenPrintLine(current->mName);
+         #ifdef __DEBUG_SCHEDULER
+            tkScreen_Print("Scheduler: Executing Task [");  
+            tkScreen_Print(buffer);  
+            tkScreen_Print("] "); 
+            tkScreen_PrintLine(current->mName);
+         #endif
          current->mFunction();
       }
       else
       {
-         tkScreenPrint("Scheduler: No function for Task ["); tkScreenPrint(buffer); tkScreenPrint("] "); tkScreenPrintLine(current->mName);
+         #ifdef __DEBUG_SCHEDULER
+            tkScreen_Print("Scheduler: No function for Task ["); 
+            tkScreen_Print(buffer); 
+            tkScreen_Print("] "); 
+            tkScreen_PrintLine(current->mName);
+         #endif
       }
    }
-   tkScreenPrintLine("Scheduler: Reached end of Task list");
+   #ifdef __DEBUG_SCHEDULER
+      tkScreen_PrintLine("Scheduler: Reached end of Task list");
+   #endif
 }

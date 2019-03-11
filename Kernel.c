@@ -3,27 +3,29 @@
 #include "Core/Interrupt/Interrupt.h"
 #include "Core/Screen/Screen.h"
 #include "Core/Keyboard/Keyboard.h"
+#include "Core/PCI/PCI.h"
 
-void tkKernelInit(tkKernel* k)
+void tkKernel_Init(tkKernel* k)
 {
-   tkKeyboardSetupIDT();
-   tkInterruptWriteDescriptorTable();
-   tkKeyboardIRQInit();
-   tkMemoryInitialise();
-   k->mScheduler = tkSchedulerConstruct();
+   tkPCI_CheckAllBuses();
+   tkKeyboard_SetupIDT();
+   tkInterrupt_WriteDescriptorTable();
+   tkKeyboard_IRQInit();
+   tkMemory_Initialise();
+   k->mScheduler = tkScheduler_Construct();
 }
 
-void tkKernelDestruct(tkKernel* k)
+void tkKernel_Destruct(tkKernel* k)
 {
-   tkSchedulerDestruct(k->mScheduler);
+   tkScheduler_Destruct(k->mScheduler);
 }
 
-void tkKernelExecute(tkKernel* k)
+void tkKernel_Execute(tkKernel* k)
 {
-   tkSchedulerExecuteTasks(k->mScheduler);
+   tkScheduler_ExecuteTasks(k->mScheduler);
 }
 
-tkTask* tkKernelCreateTask(tkKernel* k, const char* name, void(*fn)(void))
+tkTask* tkKernel_CreateTask(tkKernel* k, const char* name, void(*fn)(void))
 {
-   return tkSchedulerCreateTask(k->mScheduler, name , fn);
+   return tkScheduler_CreateTask(k->mScheduler, name , fn);
 }
