@@ -37,5 +37,7 @@ fi
 
 
 # Run in QEMU
-qemu-system-i386 -kernel Boot/TaskieKernel -drive format=raw,if=ide,file=Tools/TaskieDisk.img
-#qemu-system-i386 -kernel Boot/TaskieKernel -drive format=raw,file=Tools/TaskieDisk.img
+qemu-system-i386 \
+    -kernel Boot/TaskieKernel \
+    -drive format=raw,if=ide,file=Tools/TaskieDisk.img \
+    -serial stdio

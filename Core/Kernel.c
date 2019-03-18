@@ -6,7 +6,9 @@
 #include <Devices/Interrupt/Interrupt.h>
 #include <Devices/PCI/PCI.h>
 #include <Devices/Keyboard/Keyboard.h>
+#include <Devices/Serial/Serial.h>
 #include <Scheduler/Scheduler.h>
+
 #include <LibC/include/stdio.h>
 
 void Kernel_Constructor
@@ -18,9 +20,10 @@ void Kernel_Constructor
 	Interrupt_Constructor(),
 	Keyboard_Constructor();
 	Interrupt_WriteDescriptorTable();
-	Keyboard_IRQInit();
+	Serial_Constructor();
 	PCI_Constructor();
 	ATA_Constructor();
+	Keyboard_IRQInit();
 	Scheduler_Constructor();
 }
 

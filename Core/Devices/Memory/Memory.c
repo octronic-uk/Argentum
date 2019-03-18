@@ -1,5 +1,6 @@
 #include "Memory.h"
 #include <LibC/include/stdio.h>
+#include <LibC/include/string.h>
 
 //#define __DEBUG_MEMORY
 
@@ -106,6 +107,7 @@ void* Memory_Allocate(uint32_t size)
 		blockHeader->mSize = size;
 		Memory_MoveHeapEnd(totalRequestedSize);
 	}
+	memset(afterBlockHeader,0,size);
 	return (void*)afterBlockHeader;
 }
 
@@ -132,6 +134,7 @@ void Memory_Free(void* addr)
 		printf("Memory: Freeing Memory Block at 0x%x", header);
 	#endif
 	header->mInUse = 0;
+	memset(addr,0,header->mSize);
 	// Last in heap
 	if ((uint32_t)Memory_HeapEndAddress == (uint32_t)header+sizeof(Memory_BlockHeader)+header->mSize)
 	{

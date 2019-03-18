@@ -123,4 +123,4 @@ unsigned char ATA_IDEPolling(ATA_Channel* channels, unsigned char channel, unsig
 unsigned char ATA_IDEPrintError(ATA_Channel* channels, ATA_IDEDevice* devices, unsigned int drive, unsigned char err) ;
 void ATA_IDEReadBuffer(ATA_Channel* channels, unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) ;
 void ATA_IDEInit (unsigned char* ide_buf, ATA_IDEDevice* ide_devices, ATA_Channel* channels, 
-   unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);
+unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);

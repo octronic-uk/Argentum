@@ -270,9 +270,9 @@ void ATA_IDEInit
    {
       if (ide_devices[i].reserved == 1) 
       {
-         printf("\tFound %s Drive %dGB - %s\n",
+         printf("\tFound %s Drive %d MB - %s\n",
             (const char *[]){"ATA", "ATAPI"}[ide_devices[i].type],         /* Type */
-            ide_devices[i].size/1024/1024/2,               /* Size */
+            ide_devices[i].size/1024/2,               /* Size */
             ide_devices[i].model);
       }
       else
