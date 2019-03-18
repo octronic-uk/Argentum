@@ -21,25 +21,25 @@ void Interrupt_WriteDescriptorTable()
 	*	Data	0x21		0xA1
 	*/
 	/* ICW1 - begin initialization */
-	IO_WritePort(0x20 , 0x11);
-	IO_WritePort(0xA0 , 0x11);
+	IO_WritePort8b(0x20 , 0x11);
+	IO_WritePort8b(0xA0 , 0x11);
 	/* ICW2 - remap offset address of InterruptDescriptorTable */
 	/*
 	* In x86 protected mode, we have to remap the PICs beyond 0x20 because
 	* Intel have designated the first 32 interrupts as "reserved" for cpu exceptions
 	*/
-	IO_WritePort(0x21 , 0x20);
-	IO_WritePort(0xA1 , 0x28);
+	IO_WritePort8b(0x21 , 0x20);
+	IO_WritePort8b(0xA1 , 0x28);
 	/* ICW3 - setup cascading */
-	IO_WritePort(0x21 , 0x00);
-	IO_WritePort(0xA1 , 0x00);
+	IO_WritePort8b(0x21 , 0x00);
+	IO_WritePort8b(0xA1 , 0x00);
 	/* ICW4 - environment info */
-	IO_WritePort(0x21 , 0x01);
-	IO_WritePort(0xA1 , 0x01);
+	IO_WritePort8b(0x21 , 0x01);
+	IO_WritePort8b(0xA1 , 0x01);
 	/* Initialization finished */
 	/* mask interrupts */
-	IO_WritePort(0x21 , 0xff);
-	IO_WritePort(0xA1 , 0xff);
+	IO_WritePort8b(0x21 , 0xff);
+	IO_WritePort8b(0xA1 , 0xff);
 	/* fill the InterruptDescriptorTable descriptor */
 	Interrupt_lidt(&Interrupt_DescriptorTable[0], sizeof(Interrupt_DescriptorTableEntry)*IDT_SIZE);
 	Interrupt_sti();

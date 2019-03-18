@@ -75,6 +75,7 @@ typedef struct
 
 void PCI_Constructor();
 
+void PCI_SetDebug(uint32_t debug);
 void PCI_DumpDevices();
 void PCI_DumpDevice(const PCI_ConfigHeader* header);
 
@@ -84,7 +85,25 @@ PCI_ConfigHeader* PCI_GetIsaBridgeConfigHeader();
 PCI_ConfigHeader* PCI_GetATADevice();
 
 uint8_t PCI_IsMultifunctionDevice(uint8_t headerType);
-uint16_t PCI_ReadConfigWord(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+
+uint32_t PCI_ReadConfig32b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint16_t PCI_ReadConfig16b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint8_t PCI_ReadConfig8b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+
+uint32_t PCI_DeviceReadConfig32b(PCI_ConfigHeader* device, uint8_t offset);
+uint16_t PCI_DeviceReadConfig16b(PCI_ConfigHeader* device, uint8_t offset);
+uint8_t  PCI_DeviceReadConfig8b(PCI_ConfigHeader* device, uint8_t offset);
+
+void PCI_ConfigSetAddress(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+
+void PCI_WriteConfig32b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t data);
+void PCI_WriteConfig16b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint16_t data);
+void PCI_WriteConfig8b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint8_t data);
+
+void PCI_DeviceWriteConfig32b(PCI_ConfigHeader* device, uint8_t offset, uint32_t data);
+void PCI_DeviceWriteConfig16b(PCI_ConfigHeader* device, uint8_t offset, uint16_t data);
+void PCI_DeviceWriteConfig8b(PCI_ConfigHeader* device, uint8_t offset, uint8_t data);
+
 uint8_t PCI_GetHeaderType(uint8_t bus , uint8_t device , uint8_t function);
 uint16_t PCI_GetVendorID(uint8_t bus, uint8_t device, uint8_t function);
 uint16_t PCI_GetDeviceID(uint8_t bus, uint8_t device, uint8_t function);

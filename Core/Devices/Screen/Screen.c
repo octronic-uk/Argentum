@@ -11,27 +11,28 @@
 #define SCREEN_CHAR_SIZE (SCREEN_ROWS * SCREEN_COLUMNS)
 #define SCREEN_ROW_SIZE_BYTES (SCREEN_COLUMNS * SCREEN_BYTES_PER_ELEMENT)
 #define SCREEN_SIZE_BYTES (SCREEN_CHAR_SIZE * SCREEN_BYTES_PER_ELEMENT)
-#define SCREEN_BUFFER_SIZE_BYTES (SCREEN_SIZE_BYTES * 512)
+#define SCREEN_BUFFER_SIZE_BYTES (SCREEN_SIZE_BYTES * 16)
 
 
-static uint8_t* Screen_VideoBasePointer = (uint8_t*) 0x000B8000;
-static uint8_t  Screen_Buffer[SCREEN_BUFFER_SIZE_BYTES];
-static int32_t Screen_BufferReadOffset = 0;
-static int32_t  Screen_BufferScrollOffset = 0;
+uint8_t* Screen_VideoBasePointer = (uint8_t*) 0x000B8000;
+uint8_t  Screen_Buffer[SCREEN_BUFFER_SIZE_BYTES];
+int32_t Screen_BufferReadOffset = 0;
+int32_t  Screen_BufferScrollOffset = 0;
 /*
     buffer size minus size in lines, minus one screen's worth of lines
 */
-static uint32_t Screen_BufferScrollOffsetMax = (SCREEN_BUFFER_SIZE_BYTES / SCREEN_ROW_SIZE_BYTES) - SCREEN_ROWS;
+uint32_t Screen_BufferScrollOffsetMax;
 
-static size_t Screen_CurrentRow = 0;
-static size_t Screen_CurrentColumn = 0;
-static uint8_t Screen_Color = 0;
+size_t Screen_CurrentRow = 0;
+size_t Screen_CurrentColumn = 0;
+uint8_t Screen_Color = 0;
 
 void Screen_Initialize(void)
 {
 	Screen_CurrentRow = 0;
 	Screen_CurrentColumn = 0;
-	Screen_BufferScrollOffset = 25;
+	Screen_BufferScrollOffset = 0;
+	Screen_BufferScrollOffsetMax = SCREEN_BUFFER_SIZE_BYTES - (SCREEN_ROWS * SCREEN_ROW_SIZE_BYTES);
 	Screen_Color = Screen_VgaEntryColor(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 	memset(Screen_Buffer,0,SCREEN_BUFFER_SIZE_BYTES);
 	Screen_Clear();

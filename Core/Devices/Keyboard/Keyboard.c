@@ -34,13 +34,13 @@ void Keyboard_OnInterrupt()
 	char keycode;
 
 	/* write EOI */
-	IO_WritePort(0x20, 0x20);
+	IO_WritePort8b(0x20, 0x20);
 
-	status = IO_ReadPort(KEYBOARD_STATUS_PORT);
+	status = IO_ReadPort8b(KEYBOARD_STATUS_PORT);
 	/* Lowest bit of status will be set if buffer is not empty */
 	if (status & 0x01)
 	{
-		keycode = IO_ReadPort(KEYBOARD_DATA_PORT);
+		keycode = IO_ReadPort8b(KEYBOARD_DATA_PORT);
 		if(keycode < 0)
 		{
 			return;
@@ -88,5 +88,5 @@ void Keyboard_IRQInit()
 	#ifdef __DEBUG_KEYBOARD
 	printf("Enabline IRQ1 [ONLY] for Keyboard\n");
 	#endif
-	IO_WritePort(0x21 , 0xFD);
+	IO_WritePort8b(0x21 , 0xFD);
 }
