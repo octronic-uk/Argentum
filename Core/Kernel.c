@@ -1,6 +1,7 @@
 #include "Kernel.h"
 
-#include <Devices/Screen/tty.h>
+#include <Devices/ATA/ATA.h>
+#include <Devices/Screen/Screen.h>
 #include <Devices/Memory/Memory.h>
 #include <Devices/Interrupt/Interrupt.h>
 #include <Devices/PCI/PCI.h>
@@ -11,15 +12,16 @@
 void Kernel_Constructor
 (multiboot_info_t * mbi)
 {
-    terminal_initialize();
-    printf("Taskie Kernel 1.0\n");
-    Memory_Constructor(mbi);
+   Screen_Initialize();
+   printf("Taskie Kernel 1.0\n");
+   Memory_Constructor(mbi);
 	Interrupt_Constructor(),
-	Scheduler_Constructor(),
-	PCI_Constructor();
 	Keyboard_Constructor();
 	Interrupt_WriteDescriptorTable();
 	Keyboard_IRQInit();
+	PCI_Constructor();
+	ATA_Constructor();
+	Scheduler_Constructor();
 }
 
 void

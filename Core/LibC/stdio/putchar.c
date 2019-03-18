@@ -1,10 +1,10 @@
 #include <LibC/include/stdio.h>
 
-#include <Devices/Screen/tty.h>
+#include <Devices/Screen/Screen.h>
 
 int putchar(int ic)
 {
 	char c = (char) ic;
-	terminal_write(&c, sizeof(c));
+	Screen_Write(&c, sizeof(c));
 	return ic;
 }

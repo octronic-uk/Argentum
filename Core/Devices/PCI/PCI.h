@@ -21,24 +21,37 @@
 #define PCI_DEVICE_BAR0L_OFFSET 0x10
 #define PCI_DEVICE_BAR0H_OFFSET 0x12
 
-#define PCI_DEVICE_BAR1_OFFSET 0x14
-#define PCI_DEVICE_BAR2_OFFSET 0x18
-#define PCI_DEVICE_BAR3_OFFSET 0x1C
-#define PCI_DEVICE_BAR4_OFFSET 0x20
-#define PCI_DEVICE_BAR5_OFFSET 0x24
-#define PCI_DEVICE_SECONDARY_BUS_OFFSET 0x19
+#define PCI_DEVICE_BAR1L_OFFSET 0x14
+#define PCI_DEVICE_BAR1H_OFFSET 0x16
+
+#define PCI_DEVICE_BAR2L_OFFSET 0x18
+#define PCI_DEVICE_BAR2H_OFFSET 0x1A
+
+#define PCI_DEVICE_BAR3L_OFFSET 0x1C
+#define PCI_DEVICE_BAR3H_OFFSET 0x1E
+
+#define PCI_DEVICE_BAR4L_OFFSET 0x20
+#define PCI_DEVICE_BAR4H_OFFSET 0x22
+
+#define PCI_DEVICE_BAR5L_OFFSET 0x24
+#define PCI_DEVICE_BAR5H_OFFSET 0x26
 
 #define PCI_DEVICE_INTERRUPT_LINE_OFFSET 0x3C
 #define PCI_DEVICE_INTERRUPT_PIN_OFFSET 0x3D
+#define PCI_DEVICE_PRIMARY_BUS_OFFSET 0x08
+#define PCI_DEVICE_SECONDARY_BUS_OFFSET 0x19
 
 #define PCI_HEADER_TYPE_MULTIFUNCTION (uint8_t)0x80
 #define PCI_INVALID_VENDOR_ID (uint16_t)0xFFFF
 #define PCI_BASE_CLASS_BRIDGE_DEVICE (uint8_t)0x06
 #define PCI_SUB_CLASS_PCI_TO_PCI_BRIDGE (uint8_t)0x04
+#define PCI_SUB_CLASS_PCI_TO_ISA_BRIDGE (uint8_t)0x01
 
 typedef struct
 {
-	int16_t  mParentBus;
+	uint8_t mBus;
+	uint8_t mDevice;
+	uint8_t mFunction;
 	uint8_t  mHeaderType;
 	uint16_t mVendorID;
 	uint16_t mDeviceID;
@@ -46,31 +59,47 @@ typedef struct
 	uint16_t mCommand;
 	uint8_t  mClassCode;
 	uint8_t  mSubclassCode;
-	uint32_t mBaseAddressRegister;
 	uint8_t  mInterruptLine;
 	uint8_t  mInterruptPin;
-} PCIConfigHeader;
+	uint8_t mPrimaryBus;
+	uint8_t mSecondaryBus;
+	uint8_t mProgIF;
+	uint32_t mBAR0;
+	uint32_t mBAR1;
+	uint32_t mBAR2;
+	uint32_t mBAR3;
+	uint32_t mBAR4;
+	uint32_t mBAR5;
+} PCI_ConfigHeader;
 
-static LinkedList* PCI_ConfigHeaderList;
 
 void PCI_Constructor();
 
-void PCI_dumpDevices();
-uint8_t PCI_isMultifunctionDevice(uint8_t headerType);
-PCIConfigHeader PCI_readConfigHeader(uint8_t bus, uint8_t device, uint8_t func);
-uint16_t PCI_readConfigWord(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
-uint8_t PCI_getHeaderType(uint8_t bus , uint8_t device , uint8_t function);
-uint16_t PCI_getVendorID(uint8_t bus, uint8_t device, uint8_t function);
-uint16_t PCI_getDeviceID(uint8_t bus, uint8_t device, uint8_t function);
-uint8_t PCI_getClassCode(uint8_t bus, uint8_t device, uint8_t function);
-uint8_t PCI_getSubClass(uint8_t bus, uint8_t device, uint8_t function);
-uint8_t PCI_getSecondaryBus(uint8_t bus, uint8_t device, uint8_t function);
-uint16_t PCI_getStatus(uint8_t bus, uint8_t device, uint8_t function);
-uint16_t PCI_getCommand(uint8_t bus, uint8_t device, uint8_t function);
-uint32_t PCI_getBaseAddressRegister(uint8_t bus, uint8_t device, uint8_t function);
-uint8_t  PCI_getInterruptLine(uint8_t bus, uint8_t device, uint8_t function);
-uint8_t  PCI_getInterruptPin(uint8_t bus, uint8_t device, uint8_t function);
-void PCI_dumpDevice(const PCIConfigHeader* header);
-void PCI_checkBusForDevices(int16_t parentBus, uint8_t bus);
-void PCI_checkDeviceForFunctions(int16_t parentBus, uint8_t bus, uint8_t device);
-void PCI_checkFunctionForBridges(int16_t parentBus, uint8_t bus, uint8_t device, uint8_t function);
+void PCI_DumpDevices();
+void PCI_DumpDevice(const PCI_ConfigHeader* header);
+
+PCI_ConfigHeader* PCI_ReadConfigHeader(uint8_t bus, uint8_t device, uint8_t func);
+PCI_ConfigHeader* PCI_GetConfigHeader(uint8_t bus, uint8_t device, uint8_t function);
+PCI_ConfigHeader* PCI_GetIsaBridgeConfigHeader();
+PCI_ConfigHeader* PCI_GetATADevice();
+
+uint8_t PCI_IsMultifunctionDevice(uint8_t headerType);
+uint16_t PCI_ReadConfigWord(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint8_t PCI_GetHeaderType(uint8_t bus , uint8_t device , uint8_t function);
+uint16_t PCI_GetVendorID(uint8_t bus, uint8_t device, uint8_t function);
+uint16_t PCI_GetDeviceID(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t PCI_GetClassCode(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t PCI_GetSubClass(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t PCI_GetPrimaryBus(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t PCI_GetSecondaryBus(uint8_t bus, uint8_t device, uint8_t function);
+uint16_t PCI_GetStatus(uint8_t bus, uint8_t device, uint8_t function);
+uint16_t PCI_GetCommand(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t  PCI_GetInterruptLine(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t  PCI_GetInterruptPin(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t PCI_GetBAR0(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t PCI_GetBAR1(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t PCI_GetBAR2(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t PCI_GetBAR3(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t PCI_GetBAR4(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t PCI_GetBAR5(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t PCI_GetProgIF(uint8_t bus, uint8_t device, uint8_t function);

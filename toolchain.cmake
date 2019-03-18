@@ -2,6 +2,7 @@
 
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_WORKS TRUE)
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I/usr/local/Cellar/i386-elf-gcc/8.2.0/lib/gcc/i386-elf/8.2.0/include -ffreestanding -nostdlib")
 
 set(CMAKE_SYSTEM_NAME "Generic")

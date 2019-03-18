@@ -1,7 +1,9 @@
 #pragma once
+
+#include <stddef.h>
 #include <stdint.h>
 
-enum vga_color
+enum Screen_VgaColor
 {
 	VGA_COLOR_BLACK = 0,
 	VGA_COLOR_BLUE = 1,
@@ -21,14 +23,13 @@ enum vga_color
 	VGA_COLOR_WHITE = 15,
 };
 
-static inline
-uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg)
-{
-	return fg | bg << 4;
-}
+uint8_t Screen_VgaEntryColor(enum Screen_VgaColor fg, enum Screen_VgaColor bg);
+uint16_t Screen_VgaEntry(unsigned char uc, uint8_t color);
 
-static inline
-uint16_t vga_entry(unsigned char uc, uint8_t color)
-{
-	return (uint16_t) uc | (uint16_t) color << 8;
-}
+void Screen_MoveScrollOffset(int32_t offset);
+void Screen_Initialize(void);
+void Screen_PutChar(char c);
+void Screen_Write(const char* data, size_t size);
+void Screen_WriteString(const char* data);
+void Screen_Update();
+void Screen_Clear();

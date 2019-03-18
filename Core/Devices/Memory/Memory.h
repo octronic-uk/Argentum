@@ -10,19 +10,19 @@ typedef struct
 {
 	uint32_t mSize;
 	uint8_t mInUse;
-} MemoryBlockHeader;
+} Memory_BlockHeader;
 
 typedef struct
 {
 	uint32_t mBlocksUsed;
 	uint32_t mSizeInBytes;
-} MemoryBlockCount;
+} Memory_BlockCount;
 
-static multiboot_info_t* MemoryMultibootInfo;
-static uint32_t MemoryUpperRamSize;
-static uint32_t MemoryBaseAddress;
-static uint32_t MemoryHeapEndAddress;
-static uint32_t MemoryBlocksBegin;
+static multiboot_info_t* Memory_MultibootInfo;
+static uint32_t Memory_UpperRamSize;
+static uint32_t Memory_BaseAddress;
+static uint32_t Memory_HeapEndAddress;
+static uint32_t Memory_BlocksBegin;
 
 void Memory_Constructor(multiboot_info_t* mbi);
 void Memory_Destructor();
@@ -32,9 +32,9 @@ uint32_t Memory_FindFreeBlock( uint32_t size);
 void* Memory_Allocate( uint32_t size);
 void Memory_Free( void* block);
 void Memory_SetMultibootInfo( multiboot_info_t* mbi);
-MemoryBlockCount Memory_CountUsedBlocks();
+Memory_BlockCount Memory_CountUsedBlocks();
 uint32_t Memory_MoveHeapEnd(int32_t delta);
 uint32_t Memory_GetLastBlock();
-MemoryBlockHeader* Memory_GetPreviousBlock( MemoryBlockHeader* block);
+Memory_BlockHeader* Memory_GetPreviousBlock( Memory_BlockHeader* block);
 
 

@@ -14,12 +14,12 @@ typedef struct
 	uint8_t  mZero;
 	uint8_t  mTypeAttribute;
 	uint16_t mOffsetHigherBits;
-} __attribute__((packed)) InterruptDescriptorTableEntry;
+} __attribute__((packed)) Interrupt_DescriptorTableEntry;
 
-static InterruptDescriptorTableEntry InterruptDescriptorTable[IDT_SIZE];
+static Interrupt_DescriptorTableEntry Interrupt_DescriptorTable[IDT_SIZE];
 
 void Interrupt_Constructor();
-void Interrupt_SetIDTEntry(uint8_t index, const InterruptDescriptorTableEntry idt);
+void Interrupt_SetIDTEntry(uint8_t index, const Interrupt_DescriptorTableEntry idt);
 void Interrupt_WriteDescriptorTable();
 void Interrupt_lidt(void* base, uint16_t size);
 void Interrupt_sti();

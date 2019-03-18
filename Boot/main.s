@@ -21,6 +21,7 @@ stack_top:
 
 # The kernel entry point.
 .section .text
+
 .global _start
 .type _start, @function
 
@@ -28,10 +29,21 @@ _start:
 	movl $stack_top, %esp
 
 	# Transfer control to the main kernel.
+	push %ebx
 	call kmain
 
 	# Hang if kernel_main unexpectedly returns.
-	cli
+	# cli
 1:	hlt
 	jmp 1b
+
+# Keyboard Interrupt Handler
+.global Keyboard_EventHandlerASM
+.extern Keyboard_OnInterrupt
+
+Keyboard_EventHandlerASM:
+	call    Keyboard_OnInterrupt
+	iret
+
 .size _start, . - _start
+

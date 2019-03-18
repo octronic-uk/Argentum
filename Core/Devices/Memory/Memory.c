@@ -1,50 +1,53 @@
 #include "Memory.h"
+#include <LibC/include/stdio.h>
+
+//#define __DEBUG_MEMORY
 
 void Memory_Constructor(multiboot_info_t* mbi_header)
 {
-	MemoryMultibootInfo = mbi_header;
-	MemoryBlocksBegin = 0;
-	MemoryBaseAddress = 0;
-	MemoryHeapEndAddress = 0;
+	Memory_MultibootInfo = mbi_header;
+	Memory_BlocksBegin = 0;
+	Memory_BaseAddress = 0;
+	Memory_HeapEndAddress = 0;
 	Memory_Detect();
 }
 
 uint32_t Memory_FindFreeBlock(uint32_t size)
 {
 	#ifdef __DEBUG_MEMORY
-		printf("Memory: Finding a free block";
+		printf("Memory: Finding a free block\n");
 	#endif
 
-	if (MemoryBlocksBegin == 0)
+	if (Memory_BlocksBegin == 0)
 	{
-		MemoryBlocksBegin = MemoryBaseAddress;
-		MemoryHeapEndAddress = MemoryBaseAddress;
-		return MemoryBaseAddress;
+		Memory_BlocksBegin = Memory_BaseAddress;
+		Memory_HeapEndAddress = Memory_BaseAddress;
+		return Memory_BaseAddress;
 	}
 
-	MemoryBlockHeader* current = (MemoryBlockHeader*)MemoryBlocksBegin;
-	while((uint32_t)current != MemoryHeapEndAddress)
+	Memory_BlockHeader* current = (Memory_BlockHeader*)Memory_BlocksBegin;
+	while((uint32_t)current != Memory_HeapEndAddress)
 	{
 		if (current->mInUse)
 		{
 			#ifdef __DEBUG_MEMORY
-				cout <<"Memory: Current block in use 0x" << current << endl;
+				printf("Memory: Current block in use 0x%x\n", current);
 			#endif
 
-			if ((uint32_t)current + sizeof(MemoryBlockHeader) + current->mSize != MemoryHeapEndAddress)
+			if ((uint32_t)current + sizeof(Memory_BlockHeader) + current->mSize != Memory_HeapEndAddress)
 			{
-				current = (MemoryBlockHeader*)(((uint32_t)current) + sizeof(MemoryBlockHeader) + current->mSize);
+				current = (Memory_BlockHeader*)(((uint32_t)current) + sizeof(Memory_BlockHeader) + current->mSize);
 
 				#ifdef __DEBUG_MEMORY
-					printf("Memory: Stepped to next 0x" << current << endl;
+					printf("Memory: Stepped to next 0x%s\n", current);
 				#endif
 			}
 			// No next block, assign to end of heap
 			else
 			{
-				current = (MemoryBlockHeader*)MemoryHeapEndAddress;
+				current = (Memory_BlockHeader*)Memory_HeapEndAddress;
 				#ifdef __DEBUG_MEMORY
-					printf("Memory: No free block found, using heap end 0x" << current << endl;
+					printf("Memory: No free block found, using heap end 0x%x\n" , current);
 				#endif
 				return (uint32_t)current;
 			}
@@ -52,7 +55,7 @@ uint32_t Memory_FindFreeBlock(uint32_t size)
 		else if (current->mSize >= size)
 		{
 			#ifdef __DEBUG_MEMORY
-				printf("Memory: Found unused block with enough space 0x" << addr;
+				printf("Memory: Found unused block with enough space 0x%x\n" , current);
 			#endif
 			return (uint32_t)current;
 		}
@@ -61,13 +64,13 @@ uint32_t Memory_FindFreeBlock(uint32_t size)
 	return (uint32_t)current;
 }
 
-MemoryBlockHeader* Memory_GetPreviousBlock(MemoryBlockHeader* block)
+Memory_BlockHeader* Memory_GetPreviousBlock(Memory_BlockHeader* block)
 {
-	MemoryBlockHeader* b = (MemoryBlockHeader*)MemoryBlocksBegin;
-	while(b + sizeof(MemoryBlockHeader) + b->mSize != block)
+	Memory_BlockHeader* b = (Memory_BlockHeader*)Memory_BlocksBegin;
+	while(b + sizeof(Memory_BlockHeader) + b->mSize != block)
 	{
-		b = (MemoryBlockHeader*)b+sizeof(MemoryBlockHeader)+b->mSize;
-		if ((uint32_t)b > MemoryHeapEndAddress)
+		b = (Memory_BlockHeader*)b+sizeof(Memory_BlockHeader)+b->mSize;
+		if ((uint32_t)b > Memory_HeapEndAddress)
 		{
 			return 0;
 		}
@@ -81,25 +84,23 @@ void* Memory_Allocate(uint32_t size)
 	if (size == 0)
 	{
 		#ifdef __DEBUG_MEMORY
-			printf("Memory: Cannot allocate 0 size block" << endl;
+			printf("Memory: Cannot allocate 0 size block");
 		#endif
 		return 0;
 	}
 
 	uint32_t freeBlock = Memory_FindFreeBlock(size);
-	uint32_t totalRequestedSize = sizeof(MemoryBlockHeader) + size;
+	uint32_t totalRequestedSize = sizeof(Memory_BlockHeader) + size;
 
-	MemoryBlockHeader* blockHeader = ((MemoryBlockHeader*)freeBlock);
-	MemoryBlockHeader* afterBlockHeader = blockHeader+1;
+	Memory_BlockHeader* blockHeader = ((Memory_BlockHeader*)freeBlock);
+	Memory_BlockHeader* afterBlockHeader = blockHeader+1;
 
 	#ifdef __DEBUG_MEMORY
-		printf("Memory: Allocated Block HDR.0x" << freeBlock
-			 << " DATA.0x" << afterBlockHeader
-			 << " END.0x" << freeBlock+totalRequestedSize
-			 << endl;
+		printf("Memory: Allocated Block HDR.0x%x DATA.0x%x END.0x%x\n",
+               freeBlock, afterBlockHeader, freeBlock+totalRequestedSize);
 	#endif
 
-	if (freeBlock == MemoryHeapEndAddress)
+	if (freeBlock == Memory_HeapEndAddress)
 	{
 		blockHeader->mInUse = 1;
 		blockHeader->mSize = size;
@@ -111,39 +112,38 @@ void* Memory_Allocate(uint32_t size)
 uint32_t Memory_MoveHeapEnd(int32_t delta)
 {
 	#ifdef __DEBUG_MEMORY
-		printf("Memory: Moving Heap End by " << delta;;
-			 << "b from 0x" << mHeapEndAddress << " to 0x";
+		printf("Memory: Moving Heap End by %d bytes from 0x%x",delta, Memory_HeapEndAddress);
 	#endif
 
-	MemoryHeapEndAddress += delta;
+	Memory_HeapEndAddress += delta;
 
 	#ifdef __DEBUG_MEMORY
-		printf(MemoryHeapEndAddress << endl;
+		printf("to 0x%x \n" , Memory_HeapEndAddress);
 	#endif
 
-	return MemoryHeapEndAddress;
+	return Memory_HeapEndAddress;
 }
 
 void Memory_Free(void* addr)
 {
 	uint32_t block = (uint32_t)addr;
-	MemoryBlockHeader* header = ((MemoryBlockHeader*)block)-1;
+	Memory_BlockHeader* header = ((Memory_BlockHeader*)block)-1;
 	#ifdef __DEBUG_MEMORY
-		printf("Memory: Freeing Memory Block at 0x" << header << endl;
+		printf("Memory: Freeing Memory Block at 0x%x", header);
 	#endif
 	header->mInUse = 0;
 	// Last in heap
-	if ((uint32_t)MemoryHeapEndAddress == (uint32_t)header+sizeof(MemoryBlockHeader)+header->mSize)
+	if ((uint32_t)Memory_HeapEndAddress == (uint32_t)header+sizeof(Memory_BlockHeader)+header->mSize)
 	{
 		// Set the previous block to mark the end of allocated memory
-		uint32_t totalSize = sizeof(MemoryBlockHeader)+header->mSize;
+		uint32_t totalSize = sizeof(Memory_BlockHeader)+header->mSize;
 		Memory_MoveHeapEnd(-totalSize);
 	}
 }
 
 void Memory_Detect()
 {
-	if (!MemoryMultibootInfo)
+	if (!Memory_MultibootInfo)
 	{
 		#ifdef __DEBUG_MEMORY
 			printf("Memory: Multiboot Info Not Found!\n");
@@ -152,134 +152,87 @@ void Memory_Detect()
 	}
 
 	struct multiboot_mmap_entry* mmap = 0;
-	if (MemoryMultibootInfo->flags & MULTIBOOT_INFO_MEMORY)
+	if (Memory_MultibootInfo->flags & MULTIBOOT_INFO_MEMORY)
 	{
-		uint32_t mem_lower = (uint32_t)MemoryMultibootInfo->mem_lower;
-		uint32_t mem_upper = (uint32_t)MemoryMultibootInfo->mem_upper;
+		uint32_t mem_lower = (uint32_t)Memory_MultibootInfo->mem_lower;
+		uint32_t mem_upper = (uint32_t)Memory_MultibootInfo->mem_upper;
 		#ifdef __DEBUG_MEMORY
-			char lowerBuf[BUFLEN];
-			char upperBuf[BUFLEN];
-			memset(lowerBuf,0,sizeof(char)*BUFLEN);
-			memset(upperBuf,0,sizeof(char)*BUFLEN);
-			itoa(mem_lower,lowerBuf,BASE_10);
-			itoa(mem_upper,upperBuf,BASE_10);
-			tkScreen_Print("Memory Lower: ");
-			tkScreen_Print(lowerBuf);
-			tkScreen_Print("Kb, Upper: ");
-			tkScreen_Print(upperBuf);
-			tkScreen_Print("Kb");
-			tkScreen_NewLine();
+            printf("Memory: Upper %d KB Lower %d KB\n",mem_lower,mem_upper);
 		#endif
 	}
 
-	if (MemoryMultibootInfo->flags & MULTIBOOT_INFO_MEM_MAP)
+	if (Memory_MultibootInfo->flags & MULTIBOOT_INFO_MEM_MAP)
 	{
 		#ifdef __DEBUG_MEMORY
-		char mmapAddrBuf[BUFLEN];
-		char mmapLenBuf[BUFLEN];
-		memset(mmapAddrBuf,0,sizeof(char)*BUFLEN);
-		memset(mmapLenBuf,0,sizeof(char)*BUFLEN);
-		itoa(mMultibootInfo->mmap_addr,mmapAddrBuf,BASE_16);
-		itoa(mMultibootInfo->mmap_length,mmapLenBuf,BASE_16);
-		tkScreen_Print("MMap Addr: 0x");
-		tkScreen_Print(mmapAddrBuf);
-		tkScreen_Print(" MMap Length: 0x");
-		tkScreen_Print(mmapLenBuf);
-		tkScreen_NewLine();
+		printf("MMap Addr: 0x%x, MMap Length: 0x%x \n",
+               MemoryMultibootInfo->mmap_addr,MemoryMultibootInfo->mmap_length);
 		#endif
 
 		for
 		(
-			mmap = (struct multiboot_mmap_entry*)MemoryMultibootInfo->mmap_addr;
-			(uint32_t)mmap < (MemoryMultibootInfo->mmap_addr + MemoryMultibootInfo->mmap_length);
+			mmap = (struct multiboot_mmap_entry*)Memory_MultibootInfo->mmap_addr;
+			(uint32_t)mmap < (Memory_MultibootInfo->mmap_addr + Memory_MultibootInfo->mmap_length);
 			mmap = (struct multiboot_mmap_entry*)((uint32_t)mmap + mmap->size + sizeof(mmap->size))
 		)
 		{
 			#ifdef __DEBUG_MEMORY
-				char baseAddrHighBuffer[BUFLEN];
-				char baseAddrLowBuffer[BUFLEN];
-				char lengthHighBuffer[BUFLEN];
-				char lengthLowBuffer[BUFLEN];
-				char typeBuffer[BUFLEN];
 
-				memset(baseAddrHighBuffer,0,sizeof(char)*BUFLEN);
-				memset(baseAddrLowBuffer,0,sizeof(char)*BUFLEN);
-				memset(lengthHighBuffer,0,sizeof(char)*BUFLEN);
-				memset(lengthLowBuffer,0,sizeof(char)*BUFLEN);
-				memset(typeBuffer,0,sizeof(char)*BUFLEN);
+				uint32_t baseHigh = mmap->addr >> 32;
+				uint32_t baseLow = mmap->addr & 0xFFFFFFFF;
+				uint32_t lengthHigh = mmap->len >> 32;
+				uint32_t lengthLow = mmap->len & 0xFFFFFFFF;
+				uint32_t type = mmap->type;
 
-				itoa(mmap->addr >> 32, baseAddrHighBuffer, BASE_16);
-				itoa(mmap->addr & 0xFFFFFFFF, baseAddrLowBuffer, BASE_16);
-				itoa(mmap->len >> 32, lengthHighBuffer, BASE_16);
-				itoa(mmap->len & 0xFFFFFFFF, lengthLowBuffer, BASE_16);
-				itoa(mmap->type, typeBuffer, BASE_16);
-
-				cout("Base [H0x");
-				cout(baseAddrHighBuffer);
-				cout(" L0x");
-				cout(baseAddrLowBuffer);
-				cout("], Length [H0x");
-				cout(lengthHighBuffer);
-				cout(" L0x");
-				cout(lengthLowBuffer);
-				cout("], Type 0x");
-				cout(typeBuffer);
+				printf("Memory: Base H.0x%x L.0x%x | Length H.0x%x L.0x%x Type %d",
+                       baseHigh, baseLow, lengthHigh, lengthLow, type);
 
 			#endif
 
 			if ((mmap->addr & 0xFFFFFFFF) == UPPER_RAM_BASE)
 			{
 				#ifdef __DEBUG_MEMORY
-				tkScreen_Print(" <-- HEAP");
+				printf(" <-- HEAP");
 				#endif
-				MemoryBaseAddress = UPPER_RAM_BASE+UPPER_RAM_OFFSET;
-				MemoryUpperRamSize = mmap->len;
+				Memory_BaseAddress = UPPER_RAM_BASE+UPPER_RAM_OFFSET;
+				Memory_UpperRamSize = mmap->len;
 			}
 			#ifdef __DEBUG_MEMORY
-				tkScreen_NewLine();
+            	printf("\n");
 			#endif
 		}
 	}
 	#ifdef __DEBUG_MEMORY
-		static char buffer[BUFLEN];
-		memset(buffer,0,sizeof(char)*BUFLEN);
-		itoa((uint32_t)mBaseAddress,buffer,BASE_16);
-		tkScreen_Print("Memory: Heap starts at 0x");
-		tkScreen_PrintLine(buffer);
-		memset(buffer,0,sizeof(char)*BUFLEN);
-		itoa(sizeof(MemoryBlockHeader),buffer,BASE_10);
-		tkScreen_Print("Memory: MemoryBlockHeader header is ");
-		tkScreen_Print(buffer);
-		tkScreen_PrintLine("b");
+		printf("Memory: Heap starts at 0x%x \n",Memory_BaseAddress);
+		printf("Memory: Memory_BlockHeader header is %d bytes\n",sizeof(Memory_BlockHeader));
 	#endif
 }
 
 void Memory_SetMultibootInfo(multiboot_info_t* mbi)
 {
-	MemoryMultibootInfo = mbi;
+	Memory_MultibootInfo = mbi;
 }
 
-MemoryBlockCount Memory_CountUsedBlocks()
+Memory_BlockCount Memory_CountUsedBlocks()
 {
-	MemoryBlockCount c;
+	Memory_BlockCount c;
 	c.mBlocksUsed = 0;
 	c.mSizeInBytes = 0;
-	MemoryBlockHeader* current = (MemoryBlockHeader*)MemoryBlocksBegin;
+	Memory_BlockHeader* current = (Memory_BlockHeader*)Memory_BlocksBegin;
 	do
 	{
 		if (current->mInUse)
 		{
 			c.mBlocksUsed++;
-			c.mSizeInBytes += sizeof(MemoryBlockHeader)+current->mSize;
+			c.mSizeInBytes += sizeof(Memory_BlockHeader)+current->mSize;
 		}
-		current = (MemoryBlockHeader*)current + sizeof(MemoryBlockHeader) + current->mSize;
+		current = (Memory_BlockHeader*)current + sizeof(Memory_BlockHeader) + current->mSize;
 	}
-	while (current < (MemoryBlockHeader*)MemoryHeapEndAddress);
+	while (current < (Memory_BlockHeader*)Memory_HeapEndAddress);
 	return c;
 }
 
 uint32_t Memory_GetLastBlock()
 {
-	MemoryBlockHeader* last = Memory_GetPreviousBlock((MemoryBlockHeader*)MemoryHeapEndAddress);
+	Memory_BlockHeader* last = Memory_GetPreviousBlock((Memory_BlockHeader*)Memory_HeapEndAddress);
 	return (uint32_t)last;
 }

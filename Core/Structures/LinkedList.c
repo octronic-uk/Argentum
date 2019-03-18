@@ -98,6 +98,12 @@ void LinkedList_Reverse(LinkedList* list)
 void* LinkedList_At(LinkedList* list, unsigned int index)
 {
 	LinkedListNode* current = list->head;
+
+	if (!current)
+	{
+		return 0;
+	}
+
     unsigned int i;
 	for (i=0; i<index; i++)
     {

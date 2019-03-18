@@ -3,3 +3,5 @@
 *.o
 _build
 *.user
+.vscode
+*.img

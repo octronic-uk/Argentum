@@ -1,24 +1,31 @@
 #include "Keyboard.h"
 #include <Kernel.h>
 #include <Devices/IO/IO.h>
+#include <Devices/Screen/Screen.h>
 #include <Devices/Interrupt/Interrupt.h>
-#include <LibC/include/stdio.h>
 #include <LibC/include/string.h>
+#include <LibC/include/stdio.h>
 
+//#define __DEBUG_KEYBOARD
+
+Keyboard_Event Keyboard_EventBuffer[KEYBOARD_EVENT_BUFFER_SIZE];
+uint8_t Keyboard_EventBufferIndex;
+Interrupt_DescriptorTableEntry Keyboard_IDTEntry;
 
 void Keyboard_Constructor()
 {
-	KeyboardBufferLocation = 0;
-	memset(KeyboardBuffer,0,sizeof(KeyboardEventData)*KEYBOARD_BUFFER_SIZE);
-	printf("Setting Keyboard IDT entry.");
-	unsigned long keyboard_address;
-	keyboard_address = (unsigned long)Keyboard_OnInterrupt;
-	IDTEntry.mOffsetLowerBits = keyboard_address & 0xffff;
-	IDTEntry.mSelector = KERNEL_CODE_SEGMENT_OFFSET;
-	IDTEntry.mZero = 0;
-	IDTEntry.mTypeAttribute = INTERRUPT_GATE;
-	IDTEntry.mOffsetHigherBits = (keyboard_address & 0xffff0000) >> 16;
-	Interrupt_SetIDTEntry(0x21,IDTEntry);
+	Keyboard_EventBufferIndex = 0;
+	memset(Keyboard_EventBuffer,0,sizeof(Keyboard_Event)*KEYBOARD_EVENT_BUFFER_SIZE);
+	#ifdef __DEBUG_KEYBOARD
+	printf("Setting Keyboard IDT entry.\n");
+	#endif
+	uint32_t keyboard_asm = (uint32_t)Keyboard_EventHandlerASM;
+	Keyboard_IDTEntry.mOffsetLowerBits = keyboard_asm & 0xffff;
+	Keyboard_IDTEntry.mOffsetHigherBits = (keyboard_asm & 0xffff0000) >> 16;
+	Keyboard_IDTEntry.mSelector = KERNEL_CODE_SEGMENT_OFFSET;
+	Keyboard_IDTEntry.mZero = 0;
+	Keyboard_IDTEntry.mTypeAttribute = INTERRUPT_GATE;
+	Interrupt_SetIDTEntry(0x21,Keyboard_IDTEntry);
 }
 
 void Keyboard_OnInterrupt()
@@ -38,48 +45,48 @@ void Keyboard_OnInterrupt()
 		{
 			return;
 		}
-		if (KeyboardBufferLocation < KEYBOARD_BUFFER_SIZE)
+		if (Keyboard_EventBufferIndex < KEYBOARD_EVENT_BUFFER_SIZE-1)
 		{
-			KeyboardBuffer[KeyboardBufferLocation].mKeycode = keycode;
-			KeyboardBuffer[KeyboardBufferLocation].mStatus = status;
-			KeyboardBufferLocation++;
+			Keyboard_EventBuffer[Keyboard_EventBufferIndex].mKeycode = keycode;
+			Keyboard_EventBuffer[Keyboard_EventBufferIndex].mStatus = status;
+			#ifdef __DEBUG_KEYBOARD
+			printf("Keyboard: Pushed Event %d\n",Keyboard_EventBufferIndex);
+			#endif
+			Keyboard_EventBufferIndex++;
 		}
 		else
 		{
-			Keyboard_BufferOverflow();
+			printf("ERROR: Keyboard Buffer Overflow\n");
 		}
 	}
-	Keyboard_HandleEvents();
+	Keyboard_HandleEvents(); // TODO - Move into a Task
 }
 
 void Keyboard_HandleEvents()
 {
 	int i;
-	for (i=0;i<KeyboardBufferLocation; i++)
+	for (i=0; i<=Keyboard_EventBufferIndex; i++)
 	{
-		switch (KeyboardBuffer[i].mKeycode)
+		switch (Keyboard_EventBuffer[i].mKeycode)
 		{
 			case KEY_UP:
-				//Screen_MoveScrollOffset(-1);
+				Screen_MoveScrollOffset(-1);
 				break;
 			case KEY_DOWN:
-				//Screen_MoveScrollOffset(1);
+				Screen_MoveScrollOffset(1);
 				break;
 			default:
 				break;
 		}
 	}
-	KeyboardBufferLocation = 0;
-}
-
-void Keyboard_BufferOverflow()
-{
-	printf("ERR: Keyboard Buffer Overflow");
+	Keyboard_EventBufferIndex = 0;
 }
 
 void Keyboard_IRQInit()
 {
 	/* 0xFD is 11111101 - enables only IRQ1 (keyboard)*/
-	printf("Enabline IRQ1 [ONLY] for Keyboard");
+	#ifdef __DEBUG_KEYBOARD
+	printf("Enabline IRQ1 [ONLY] for Keyboard\n");
+	#endif
 	IO_WritePort(0x21 , 0xFD);
 }

@@ -7,12 +7,14 @@
 
 void Interrupt_Constructor()
 {
-    memset(&InterruptDescriptorTable[0],0,sizeof(InterruptDescriptorTableEntry)*IDT_SIZE);
+    memset(&Interrupt_DescriptorTable[0],0,sizeof(Interrupt_DescriptorTableEntry)*IDT_SIZE);
 }
 
 void Interrupt_WriteDescriptorTable()
 {
-	printf("Initialising Interrupt Description Table");
+	#ifdef __DEBUG_INTERRUPT
+	printf("Interrupt: Writing Description Table\n");
+	#endif
 	/*   Ports
 	*	 		PIC1		PIC2
 	*	Command 0x20		0xA0
@@ -39,12 +41,17 @@ void Interrupt_WriteDescriptorTable()
 	IO_WritePort(0x21 , 0xff);
 	IO_WritePort(0xA1 , 0xff);
 	/* fill the InterruptDescriptorTable descriptor */
-	Interrupt_lidt(&InterruptDescriptorTable[0], sizeof(InterruptDescriptorTableEntry)*IDT_SIZE);
+	Interrupt_lidt(&Interrupt_DescriptorTable[0], sizeof(Interrupt_DescriptorTableEntry)*IDT_SIZE);
 	Interrupt_sti();
 }
 
 void Interrupt_lidt(void* base, uint16_t size)
-{   // This function works in 32 and 64bit mode
+{
+
+	#ifdef __DEBUG_INTERRUPT
+    printf("Interrupt: LIDT\n");
+	#endif
+    // This function works in 32 and 64bit mode
 	struct
 	{
 		uint16_t length;
@@ -55,17 +62,26 @@ void Interrupt_lidt(void* base, uint16_t size)
 
 void Interrupt_sti()
 {
+    #ifdef __DEBUG_INTERRUPT
+    printf("Interrupt: STI\n");
+	#endif
 	//Enables the interrupts , set the interrupt flag
 	__asm__ ("sti");
 }
 
 void Interrupt_cli()
 {
+    #ifdef __DEBUG_INTERRUPT
+    printf("Interrupt: CLI\n");
+	#endif
 	//Disables interrupts ,clears the interrupt flag
 	__asm__ ("cli");
 }
 
-void Interrupt_SetIDTEntry(uint8_t index, const InterruptDescriptorTableEntry idt)
+void Interrupt_SetIDTEntry(uint8_t index, const Interrupt_DescriptorTableEntry idt)
 {
-	InterruptDescriptorTable[index] = idt;
+    #ifdef __DEBUG_INTERRUPT
+    printf("Interrupt: Set IDT Entry %d\n",index);
+	#endif
+	Interrupt_DescriptorTable[index] = idt;
 }
