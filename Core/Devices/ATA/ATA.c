@@ -172,12 +172,12 @@ void ATA_IDEInit
          // (I) Select Drive:
          if (ATA_Debug) printf("ATA: Selecting %d\n",i);
          ATA_IDEWrite(channels, i, ATA_REG_HDDEVSEL, 0xA0 | (j<<4)); // Select Drive.
-         sleep(1); // Wait 1ms for drive select to work.
+         usleep(20); // Wait 1ms for drive select to work.
 
          // (II) Send ATA Identify Command:
          if (ATA_Debug) printf("ATA: Sending identify command to %d\n",i);
          ATA_IDEWrite(channels, i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
-         sleep(1); // This function should be implemented in your OS. which waits for 1 ms. it is based on System Timer Device Driver. 
+         usleep(20); // This function should be implemented in your OS. which waits for 1 ms. it is based on System Timer Device Driver. 
 
          // (III) Polling:
          if (ATA_Debug) printf("ATA: Polling %d,%d\n",i,j);
@@ -225,7 +225,7 @@ void ATA_IDEInit
             }
 
             ATA_IDEWrite(channels, i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY_PACKET);
-            sleep(1);
+            usleep(20);
          }
 
          // (V) Read Identification Space of the Device:

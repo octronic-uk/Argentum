@@ -45,5 +45,12 @@ Keyboard_EventHandlerASM:
 	call    Keyboard_OnInterrupt
 	iret
 
+.global Serial_Port1InterruptHandlerASM
+.extern Serial_Port1InterruptHandler
+
+Serial_Port1InterruptHandlerASM:
+	call Serial_Port1InterruptHandler
+	iret
+
 .size _start, . - _start
 

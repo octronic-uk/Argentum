@@ -17,7 +17,7 @@
 uint8_t* Screen_VideoBasePointer = (uint8_t*) 0x000B8000;
 uint8_t  Screen_Buffer[SCREEN_BUFFER_SIZE_BYTES];
 int32_t Screen_BufferReadOffset = 0;
-int32_t  Screen_BufferScrollOffset = 0;
+int32_t  Screen_BufferScrollOffset = 25;
 /*
     buffer size minus size in lines, minus one screen's worth of lines
 */

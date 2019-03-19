@@ -19,12 +19,15 @@ void Kernel_Constructor
    Memory_Constructor(mbi);
 	Interrupt_Constructor(),
 	Keyboard_Constructor();
-	Interrupt_WriteDescriptorTable();
 	Serial_Constructor();
-	PCI_Constructor();
-	ATA_Constructor();
-	Keyboard_IRQInit();
-	Scheduler_Constructor();
+	//PCI_Constructor();
+	//ATA_Constructor();
+	Interrupt_SetDebug(1);
+	Interrupt_WriteDescriptorTable();
+	Interrupt_SetMask_PIC1(0xE5);
+	Interrupt_Enable_STI();
+	//Scheduler_Constructor();
+	Serial_TestPort1();
 }
 
 void

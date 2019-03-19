@@ -10,17 +10,17 @@
 #include <LibC/include/stdint.h>
 #include <Devices/Interrupt/Interrupt.h>
 
-extern void Keyboard_EventHandlerASM();
-
 typedef struct
 {
 	uint8_t mKeycode;
 	uint8_t mStatus;
 } Keyboard_Event;
 
+extern void Keyboard_EventHandlerASM();
+void Keyboard_SetDebug(uint8_t debug);
+uint8_t Keyboard_GetDebug();
 void Keyboard_Constructor();
 void Keyboard_Handler();
-void Keyboard_IRQInit();
 void Keyboard_HandleEvents();
 void Keyboard_OnInterrupt();
 
