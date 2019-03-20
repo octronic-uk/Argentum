@@ -22,11 +22,11 @@ void Kernel_Constructor
 	Serial_Constructor();
 	//PCI_Constructor();
 	//ATA_Constructor();
-	Interrupt_SetDebug(1);
 	Interrupt_WriteDescriptorTable();
-	Interrupt_SetMask_PIC1(0xE5);
+	Interrupt_SetMask_PIC1(0x01);
 	Interrupt_Enable_STI();
-	//Scheduler_Constructor();
+	Scheduler_Constructor();
+	Serial_SetInterruptEnableRegister(&Serial_Port1_8N1);
 	Serial_TestPort1();
 }
 

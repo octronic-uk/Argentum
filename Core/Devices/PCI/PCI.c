@@ -21,13 +21,13 @@ void PCI_Constructor()
 
 	uint8_t bus, device, function;
 	PCI_ConfigHeader* tmp = 0;
-	for (bus = 0; bus < 8; bus++)
+	for (bus = 0; bus < 255; bus++)
 	{
-		for (device = 0; device < 8; device++)
+		for (device = 0; device < 32; device++)
 		{
 			for (function = 0; function < 8; function++)
 			{
-				tmp = PCI_ReadConfigHeader(bus,device,function);				
+				tmp = PCI_ReadConfigHeader(bus,device,function);
 				if (tmp)
 				{
 					LinkedList_PushBack(PCI_ConfigHeaderList,tmp);
@@ -54,8 +54,8 @@ void PCI_DumpDevices()
 void PCI_DumpDevice(const PCI_ConfigHeader* header)
 {
 	printf(
-		"PCI: %d/%d/%d (%x:%x)\n", 
-		header->mBus, header->mDevice, header->mFunction, 
+		"PCI: %d/%d/%d (%x:%x)\n",
+		header->mBus, header->mDevice, header->mFunction,
 		header->mVendorID, header->mDeviceID);
 
 	if (PCI_Debug)
@@ -135,7 +135,7 @@ PCI_ConfigHeader* PCI_ReadConfigHeader
 
 	PCI_ConfigHeader* header = Memory_Allocate(sizeof(PCI_ConfigHeader));
 	memset(header,0,sizeof(PCI_ConfigHeader));
-	
+
 	header->mVendorID = vid;
 	header->mBus = bus;
 	header->mDevice = device;

@@ -26,9 +26,11 @@ void Interrupt_Constructor()
 		printf("Interrupt: Constructing\n");
 	}
     memset(&Interrupt_DescriptorTable[0],0,sizeof(Interrupt_DescriptorTableEntry)*INTERRUPT_IDT_SIZE);
+
 	/* ICW1 - begin initialization */
 	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_CMD_INIT);
 	IO_WritePort8b(INTERRUPT_PIC2_COMMAND, INTERRUPT_PIC_CMD_INIT);
+
 	/* ICW2 - remap offset address of InterruptDescriptorTable */
 	/*
 	* In x86 protected mode, we have to remap the PICs beyond 0x20 because
@@ -36,16 +38,21 @@ void Interrupt_Constructor()
 	*/
 	IO_WritePort8b(INTERRUPT_PIC1_DATA, 0x20);
 	IO_WritePort8b(INTERRUPT_PIC2_DATA, 0x28);
+
 	/* ICW3 - setup cascading */
-	IO_WritePort8b(INTERRUPT_PIC1_DATA, 0x00);
-	IO_WritePort8b(INTERRUPT_PIC2_DATA, 0x00);
+	IO_WritePort8b(INTERRUPT_PIC1_DATA, 0x04);
+	IO_WritePort8b(INTERRUPT_PIC2_DATA, 0x02);
+
 	/* ICW4 - environment info */
+	/* 0x01 = 8086 mode */
 	IO_WritePort8b(INTERRUPT_PIC1_DATA, 0x01);
 	IO_WritePort8b(INTERRUPT_PIC2_DATA, 0x01);
+
 	/* Initialization finished */
-	/* mask interrupts */
-	IO_WritePort8b(INTERRUPT_PIC1_DATA, 0xff);
-	IO_WritePort8b(INTERRUPT_PIC2_DATA, 0xff);
+
+	/* disable interrupts */
+	Interrupt_SetMask_PIC1(0xff);
+	Interrupt_SetMask_PIC2(0xff);
 }
 
 void Interrupt_WriteDescriptorTable()
@@ -141,8 +148,37 @@ void Interrupt_SetMask_PIC1(uint8_t mask)
 
 void Interrupt_SetMask_PIC2(uint8_t mask)
 {
-	if (Interrupt_Debug) {
+	if (Interrupt_Debug) 
+	{
     	printf("Interrupt: Setting mask of PIC 2 0x%x\n",mask);
 	}
 	IO_WritePort8b(INTERRUPT_PIC2_DATA, mask);
+}
+
+uint8_t Interrupt_ReadISR_PIC1() 
+{
+	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_READ_ISR);
+	uint8_t isr = IO_ReadPort8b(INTERRUPT_PIC1_COMMAND);
+	return isr;
+}
+
+uint8_t Interrupt_ReadISR_PIC2() 
+{
+	IO_WritePort8b(INTERRUPT_PIC2_COMMAND, INTERRUPT_PIC_READ_ISR);
+	uint8_t isr = IO_ReadPort8b(INTERRUPT_PIC2_COMMAND);
+	return isr;
+}
+
+uint8_t Interrupt_ReadIRR_PIC1() 
+{
+	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_READ_IRR);
+	uint8_t irr = IO_ReadPort8b(INTERRUPT_PIC1_COMMAND);
+	return irr;
+}
+
+uint8_t Interrupt_ReadIRR_PIC2() 
+{
+	IO_WritePort8b(INTERRUPT_PIC2_COMMAND, INTERRUPT_PIC_READ_IRR);
+	uint8_t irr = IO_ReadPort8b(INTERRUPT_PIC2_COMMAND);
+	return irr;
 }

@@ -40,19 +40,8 @@ by the Resource class. Specialisations will be used when necessary to add specif
 functionality to a Resource. Some Resource Examples include.
 
 * A Memory Region (MMIO, DMA, RAM, SWAP)
-* Network (Establish Connection, listen port, send port)
-* Storage Devices (SSD/NVME/FLASH/etc)
+* Network Device
+* Storage Devices (Drive, Partition, Directory)
 * Graphical Devices (VGA, GPU Accelerator, Printer, etc)
-* Expansion Busses (SATA, PCIe, USB, I2C, Thunderbolt)
 * Audio Devices (Capture & Recording)
 * Input Device (Mouse, Keyboard, Joystick, etc.)
-
-## Benefits of this Design
-* Asynchronous Execution by design
-
-##Notes
-* Scheduler type (Initially RoundRobin)
-* Task Resume/Suspend capability
-* Task execution rollback capability
-* Memory always zero when freed
-

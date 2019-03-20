@@ -12,6 +12,8 @@
 #define INTERRUPT_PIC2_DATA		(INTERRUPT_PIC2+1)
 #define INTERRUPT_PIC_EOI		0x20		/* End-of-interrupt command code */
 #define INTERRUPT_PIC_CMD_INIT  0x11
+#define INTERRUPT_PIC_READ_IRR  0x0a    /* OCW3 irq ready next CMD read */
+#define INTERRUPT_PIC_READ_ISR  0x0b    /* OCW3 irq service next CMD read */
 
 struct Kernel;
 
@@ -38,6 +40,10 @@ void Interrupt_SendEOI_PIC1();
 void Interrupt_SendEOI_PIC2();
 void Interrupt_SetMask_PIC1(uint8_t mask);
 void Interrupt_SetMask_PIC2(uint8_t mask);
+uint8_t Interrupt_ReadISR_PIC1();
+uint8_t Interrupt_ReadISR_PIC2();
+uint8_t Interrupt_ReadIRR_PIC1();
+uint8_t Interrupt_ReadIRR_PIC2();
 
 
 
