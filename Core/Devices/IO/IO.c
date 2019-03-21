@@ -1,5 +1,5 @@
 #include "IO.h"
-#include <LibC/include/stdio.h>
+#include <stdio.h>
 
 uint8_t IO_Debug = 0;
 

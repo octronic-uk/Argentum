@@ -2,27 +2,11 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(Taskie C)
 
-set (TASKIE_BUILD_DOC OFF)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -nostartfiles -nostdlib")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -nostartfiles -nostdlib")
-
-file(
-	GLOB_RECURSE
-	SRC_FILES
-	"Core/*.c"
-)
-
-include_directories(
-	Taskie
-	${CMAKE_SOURCE_DIR}/Core
-)
-
-add_library(
-    Taskie
-    ${SRC_FILES}
-)
+set (TASKIE_BUILD_DOC OFF)
 
 # Doxygen Docs
 if (TASKIE_BUILD_DOC)
@@ -44,3 +28,6 @@ if (TASKIE_BUILD_DOC)
       message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
 endif()
+
+add_subdirectory("Core")
+#add_subdirectory("Lua")

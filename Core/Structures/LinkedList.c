@@ -1,7 +1,7 @@
 #include "LinkedList.h"
 #include <Devices/Memory/Memory.h>
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <stdio.h>
+#include <string.h>
 
 LinkedList* LinkedList_Constructor()
 {

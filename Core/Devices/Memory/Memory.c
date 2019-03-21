@@ -1,8 +1,10 @@
 #include "Memory.h"
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <stdio.h>
+#include <string.h>
 
 //#define __DEBUG_MEMORY
+uint8_t Memory_Debug = 0;
+uint32_t Memory_PageTable[MEMORY_PAGE_TABLE_SIZE];
 
 void Memory_Constructor(multiboot_info_t* mbi_header)
 {
@@ -15,9 +17,9 @@ void Memory_Constructor(multiboot_info_t* mbi_header)
 
 uint32_t Memory_FindFreeBlock(uint32_t size)
 {
-	#ifdef __DEBUG_MEMORY
+	if (Memory_Debug) {
 		printf("Memory: Finding a free block\n");
-	#endif
+	}
 
 	if (Memory_BlocksBegin == 0)
 	{
@@ -31,33 +33,33 @@ uint32_t Memory_FindFreeBlock(uint32_t size)
 	{
 		if (current->mInUse)
 		{
-			#ifdef __DEBUG_MEMORY
+			if (Memory_Debug) {
 				printf("Memory: Current block in use 0x%x\n", current);
-			#endif
+			}
 
 			if ((uint32_t)current + sizeof(Memory_BlockHeader) + current->mSize != Memory_HeapEndAddress)
 			{
 				current = (Memory_BlockHeader*)(((uint32_t)current) + sizeof(Memory_BlockHeader) + current->mSize);
 
-				#ifdef __DEBUG_MEMORY
+				if (Memory_Debug) {
 					printf("Memory: Stepped to next 0x%s\n", current);
-				#endif
+				}
 			}
 			// No next block, assign to end of heap
 			else
 			{
 				current = (Memory_BlockHeader*)Memory_HeapEndAddress;
-				#ifdef __DEBUG_MEMORY
+				if (Memory_Debug) {
 					printf("Memory: No free block found, using heap end 0x%x\n" , current);
-				#endif
+				}
 				return (uint32_t)current;
 			}
 		}
 		else if (current->mSize >= size)
 		{
-			#ifdef __DEBUG_MEMORY
+			if (Memory_Debug) {
 				printf("Memory: Found unused block with enough space 0x%x\n" , current);
-			#endif
+			}
 			return (uint32_t)current;
 		}
 	}
@@ -84,9 +86,9 @@ void* Memory_Allocate(uint32_t size)
 	// Cannot allocate zero size block
 	if (size == 0)
 	{
-		#ifdef __DEBUG_MEMORY
+		if (Memory_Debug) {
 			printf("Memory: Cannot allocate 0 size block");
-		#endif
+		}
 		return 0;
 	}
 
@@ -96,10 +98,10 @@ void* Memory_Allocate(uint32_t size)
 	Memory_BlockHeader* blockHeader = ((Memory_BlockHeader*)freeBlock);
 	Memory_BlockHeader* afterBlockHeader = blockHeader+1;
 
-	#ifdef __DEBUG_MEMORY
+	if (Memory_Debug) {
 		printf("Memory: Allocated Block HDR.0x%x DATA.0x%x END.0x%x\n",
                freeBlock, afterBlockHeader, freeBlock+totalRequestedSize);
-	#endif
+	}
 
 	if (freeBlock == Memory_HeapEndAddress)
 	{
@@ -113,15 +115,15 @@ void* Memory_Allocate(uint32_t size)
 
 uint32_t Memory_MoveHeapEnd(int32_t delta)
 {
-	#ifdef __DEBUG_MEMORY
+	if (Memory_Debug) {
 		printf("Memory: Moving Heap End by %d bytes from 0x%x",delta, Memory_HeapEndAddress);
-	#endif
+	}
 
 	Memory_HeapEndAddress += delta;
 
-	#ifdef __DEBUG_MEMORY
+	if (Memory_Debug) {
 		printf("to 0x%x \n" , Memory_HeapEndAddress);
-	#endif
+	}
 
 	return Memory_HeapEndAddress;
 }
@@ -130,9 +132,9 @@ void Memory_Free(void* addr)
 {
 	uint32_t block = (uint32_t)addr;
 	Memory_BlockHeader* header = ((Memory_BlockHeader*)block)-1;
-	#ifdef __DEBUG_MEMORY
+	if (Memory_Debug) {
 		printf("Memory: Freeing Memory Block at 0x%x", header);
-	#endif
+	}
 	header->mInUse = 0;
 	memset(addr,0,header->mSize);
 	// Last in heap
@@ -148,9 +150,9 @@ void Memory_Detect()
 {
 	if (!Memory_MultibootInfo)
 	{
-		#ifdef __DEBUG_MEMORY
+		if (Memory_Debug) {
 			printf("Memory: Multiboot Info Not Found!\n");
-		#endif
+		}
 		return;
 	}
 
@@ -159,17 +161,17 @@ void Memory_Detect()
 	{
 		uint32_t mem_lower = (uint32_t)Memory_MultibootInfo->mem_lower;
 		uint32_t mem_upper = (uint32_t)Memory_MultibootInfo->mem_upper;
-		#ifdef __DEBUG_MEMORY
+		if (Memory_Debug) {
             printf("Memory: Upper %d KB Lower %d KB\n",mem_lower,mem_upper);
-		#endif
+		}
 	}
 
 	if (Memory_MultibootInfo->flags & MULTIBOOT_INFO_MEM_MAP)
 	{
-		#ifdef __DEBUG_MEMORY
+		if (Memory_Debug) {
 		printf("MMap Addr: 0x%x, MMap Length: 0x%x \n",
-               MemoryMultibootInfo->mmap_addr,MemoryMultibootInfo->mmap_length);
-		#endif
+               Memory_MultibootInfo->mmap_addr,Memory_MultibootInfo->mmap_length);
+		}
 
 		for
 		(
@@ -178,7 +180,7 @@ void Memory_Detect()
 			mmap = (struct multiboot_mmap_entry*)((uint32_t)mmap + mmap->size + sizeof(mmap->size))
 		)
 		{
-			#ifdef __DEBUG_MEMORY
+			if (Memory_Debug) {
 
 				uint32_t baseHigh = mmap->addr >> 32;
 				uint32_t baseLow = mmap->addr & 0xFFFFFFFF;
@@ -189,25 +191,25 @@ void Memory_Detect()
 				printf("Memory: Base H.0x%x L.0x%x | Length H.0x%x L.0x%x Type %d",
                        baseHigh, baseLow, lengthHigh, lengthLow, type);
 
-			#endif
+			}
 
-			if ((mmap->addr & 0xFFFFFFFF) == UPPER_RAM_BASE)
+			if ((mmap->addr & 0xFFFFFFFF) == MEMORY_UPPER_RAM_BASE)
 			{
-				#ifdef __DEBUG_MEMORY
+				if (Memory_Debug) {
 				printf(" <-- HEAP");
-				#endif
-				Memory_BaseAddress = UPPER_RAM_BASE+UPPER_RAM_OFFSET;
+				}
+				Memory_BaseAddress = MEMORY_UPPER_RAM_BASE + MEMORY_UPPER_RAM_OFFSET;
 				Memory_UpperRamSize = mmap->len;
 			}
-			#ifdef __DEBUG_MEMORY
+			if (Memory_Debug) {
             	printf("\n");
-			#endif
+			}
 		}
 	}
-	#ifdef __DEBUG_MEMORY
+	if (Memory_Debug) {
 		printf("Memory: Heap starts at 0x%x \n",Memory_BaseAddress);
 		printf("Memory: Memory_BlockHeader header is %d bytes\n",sizeof(Memory_BlockHeader));
-	#endif
+	}
 }
 
 void Memory_SetMultibootInfo(multiboot_info_t* mbi)
@@ -238,4 +240,39 @@ uint32_t Memory_GetLastBlock()
 {
 	Memory_BlockHeader* last = Memory_GetPreviousBlock((Memory_BlockHeader*)Memory_HeapEndAddress);
 	return (uint32_t)last;
+}
+
+void* Memory_GetPhysicalAddress(void* virtualAddress)
+{
+    unsigned long pageDirectoryIndex = (unsigned long)virtualAddress >> 22;
+    unsigned long pageTableIndex = (unsigned long)virtualAddress >> 12 & 0x03FF;
+ 
+    // Here you need to check whether the PD entry is present.
+    unsigned long* pageDirectory = (unsigned long*)0xFFFFF000;
+ 
+    // Here you need to check whether the PT entry is present.
+    unsigned long* pageTableEntry = ((unsigned long *)0xFFC00000) + (0x400 * pageDirectoryIndex);
+ 
+    return (void *)((Memory_PageTable[pageTableIndex] & ~0xFFF) + ((unsigned long)virtualAddress & 0xFFF));
+}
+
+void Memory_MapPage(void* physicalAddress, void* virtualAddress, unsigned int flags)
+{
+    // Make sure that both addresses are page-aligned.
+ 
+    unsigned long pageDirectoryIndex = (unsigned long)virtualAddress >> 22;
+    unsigned long pageTableIndex = (unsigned long)virtualAddress >> 12 & 0x03FF;
+ 
+    // Here you need to check whether the PD entry is present.
+    // When it is not present, you need to create a new empty PT and
+    // adjust the PDE accordingly.
+    unsigned long * pageDirectory = (unsigned long *)0xFFFFF000;
+ 
+    // Here you need to check whether the PT entry is present.
+    // When it is, then there is already a mapping present. What do you do now?
+    unsigned long * pageTable = ((unsigned long *)0xFFC00000) + (0x400 * pageDirectoryIndex);
+ 
+    // Now you need to flush the entry in the TLB
+    // or you might not notice the change.
+    Memory_PageTable[pageTableIndex] = ((unsigned long)physicalAddress) | (flags & 0xFFF) | 0x01; // Present
 }

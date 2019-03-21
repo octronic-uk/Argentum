@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Structures/LinkedList.h>
-#include <LibC/include/stdint.h>
+#include <stdint.h>
 
 #define PCI_CONFIG_ADDRESS 0x0CF8
 #define PCI_CONFIG_DATA    0x0CFC

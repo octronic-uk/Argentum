@@ -2,8 +2,8 @@
 #include <Kernel.h>
 #include <Devices/IO/IO.h>
 
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <stdio.h>
+#include <string.h>
 
 Interrupt_DescriptorTableEntry Interrupt_DescriptorTable[INTERRUPT_IDT_SIZE];
 

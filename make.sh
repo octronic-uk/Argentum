@@ -1,11 +1,11 @@
 #/bin/bash
 
-LIB_BUILD=_build
+_CMAKE_BUILD_DIR=_build
 
 # Build Taskie Library
-rm -rf ${BUILD_DIR}
-mkdir ${LIB_BUILD}
-cd ${LIB_BUILD}
+rm -rf ${_CMAKE_BUILD_DIR}
+mkdir ${_CMAKE_BUILD_DIR}
+cd ${_CMAKE_BUILD_DIR}
 cmake .. -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake
 
 if [ "$?" -ne 0 ]; then
@@ -21,7 +21,6 @@ if [ "$MAKE_RESULT" -ne 0 ]; then
     echo "Library Compilation Flopped :("
     exit
 fi
-
 
 # Build Kernel Executable
 cd Boot

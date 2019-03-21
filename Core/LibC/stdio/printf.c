@@ -1,9 +1,9 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include <LibC/include/itoa.h>
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <itoa.h>
+#include <stdio.h>
+#include <string.h>
 #include <Devices/Screen/Screen.h>
 
 void outputchar(char **str, char c)

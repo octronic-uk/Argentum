@@ -6,7 +6,7 @@ _build
 .vscode
 *.img
 Boot/TaskieKernel
-*.creator
+*.creator*
 *.includes
 *.files
 *.config

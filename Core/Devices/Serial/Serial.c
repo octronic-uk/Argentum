@@ -1,8 +1,8 @@
 #include "Serial.h"
 #include <Devices/IO/IO.h>
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
-#include <LibC/include/unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <Devices/Interrupt/Interrupt.h>
 
 uint16_t Serial_PortAddresses[4];

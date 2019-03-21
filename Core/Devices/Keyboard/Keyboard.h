@@ -7,7 +7,7 @@
 #define KEY_DOWN 0x50
 #define KEYBOARD_EVENT_BUFFER_SIZE 256
 
-#include <LibC/include/stdint.h>
+#include <stdint.h>
 #include <Devices/Interrupt/Interrupt.h>
 
 typedef struct

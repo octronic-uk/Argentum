@@ -1,5 +1,7 @@
 #include "Kernel.h"
 
+#include <stdio.h>
+
 #include <Devices/ATA/ATA.h>
 #include <Devices/Screen/Screen.h>
 #include <Devices/Memory/Memory.h>
@@ -7,9 +9,10 @@
 #include <Devices/PCI/PCI.h>
 #include <Devices/Keyboard/Keyboard.h>
 #include <Devices/Serial/Serial.h>
+#include <Devices/PS2/Intel8042.h>
+
 #include <Scheduler/Scheduler.h>
 
-#include <LibC/include/stdio.h>
 
 void Kernel_Constructor
 (multiboot_info_t * mbi)
@@ -19,15 +22,17 @@ void Kernel_Constructor
    Memory_Constructor(mbi);
 	Interrupt_Constructor(),
 	Keyboard_Constructor();
-	Serial_Constructor();
+	I8042_Constructor();
+	//Serial_Constructor();
 	//PCI_Constructor();
 	//ATA_Constructor();
 	Interrupt_WriteDescriptorTable();
 	Interrupt_SetMask_PIC1(0x01);
+	Interrupt_SetMask_PIC2(0x00);
 	Interrupt_Enable_STI();
-	Scheduler_Constructor();
-	Serial_SetInterruptEnableRegister(&Serial_Port1_8N1);
-	Serial_TestPort1();
+	//Scheduler_Constructor();
+	//Serial_SetInterruptEnableRegister(&Serial_Port1_8N1);
+	//Serial_TestPort1();
 }
 
 void

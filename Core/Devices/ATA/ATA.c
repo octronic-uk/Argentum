@@ -2,9 +2,9 @@
 
 #include <Devices/IO/IO.h>
 #include <Devices/PCI/PCI.h>
-#include <LibC/include/unistd.h>
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 
 uint8_t ATA_Debug = 0;
 ATA_Channel ATA_Channels[2];

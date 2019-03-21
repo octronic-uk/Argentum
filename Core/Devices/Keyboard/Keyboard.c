@@ -3,8 +3,8 @@
 #include <Devices/IO/IO.h>
 #include <Devices/Screen/Screen.h>
 #include <Devices/Interrupt/Interrupt.h>
-#include <LibC/include/string.h>
-#include <LibC/include/stdio.h>
+#include <string.h>
+#include <stdio.h>
 
 uint8_t Keyboard_Debug;
 

@@ -1,4 +1,4 @@
-#include <LibC/include/stdio.h>
+#include <stdio.h>
 
 int puts(const char* string)
 {

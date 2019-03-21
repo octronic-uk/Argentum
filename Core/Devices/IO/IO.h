@@ -1,5 +1,5 @@
 #pragma once
-#include <LibC/include/stdint.h>
+#include <stdint.h>
 
 void IO_SetDebug(uint8_t debug);
 

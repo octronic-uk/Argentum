@@ -1,5 +1,5 @@
 #include "Task.h"
-#include <LibC/include/string.h>
+#include <string.h>
 #include <Devices/Memory/Memory.h>
 
 Task* Task_Constructor(const char* name, void(*e)(void))

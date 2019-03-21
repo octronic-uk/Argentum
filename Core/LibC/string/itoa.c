@@ -2,8 +2,8 @@
  *  Ansi C "itoa" based on Kernighan & Ritchie's "Ansi C"
  *
  */
-#include <LibC/include/itoa.h>
-#include <LibC/include/string.h>
+#include <itoa.h>
+#include <string.h>
 #include <stdbool.h>
 
 // inline function to swap two numbers

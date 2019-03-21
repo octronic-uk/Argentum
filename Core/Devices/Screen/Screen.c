@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
-#include <LibC/include/stdint.h>
-#include <LibC/include/string.h>
+#include <stdint.h>
+#include <string.h>
 #include <Devices/Screen/Screen.h>
 
 #define SCREEN_TAB_SIZE 4

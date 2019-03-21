@@ -1,4 +1,4 @@
-#include <LibC/include/stdio.h>
+#include <stdio.h>
 
 #include <Devices/Screen/Screen.h>
 

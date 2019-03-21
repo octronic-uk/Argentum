@@ -1,6 +1,6 @@
 #pragma once
 
-#include <LibC/include/stdint.h>
+#include <stdint.h>
 
 #define SERIAL_PORT_1_ADDRESS 0x03F8
 #define SERIAL_PORT_2_ADDRESS 0x02F8

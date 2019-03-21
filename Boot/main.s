@@ -52,5 +52,19 @@ Serial_Port1InterruptHandlerASM:
 	call Serial_Port1InterruptHandler
 	iret
 
+.global I8042_FirstPortInterruptHandlerASM
+.extern I8042_FirstPortInterruptHandler
+
+I8042_FirstPortInterruptHandlerASM:
+	call I8042_FirstPortInterruptHandler
+	iret
+
+.global I8042_SecondPortInterruptHandlerASM
+.extern I8042_SecondPortInterruptHandler
+
+I8042_SecondPortInterruptHandlerASM:
+	call I8042_SecondPortInterruptHandler
+	iret
+
 .size _start, . - _start
 

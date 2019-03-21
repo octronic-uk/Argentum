@@ -1,8 +1,8 @@
 #include "Scheduler.h"
 #include "Task.h"
 
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <stdio.h>
+#include <string.h>
 
 uint8_t Scheduler_Debug = 0;
 static LinkedList* SchedulerTasks = 0;

@@ -1,7 +1,7 @@
 #ifndef _STDLIB_H
 #define _STDLIB_H 1
 
-#include <LibC/include/sys/cdefs.h>
+#include <sys/cdefs.h>
 
 #ifdef __cplusplus
 extern "C" {

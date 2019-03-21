@@ -1,8 +1,8 @@
 #include "PCI.h"
 #include <Devices/IO/IO.h>
 #include <Devices/Memory/Memory.h>
-#include <LibC/include/stdio.h>
-#include <LibC/include/string.h>
+#include <stdio.h>
+#include <string.h>
 
 LinkedList* PCI_ConfigHeaderList = 0;
 uint8_t PCI_Debug = 0;
