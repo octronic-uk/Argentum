@@ -1,9 +1,9 @@
 #include "Serial.h"
-#include <Devices/IO/IO.h>
+#include <Drivers/IO/IO.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <Devices/Interrupt/Interrupt.h>
+#include <Drivers/Interrupt/Interrupt.h>
 
 uint16_t Serial_PortAddresses[4];
 uint8_t Serial_Debug = 0;

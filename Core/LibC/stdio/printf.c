@@ -4,7 +4,7 @@
 #include <itoa.h>
 #include <stdio.h>
 #include <string.h>
-#include <Devices/Screen/Screen.h>
+#include <Drivers/Screen/Screen.h>
 
 void outputchar(char **str, char c)
 {

@@ -10,7 +10,7 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake
 
 if [ "$?" -ne 0 ]; then
     echo "CMake Flopped :("
-    exit
+    exit 1
 fi
 
 make
@@ -19,7 +19,7 @@ cd ..
 
 if [ "$MAKE_RESULT" -ne 0 ]; then
     echo "Library Compilation Flopped :("
-    exit
+    exit 1
 fi
 
 # Build Kernel Executable
@@ -31,5 +31,5 @@ cd ..
 
 if [ "$MAKE_RESULT" -ne 0 ]; then
     echo "Kernel Compilation/Linking Flopped ):"
-    exit
+    exit 1
 fi

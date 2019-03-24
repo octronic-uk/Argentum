@@ -1,6 +1,6 @@
 #include "PCI.h"
-#include <Devices/IO/IO.h>
-#include <Devices/Memory/Memory.h>
+#include <Drivers/IO/IO.h>
+#include <Drivers/Memory/Memory.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -21,7 +21,7 @@ void PCI_Constructor()
 
 	uint8_t bus, device, function;
 	PCI_ConfigHeader* tmp = 0;
-	for (bus = 0; bus < 255; bus++)
+	for (bus = 0; bus < 128; bus++)
 	{
 		for (device = 0; device < 32; device++)
 		{

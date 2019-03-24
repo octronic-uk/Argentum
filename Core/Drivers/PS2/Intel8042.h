@@ -28,6 +28,9 @@
 #define I8042_CMD_TEST_FIRST_PS2_PORT     0xAB
 #define I8042_CMD_DISABLE_FIRST_PS2_PORT  0xAD
 #define I8042_CMD_ENABLE_FIRST_PS2_PORT   0xAE
+#define I8042_CMD_READ_CTRL_OUT_PORT      0xD1
+#define I8042_CMD_WRITE_CTRL_OUT_PORT     0xD1
+#define I8042_CMD_WRITE_TO_SECOND_PS2_PORT   0xD4
 
 // Configuration Byte
 #define I8042_CONFIG_FIRST_PS2_INTERRUPT    0x01
@@ -44,6 +47,26 @@
 #define I8042_SECOND_PORT_INTERRUPT 0x02
 #define I8042_FIRST_PORT_IDT 0x21
 #define I8042_SECOND_PORT_IDT 0x2C
+
+#define I8042_DEVICE_RESET 0xFF
+#define I8042_DEVICE_RESET_SUCCESS 0xFA
+#define I8042_DEVICE_RESET_FAILURE 0xFC
+
+#define KEY_UP 0x48
+#define KEY_DOWN 0x50
+#define KEYBOARD_EVENT_BUFFER_SIZE 256
+
+typedef enum
+{
+    Status,
+    Scancode
+} I8042_KeyboardNextByte;
+
+typedef struct
+{
+	uint8_t mKeycode;
+	uint8_t mStatus;
+} I8042_KeyboardEvent;
 
 void I8042_Constructor();
 void I8042_Destructor();
@@ -68,6 +91,10 @@ void I8042_CMD_EnableSecondPort();
 void I8042_CMD_DisableSecondPort();
 
 void I8042_WriteConfigurationByte();
+
+// Device Commands
+void I8042_DeviceCMD_ResetFirstPort();
+void I8042_DeviceCMD_ResetSecondPort();
 
 // Interrupt Functions
 void I8042_EnableInterrupts();

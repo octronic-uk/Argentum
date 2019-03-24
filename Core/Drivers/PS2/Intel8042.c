@@ -3,18 +3,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <Devices/IO/IO.h>
-#include <Devices/Interrupt/Interrupt.h>
+#include <Drivers/IO/IO.h>
+#include <Drivers/Interrupt/Interrupt.h>
+#include <Drivers/Screen/Screen.h>
 
 Interrupt_DescriptorTableEntry I8042_FirstPort_IDT_Entry;
 Interrupt_DescriptorTableEntry I8042_SecondPort_IDT_Entry;
 
-uint8_t I8042_Debug = 1;
+uint8_t I8042_Debug = 0;
 uint8_t I8042_SecondPortExists = 0;
+I8042_KeyboardNextByte I8042_KeyboardNextByteExpected = Status;
 
 void I8042_Constructor()
 {
     printf("I8042: Constructing\n");
+
     memset(&I8042_FirstPort_IDT_Entry, 0, sizeof(Interrupt_DescriptorTableEntry));
     memset(&I8042_SecondPort_IDT_Entry, 0, sizeof(Interrupt_DescriptorTableEntry));
 
@@ -38,6 +41,14 @@ void I8042_Constructor()
         }
     }
     I8042_SetupInterruptHandlers();
+
+    I8042_DeviceCMD_ResetFirstPort();
+    if (I8042_SecondPortExists)
+    {
+        I8042_DeviceCMD_ResetSecondPort();
+    }
+
+    I8042_EnableInterrupts();
 }
 
 void I8042_Destructor()
@@ -70,7 +81,7 @@ void I8042_WriteCommandRegister(uint8_t cmd)
 
 void I8042_CMD_EnableFirstPort()
 {
-if (I8042_Debug)
+    if (I8042_Debug)
     {
         printf("I8042: Enabling First Port\n");
     }
@@ -79,7 +90,7 @@ if (I8042_Debug)
 
 void I8042_CMD_DisableFirstPort()
 {
-if (I8042_Debug)
+    if (I8042_Debug)
     {
         printf("I8042: Disabling First Port\n");
     }
@@ -88,7 +99,7 @@ if (I8042_Debug)
 
 void I8042_CMD_EnableSecondPort()
 {
-if (I8042_Debug)
+    if (I8042_Debug)
     {
         printf("I8042: Enabling Second Port\n");
     }
@@ -147,18 +158,16 @@ uint8_t I8042_CMD_TestFirstPort()
     // Read Result
     uint8_t result = I8042_ReadDataPort();
     // Test Result
-    if (I8042_Debug) 
+     
+    if (result == 0 || result == I8042_TEST_RESULT_PASSED) 
     {
-        if (result == 0) 
-        {
-            printf("I8042: Testing First Port PASSED\n");
-            return 1;
-        }
-        else 
-        {
-            printf("I8042: Testing First Port FAILED with 0x%x\n",result);
-            return 0;
-        }
+        if (I8042_Debug) printf("I8042: Testing First Port PASSED\n");
+        return 1;
+    }
+    else 
+    {
+        if (I8042_Debug) printf("I8042: Testing First Port FAILED with 0x%x\n",result);
+        return 0;
     }
 }
 
@@ -175,18 +184,111 @@ uint8_t I8042_CMD_TestSecondPort()
     // Read Result
     uint8_t result = I8042_ReadDataPort();
     // Test Result
-    if (I8042_Debug) 
+    if (result == 0 || result == I8042_TEST_RESULT_PASSED) 
     {
-        if (result == 0) 
+        if (I8042_Debug) printf("I8042: Testing Second Port PASSED\n");
+        return 1;
+    }
+    else 
+    {
+        if (I8042_Debug) printf("I8042: Testing Second Port FAILED with 0x%x\n",result);
+        return 0;
+    }
+}
+// Device Commands
+void I8042_DeviceCMD_ResetFirstPort()
+{
+    if (I8042_Debug) printf("I8042: Resetting First Port\n");
+    // Wait for register to clear
+    while ((I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) != 0)
+    {
+        usleep(20);
+    }
+    // Read Result
+    I8042_WriteDataPort(I8042_DEVICE_RESET);
+    // Wait for response
+    while ((I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) == 0)
+    {
+        usleep(20);
+    }
+    uint8_t result = I8042_ReadDataPort();
+    // Test Result
+    if (result == I8042_DEVICE_RESET_SUCCESS) 
+    {
+        if (I8042_Debug) 
+        printf("I8042: Reset first port successfully\n");
+    }
+    else if (result == 0xAA)
+    {
+        if (I8042_Debug) 
+        printf("I8042: Got 0xAA...\n");
+        // Wait for response
+        while ((I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) == 0)
         {
-            printf("I8042: Testing Second Port PASSED\n");
-            return 1;
+            usleep(20);
         }
-        else 
+        result = I8042_ReadDataPort();
+        if (result == I8042_DEVICE_RESET_SUCCESS)
         {
-            printf("I8042: Testing Second Port FAILED with 0x%x\n",result);
-            return 0;
+            if (I8042_Debug) 
+            printf("I8042: Reset finally succeeded on first port\n");
         }
+
+    }
+    else if (result == I8042_DEVICE_RESET_FAILURE)
+    {
+        if (I8042_Debug) 
+        printf("I8042: Reset first port FAILED\n");
+    }
+    else
+    {
+        if (I8042_Debug) 
+        printf("I8042: Reset first port FAILED with weird result 0x%x\n",result);
+    }
+}
+void I8042_DeviceCMD_ResetSecondPort()
+{
+    if (I8042_Debug) printf("I8042: Resetting Second Port\n");
+    I8042_WriteCommandRegister(I8042_CMD_WRITE_TO_SECOND_PS2_PORT);
+    I8042_WriteDataPort(I8042_DEVICE_RESET);
+    // Wait for response
+    while ((I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) == 0)
+    {
+        usleep(20);
+    }
+    uint8_t result = I8042_ReadDataPort();
+    // Test Result
+    if (result == I8042_DEVICE_RESET_SUCCESS) 
+    {
+        if (I8042_Debug) 
+        printf("I8042: Reset second port successfully\n");
+    }
+    else if (result == 0xAA)
+    {
+        if (I8042_Debug) 
+        printf("I8042: Got 0xAA...\n");
+        // Wait for response
+        while ((I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) == 0)
+        {
+            usleep(20);
+        }
+        result = I8042_ReadDataPort();
+        if (result == I8042_DEVICE_RESET_SUCCESS)
+        {
+            if (I8042_Debug) 
+            printf("I8042: Reset finally succeeded on second port\n");
+        }
+
+    }
+    else if (result == I8042_DEVICE_RESET_FAILURE)
+    {
+        if (I8042_Debug) 
+        printf("I8042: Reset second port FAILED\n");
+    }
+    else
+    {
+        if (I8042_Debug)
+        printf("I8042: Reset second port FAILED with weird result 0x%x\n",result);
     }
 }
 
@@ -244,11 +346,11 @@ void I8042_EnableInterrupts()
 
     if (I8042_Debug) printf("I8042: Current config byte 0x%x\n",currentConfig);
 
-    currentConfig &= I8042_FIRST_PORT_INTERRUPT;
+    currentConfig |= I8042_FIRST_PORT_INTERRUPT;
 
     if (I8042_SecondPortExists)
     {
-        currentConfig &= I8042_SECOND_PORT_INTERRUPT;
+        currentConfig |= I8042_SECOND_PORT_INTERRUPT;
     }
 
     I8042_WriteCommandRegister(I8042_CMD_WRITE_RAM_BYTE_ZERO);
@@ -268,7 +370,7 @@ void I8042_SetupInterruptHandlers()
     // First Port
     if (I8042_Debug)
     {
-	    printf("I8042: Setting first port IDT entry.\n");
+	   // printf("I8042: Setting first port IDT entry.\n");
 	}
 	uint32_t first_port_asm = (uint32_t)I8042_FirstPortInterruptHandlerASM;
 	I8042_FirstPort_IDT_Entry.mOffsetLowerBits = first_port_asm & 0xffff;
@@ -299,13 +401,23 @@ void I8042_SetupInterruptHandlers()
 void I8042_FirstPortInterruptHandler()
 {
     printf("I8042: First Port Interrupt\n");
-    Interrupt_SendEOI(I8042_FIRST_PORT_IDT-0x20);
+    if (I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) 
+    {
+        int8_t keycode = (int8_t)I8042_ReadDataPort();
+        if (keycode >= 0)
+        {
+            printf("Got Keyboard Event scancode:0x%x\n",keycode);
+        }
+    }
+    Interrupt_SendEOI_PIC1();
 }
 
 void I8042_SecondPortInterruptHandler()
 {
     printf("I8042: Second Port Interrupt\n");
-    Interrupt_SendEOI(I8042_SECOND_PORT_IDT-0x20);
+    uint8_t data = I8042_ReadDataPort();
+    printf("I8042: Got data 0x%x\n",data);
+    Interrupt_SendEOI_PIC2();
 }
 
 // Debugging ===================================================================
@@ -314,4 +426,3 @@ void I8042_SetDebug(uint8_t debug)
 {
     I8042_Debug = debug;
 }
-

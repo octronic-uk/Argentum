@@ -117,10 +117,9 @@ typedef struct
 } ATA_IDEDevice;
 
 void ATA_Constructor();
-unsigned char ATA_IDERead(ATA_Channel* channels, unsigned char channel, unsigned char reg);
-void ATA_IDEWrite(ATA_Channel* channels, unsigned char channel, unsigned char reg, unsigned char data);
-unsigned char ATA_IDEPolling(ATA_Channel* channels, unsigned char channel, unsigned int advanced_check);
-unsigned char ATA_IDEPrintError(ATA_Channel* channels, ATA_IDEDevice* devices, unsigned int drive, unsigned char err) ;
-void ATA_IDEReadBuffer(ATA_Channel* channels, unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) ;
-void ATA_IDEInit (unsigned char* ide_buf, ATA_IDEDevice* ide_devices, ATA_Channel* channels, 
-unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);
+unsigned char ATA_IDERead(unsigned char channel, unsigned char reg);
+void ATA_IDEWrite(unsigned char channel, unsigned char reg, unsigned char data);
+unsigned char ATA_IDEPolling(unsigned char channel, unsigned int advanced_check);
+unsigned char ATA_IDEPrintError(unsigned int drive, unsigned char err) ;
+void ATA_IDEReadBuffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) ;
+void ATA_IDEInit (unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);

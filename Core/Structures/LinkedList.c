@@ -1,5 +1,5 @@
 #include "LinkedList.h"
-#include <Devices/Memory/Memory.h>
+#include <Drivers/Memory/Memory.h>
 #include <stdio.h>
 #include <string.h>
 

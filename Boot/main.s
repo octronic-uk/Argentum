@@ -37,14 +37,6 @@ _start:
 1:	hlt
 	jmp 1b
 
-# Keyboard Interrupt Handler
-.global Keyboard_EventHandlerASM
-.extern Keyboard_OnInterrupt
-
-Keyboard_EventHandlerASM:
-	call    Keyboard_OnInterrupt
-	iret
-
 .global Serial_Port1InterruptHandlerASM
 .extern Serial_Port1InterruptHandler
 
