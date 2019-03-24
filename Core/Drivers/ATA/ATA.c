@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-uint8_t ATA_Debug = 0;
+uint8_t ATA_Debug = 1;
 ATA_Channel ATA_Channels[2];
 ATA_IDEDevice ATA_IDEDevices[4];
 
@@ -31,10 +31,9 @@ void ATA_Constructor()
         // This Device needs IRQ assignment.
         if (readInterruptLine != 0xFE)
         {
-            if (ATA_Debug)
-            {
                 printf("ATA: Couldn't set interrupt line, device needs IRQ Assignment (NOT IMPLEMENTED)\n");
-            }
+                printf("\t---[ BAIL OUT ]---\n");
+                return;
         }
         // The Device doesn't use IRQs, check if this is an Parallel IDE:
         else

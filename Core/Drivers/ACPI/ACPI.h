@@ -69,6 +69,8 @@ typedef struct
 } __attribute__ ((packed))
 ACPI_RsdpDescriptorV2;
 
+// SDT Header ==================================================================
+
 typedef struct  
 {
   char Signature[4];
@@ -92,6 +94,16 @@ typedef struct
   uint64_t Address;
 } __attribute__((packed))
 ACPI_GenericAddressStructure;
+
+// FADT ========================================================================
+
+/* Masks for FADT IA-PC Boot Architecture Flags (boot_flags) [Vx]=Introduced in this FADT revision */
+#define ACPI_FADT_LEGACY_DEVICES    (1)         /* 00: [V2] System has LPC or ISA bus devices */
+#define ACPI_FADT_8042              (1<<1)      /* 01: [V3] System has an 8042 controller on port 60/64 */
+#define ACPI_FADT_NO_VGA            (1<<2)      /* 02: [V4] It is not safe to probe for VGA hardware */
+#define ACPI_FADT_NO_MSI            (1<<3)      /* 03: [V4] Message Signaled Interrupts (MSI) must not be enabled */
+#define ACPI_FADT_NO_ASPM           (1<<4)      /* 04: [V4] PCIe ASPM control must not be enabled */
+#define ACPI_FADT_NO_CMOS_RTC       (1<<5)      /* 05: [V5] No CMOS real-time clock present */
 
 typedef struct
 {
@@ -159,19 +171,21 @@ typedef struct
     ACPI_GenericAddressStructure X_PMTimerBlock;
     ACPI_GenericAddressStructure X_GPE0Block;
     ACPI_GenericAddressStructure X_GPE1Block;
-}  ACPI_FADT;
+}  __attribute__((packed)) ACPI_FADT;
 
 typedef struct  
 {
     ACPI_SDTHeader h;
-    void* PointerToOtherSDT; // (h.Length - sizeof(h)) / 4;
+    uint32_t PointerToOtherSDT; // (h.Length - sizeof(h)) / 4;
 } ACPI_RSDT;
 
 typedef struct  
 {
     ACPI_SDTHeader h;
-    void* PointerToOtherSDT; // (h.Length - sizeof(h)) / 8;
+    uint64_t PointerToOtherSDT; // (h.Length - sizeof(h)) / 8;
 } ACPI_XSDT;
+
+// FACS ========================================================================
 
 typedef struct
 {
@@ -189,13 +203,88 @@ typedef struct
 
 } ACPI_FACS;
 
-/* Masks for FADT IA-PC Boot Architecture Flags (boot_flags) [Vx]=Introduced in this FADT revision */
-#define ACPI_FADT_LEGACY_DEVICES    (1)         /* 00: [V2] System has LPC or ISA bus devices */
-#define ACPI_FADT_8042              (1<<1)      /* 01: [V3] System has an 8042 controller on port 60/64 */
-#define ACPI_FADT_NO_VGA            (1<<2)      /* 02: [V4] It is not safe to probe for VGA hardware */
-#define ACPI_FADT_NO_MSI            (1<<3)      /* 03: [V4] Message Signaled Interrupts (MSI) must not be enabled */
-#define ACPI_FADT_NO_ASPM           (1<<4)      /* 04: [V4] PCIe ASPM control must not be enabled */
-#define ACPI_FADT_NO_CMOS_RTC       (1<<5)      /* 05: [V5] No CMOS real-time clock present */
+// MADT ========================================================================
+
+/* MADT Record Flags */
+#define ACPI_MADT_RECORD_TYPE_PROC_LOCAL_APIC 0x00
+#define ACPI_MADT_RECORD_TYPE_IOAPIC          0x01
+#define ACPI_MADT_RECORD_TYPE_ISRC_OVERRIDE   0x02
+#define ACPI_MADT_RECORD_TYPE_NMI             0x04
+#define ACPI_MADT_RECORD_TYPE_LOCAL_APIC_OVR  0x05
+
+#define ACPI_MADT_FLAGS_ACTIVE_LOW      0x02
+#define ACPI_MADT_FLAGS_LEVEL_TRIGGERED 0x08
+
+typedef struct 
+{
+    ACPI_SDTHeader h;
+    uint32_t LocalAPICAddress;
+    uint32_t Flags;
+    uint8_t RecordsStart;
+} ACPI_MADT;
+
+typedef struct
+{
+    uint8_t RecordType;
+    uint8_t Length;
+}__attribute__((packed))
+ACPI_MADTRecordBase;
+
+typedef struct
+{
+    ACPI_MADTRecordBase Base;
+    uint8_t AcpiProcessorId;
+    uint8_t AcpiId;
+    uint32_t Flags;
+} __attribute__((packed))
+ACPI_MADTRecord_0_APIC;
+
+typedef struct
+{
+    ACPI_MADTRecordBase Base;
+    uint8_t IoApicId;
+    uint8_t Reserved;
+    uint32_t IoApicAddress;
+    uint32_t GlobalSystemInterruptBase; 
+} __attribute__((packed))
+ACPI_MADTRecord_1_IOAPIC;
+
+typedef struct
+{
+    ACPI_MADTRecordBase Base;
+    uint8_t BusSource;
+    uint8_t IrqSource;
+    uint32_t GlobalSystemInterrupt;
+    uint16_t Flags;
+} __attribute__((packed))
+ACPI_MADTRecord_2_InputSourceOverride;
+
+typedef struct
+{
+    ACPI_MADTRecordBase Base;
+    uint8_t ApicProcessorId;
+    uint16_t Flags;
+    uint8_t LintNumber;
+} __attribute__((packed))
+ACPI_MADTRecord_4_NonMaskableInterrupt;
+
+typedef struct
+{
+    ACPI_MADTRecordBase Base;
+    uint8_t Reserved;
+    uint64_t LocalApic;
+} __attribute__((packed))
+ACPI_MADTRecord_5_LocalApicAddressOverride;
+
+typedef struct
+{
+    uint32_t IoRegSel;
+    uint32_t IoRegWin;
+} ACPI_IoApic;
+
+
+
+
 
 /* Masks for FADT ARM Boot Architecture Flags (arm_boot_flags) ACPI 5.1 */
 #define ACPI_FADT_PSCI_COMPLIANT    (1)         /* 00: [V5+] PSCI 0.2+ is implemented */
@@ -241,3 +330,5 @@ void ACPI_SetFacsPointer(uint32_t ptr);
 void ACPI_SetSciInterrupt(uint16_t sci);
 void ACPI_SetDsdtPointer(uint32_t dsdt);
 void APCI_SetDebug(uint8_t debug);
+
+void ACPI_ProcessMADT(ACPI_MADT* madt);

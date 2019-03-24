@@ -7,7 +7,7 @@
 
 Interrupt_DescriptorTableEntry Interrupt_DescriptorTable[INTERRUPT_IDT_SIZE];
 
-uint8_t Interrupt_Debug;
+uint8_t Interrupt_Debug = 0;
 
 void Interrupt_SetDebug(uint8_t debug)
 {

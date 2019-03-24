@@ -49,6 +49,12 @@ void I8042_Constructor()
     }
 
     I8042_EnableInterrupts();
+
+    // Empty the buffer hard for good measure
+    I8042_ReadDataPort(); // to flush the output buffer
+    I8042_ReadDataPort(); // to flush the output buffer
+    I8042_ReadDataPort(); // to flush the output buffer
+    I8042_ReadDataPort(); // to flush the output buffer
 }
 
 void I8042_Destructor()
@@ -400,13 +406,23 @@ void I8042_SetupInterruptHandlers()
 
 void I8042_FirstPortInterruptHandler()
 {
+    if (I8042_Debug) 
     printf("I8042: First Port Interrupt\n");
     if (I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) 
     {
         int8_t keycode = (int8_t)I8042_ReadDataPort();
         if (keycode >= 0)
         {
-            printf("Got Keyboard Event scancode:0x%x\n",keycode);
+            if (I8042_Debug) 
+            printf("Got Keyboard Event scancode: 0x%x\n",keycode);
+            if (keycode == 0x48) 
+            {
+                Screen_MoveScrollOffset(-1);
+            }
+            else if (keycode == 0x50)
+            {
+                Screen_MoveScrollOffset(1);
+            }
         }
     }
     Interrupt_SendEOI_PIC1();
@@ -414,8 +430,10 @@ void I8042_FirstPortInterruptHandler()
 
 void I8042_SecondPortInterruptHandler()
 {
+    if (I8042_Debug) 
     printf("I8042: Second Port Interrupt\n");
     uint8_t data = I8042_ReadDataPort();
+    if (I8042_Debug) 
     printf("I8042: Got data 0x%x\n",data);
     Interrupt_SendEOI_PIC2();
 }

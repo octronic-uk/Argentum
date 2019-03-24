@@ -6,7 +6,7 @@
 #include <Drivers/Interrupt/Interrupt.h>
 
 uint16_t Serial_PortAddresses[4];
-uint8_t Serial_Debug = 0;
+uint8_t Serial_Debug = 1;
 Interrupt_DescriptorTableEntry Serial_Port1_IDTEntry;
 
 void Serial_Constructor()

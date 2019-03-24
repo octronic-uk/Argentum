@@ -21,18 +21,21 @@ void Kernel_Constructor
    printf("Taskie Kernel 1.0\n");
    Memory_Constructor(mbi);
 	Interrupt_Constructor(),
+	ACPI_Constructor();
 	I8042_Constructor();
-	Serial_Constructor();
+	
+	//Serial_Constructor();
 	PCI_Constructor();
 	ATA_Constructor();
+
 	Interrupt_WriteDescriptorTable();
 	Interrupt_SetMask_PIC1(0x01);
 	Interrupt_SetMask_PIC2(0x00);
 	Interrupt_Enable_STI();
-	Scheduler_Constructor();
+
+	//Scheduler_Constructor();
 	//Serial_SetInterruptEnableRegister(&Serial_Port1_8N1);
 	//Serial_TestPort1();
-	ACPI_Constructor();
 }
 
 void
