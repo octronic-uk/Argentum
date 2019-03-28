@@ -26,10 +26,10 @@ enum Screen_VgaColor
 uint8_t Screen_VgaEntryColor(enum Screen_VgaColor fg, enum Screen_VgaColor bg);
 uint16_t Screen_VgaEntry(unsigned char uc, uint8_t color);
 
-void Screen_MoveScrollOffset(int32_t offset);
 void Screen_Initialize(void);
 void Screen_PutChar(char c);
 void Screen_Write(const char* data, size_t size);
 void Screen_WriteString(const char* data);
 void Screen_Update();
 void Screen_Clear();
+void Screen_Scroll();

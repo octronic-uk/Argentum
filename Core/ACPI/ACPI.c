@@ -2,19 +2,26 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <Drivers/IO/IO.h>
 #include <Drivers/Interrupt/Interrupt.h>
+#include <Structures/LinkedList.h>
+#include <Memory/Memory.h>
 
-uint8_t ACPI_Debug = 0;
+uint8_t ACPI_Debug = 1;
 
 uint32_t ACPI_FacsPointer = 0;
 uint32_t ACPI_DsdtPointer = 0;
 uint16_t ACPI_SciInterrupt = 0;
+LinkedList* ACPI_IoApicRecordPointers = 0;
+LinkedList* ACPI_InterruptSourceOverrideRecordPointers = 0;
 
 void ACPI_Constructor()
 {
     printf("ACPI: Constructing\n");
+    ACPI_InterruptSourceOverrideRecordPointers = LinkedList_Constructor();
+    ACPI_IoApicRecordPointers = LinkedList_Constructor();
     void* rsdpPointer = ACPI_FindRsdpPointer();
 
     if (ACPI_Debug)
@@ -69,7 +76,11 @@ void ACPI_Constructor()
 void ACPI_Destructor()
 {
     if (ACPI_Debug)
-    printf("ACPI: Destructing\n");
+    {
+        printf("ACPI: Destructing\n");
+    }
+    LinkedList_Destructor(ACPI_IoApicRecordPointers);
+    LinkedList_Destructor(ACPI_InterruptSourceOverrideRecordPointers);
 }
 
 void* ACPI_GetEbdaPointer()
@@ -296,54 +307,159 @@ void ACPI_ProcessMADT(ACPI_MADT* madt)
     while (current < recordsEnd && !error)
     {
         ACPI_MADTRecordBase* currentRecord = (ACPI_MADTRecordBase*)current;
-        ACPI_MADTRecord_0_APIC* apic = 0;
-        ACPI_MADTRecord_1_IOAPIC* ioapic = 0;
-        ACPI_MADTRecord_2_InputSourceOverride* intSrcOvr = 0;
-        ACPI_MADTRecord_4_NonMaskableInterrupt* nmi = 0;
-        ACPI_MADTRecord_5_LocalApicAddressOverride* localApicAddrOvr = 0;
-        ACPI_IoApic* ioApicDevice;
+
         switch (currentRecord->RecordType)
         {
             case ACPI_MADT_RECORD_TYPE_PROC_LOCAL_APIC:
+            {
                 if (ACPI_Debug)
-                printf("ACPI: MADT Record Processor Local Apic\n");
-                apic = (ACPI_MADTRecord_0_APIC*)current;
+                {
+                    printf("ACPI: MADT Record Found: Processor Local Apic\n");
+                }
+                ACPI_MADTRecordApic* apic = (ACPI_MADTRecordApic*)current;
                 current += apic->Base.Length;
                 break;
+            }
             case ACPI_MADT_RECORD_TYPE_IOAPIC:
-                ioapic = (ACPI_MADTRecord_1_IOAPIC*)current;
+            {
                 if (ACPI_Debug)
-                    printf(
-                        "ACPI: MADT Record I/0 Apic\n\tID: 0x%x\n\tAddress: 0x%x\n\tGSI Base: 0x%x\n",
-                        ioapic->IoApicId, ioapic->IoApicAddress, ioapic->GlobalSystemInterruptBase 
-                    );
-                ioApicDevice = ioapic->IoApicAddress;
-
+                {
+                    printf("ACPI: MADT Record Found: I/O Apic\n");
+                }
+                ACPI_MADTRecordIoApic* ioapic = (ACPI_MADTRecordIoApic*)current;
+                LinkedList_PushBack(ACPI_IoApicRecordPointers, ioapic);
                 current += ioapic->Base.Length;
                 break;
-            case ACPI_MADT_RECORD_TYPE_ISRC_OVERRIDE:
+            }
+            case ACPI_MADT_RECORD_TYPE_ISO:
+            {
                 if (ACPI_Debug)
-                    printf("ACPI: MADT Record Interrupt Source Override\n");
-                intSrcOvr = (ACPI_MADTRecord_2_InputSourceOverride*)current;
+                {
+                    printf("ACPI: MADT Record Found: Interrupt Source Override\n");
+                }
+
+                ACPI_MADTRecordInputSourceOverride* intSrcOvr = 0;
+                intSrcOvr = (ACPI_MADTRecordInputSourceOverride*)current;
+                LinkedList_PushBack(ACPI_InterruptSourceOverrideRecordPointers,intSrcOvr);
                 current += intSrcOvr->Base.Length;
                 break;
+            }
             case ACPI_MADT_RECORD_TYPE_NMI:
+            {
                 if (ACPI_Debug)
-                    printf("ACPI: MADT Record Non-Maskable Interrupt\n");
-                nmi = (ACPI_MADTRecord_4_NonMaskableInterrupt*)current;
+                {
+                    printf("ACPI: MADT Record Found: Non-Maskable Interrupt\n");
+                }
+
+                ACPI_MADTRecordNonMaskableInterrupt* nmi = (ACPI_MADTRecordNonMaskableInterrupt*)current;
                 current += nmi->Base.Length;
                 break;
+            }
             case ACPI_MADT_RECORD_TYPE_LOCAL_APIC_OVR:
+            {
                 if (ACPI_Debug)
-                    printf("ACPI: MADT Record Local Apic Address Override\n");
-                localApicAddrOvr = (ACPI_MADTRecord_5_LocalApicAddressOverride*)current;
+                {
+                    printf("ACPI: MADT Record Found: Local Apic Address Override\n");
+                }
+
+                ACPI_MADTRecordLocalApicAddressOverride* localApicAddrOvr = (ACPI_MADTRecordLocalApicAddressOverride*)current;
                 current += localApicAddrOvr->Base.Length;
                 break;
+            }
             default:
+            {
                 if (ACPI_Debug)
                     printf("ACPI: Error unrecognised MADT Record type 0x%x\n",currentRecord->RecordType);
                 error = 1;
                 break;
+            }
         }
+    }
+    if (ACPI_Debug)
+    {
+        ACPI_DebugMADT();
+    }
+}
+
+ACPI_IoApic ACPI_GenerateIoApic(ACPI_MADTRecordIoApic* ioapic)
+{
+    ACPI_IoApic device;
+
+    *(volatile uint32_t*)(ioapic->IoApicAddress) = 0;
+    device.Id = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
+
+    *(volatile uint32_t*)(ioapic->IoApicAddress) = 1;
+    device.Version = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
+    device.IrqRedirectEntries = (device.Version >> 16) + 1;// cast to uint8_t occuring ok!
+
+    *(volatile uint32_t*)(ioapic->IoApicAddress) = 2;
+    device.Arbitration = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
+
+
+    int i, j;
+
+    for (i=0, j=0x10; i<device.IrqRedirectEntries; i++)
+    {
+        *(volatile uint32_t*)(ioapic->IoApicAddress) = j++;
+        device.IrqRedirections[i].lowerDword = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
+
+        *(volatile uint32_t*)(ioapic->IoApicAddress) = j++;
+        device.IrqRedirections[i].upperDword = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
+    }
+    return device;
+}
+
+void ACPI_DebugIoApic(ACPI_MADTRecordIoApic* record)
+{
+    ACPI_IoApic device = ACPI_GenerateIoApic(record);
+    printf("ACPI: I/0 Apic Record\n",record->IoApicId);
+    printf("\tAddress: 0x%x\n",record->IoApicAddress);
+    printf("\tGSI Base: 0x%x\n",record->GlobalSystemInterruptBase);
+    printf("\tID: 0x%x\n",device.Id);
+    printf("\tVersion: 0x%x\n",device.Version);
+    printf("\tArbitration: 0x%x\n",device.Arbitration);
+    printf("\tRedirections: %d\n",device.IrqRedirectEntries);
+    int i;
+    for (i=0; i<device.IrqRedirectEntries; i++)
+    {
+        ACPI_IoApicRedirectionEntry r = device.IrqRedirections[i];
+        printf("\t\t- %d ----------------------------------------\n",i);
+        printf("\t\t\tLow 0x%x High 0x%x\n",r.lowerDword, r.upperDword);
+        printf("\t\t\tVector 0x%x\n",r.vector);
+        printf("\t\t\tDelivery Mode 0x%x\n", r.delvMode);
+        printf("\t\t\tDestination Mode 0x%x\n", r.destMode);
+        printf("\t\t\tDelivery Status 0x%x\n", r.delvStatus);
+        printf("\t\t\tPin Polarity 0x%x\n", r.pinPolarity);
+        printf("\t\t\tRemote IRR 0x%x\n", r.remoteIRR);
+        printf("\t\t\tTrigger Mode 0x%x\n", r.triggerMode);
+        printf("\t\t\tMask 0x%x\n", r.mask);
+        printf("\t\t\tDestination 0x%x\n", r.destination);
+    }
+}
+
+void ACPI_DebugInterruptSourceOverride(ACPI_MADTRecordInputSourceOverride* record)
+{
+    printf("ACPI: Interrupt Source Override\n");
+    printf("\tBus Source: 0x%x\n",record->BusSource);
+    printf("\tIRQ Source: 0x%x\n",record->IrqSource);
+    printf("\tGIS: 0x%x\n",record->GlobalSystemInterrupt);
+    printf("\tFlags: 0x%x\n",record->Flags);
+}
+
+void ACPI_DebugMADT()
+{
+    int nElements, i;
+    /*
+    for (nElements = LinkedList_Size(ACPI_IoApicRecordPointers), i=0; i<nElements; i++)
+    {
+        ACPI_MADTRecordIoApic* ioapic = LinkedList_At(ACPI_IoApicRecordPointers,i);
+        ACPI_DebugIoApic(ioapic);
+    }
+    */
+
+    for (nElements = LinkedList_Size(ACPI_InterruptSourceOverrideRecordPointers), i=0; i<nElements; i++)
+    {
+        ACPI_MADTRecordInputSourceOverride* iso = LinkedList_At(ACPI_InterruptSourceOverrideRecordPointers, i);
+        ACPI_DebugInterruptSourceOverride(iso);
     }
 }

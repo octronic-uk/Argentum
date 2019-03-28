@@ -10,13 +10,17 @@
 Interrupt_DescriptorTableEntry I8042_FirstPort_IDT_Entry;
 Interrupt_DescriptorTableEntry I8042_SecondPort_IDT_Entry;
 
-uint8_t I8042_Debug = 0;
-uint8_t I8042_SecondPortExists = 0;
-I8042_KeyboardNextByte I8042_KeyboardNextByteExpected = Status;
+uint8_t I8042_Debug;
+uint8_t I8042_SecondPortExists;
+I8042_KeyboardNextByte I8042_KeyboardNextByteExpected;
 
 void I8042_Constructor()
 {
     printf("I8042: Constructing\n");
+    I8042_Debug = 1;
+    I8042_SecondPortExists = 0;
+    I8042_KeyboardNextByteExpected = Status;
+
 
     memset(&I8042_FirstPort_IDT_Entry, 0, sizeof(Interrupt_DescriptorTableEntry));
     memset(&I8042_SecondPort_IDT_Entry, 0, sizeof(Interrupt_DescriptorTableEntry));
@@ -378,13 +382,7 @@ void I8042_SetupInterruptHandlers()
     {
 	   // printf("I8042: Setting first port IDT entry.\n");
 	}
-	uint32_t first_port_asm = (uint32_t)I8042_FirstPortInterruptHandlerASM;
-	I8042_FirstPort_IDT_Entry.mOffsetLowerBits = first_port_asm & 0xffff;
-	I8042_FirstPort_IDT_Entry.mOffsetHigherBits = (first_port_asm & 0xffff0000) >> 16;
-	I8042_FirstPort_IDT_Entry.mSelector = INTERRUPT_KERNEL_CODE_SEGMENT_OFFSET;
-	I8042_FirstPort_IDT_Entry.mZero = 0;
-	I8042_FirstPort_IDT_Entry.mTypeAttribute = INTERRUPT_GATE;
-	Interrupt_SetIDTEntry(I8042_FIRST_PORT_IDT,I8042_FirstPort_IDT_Entry);
+	Interrupt_SetHandlerFunction(1,I8042_FirstPortInterruptHandler);
 
     // First Port
     if (I8042_SecondPortExists)
@@ -393,15 +391,8 @@ void I8042_SetupInterruptHandlers()
         {
             printf("I8042: Setting second port IDT entry.\n");
         }
-        uint32_t second_port_asm = (uint32_t)I8042_SecondPortInterruptHandlerASM;
-        I8042_SecondPort_IDT_Entry.mOffsetLowerBits = second_port_asm & 0xffff;
-        I8042_SecondPort_IDT_Entry.mOffsetHigherBits = (second_port_asm & 0xffff0000) >> 16;
-        I8042_SecondPort_IDT_Entry.mSelector = INTERRUPT_KERNEL_CODE_SEGMENT_OFFSET;
-        I8042_SecondPort_IDT_Entry.mZero = 0;
-        I8042_SecondPort_IDT_Entry.mTypeAttribute = INTERRUPT_GATE;
-        Interrupt_SetIDTEntry(I8042_SECOND_PORT_IDT,I8042_SecondPort_IDT_Entry);
+        Interrupt_SetHandlerFunction(12,I8042_SecondPortInterruptHandler);
     }
-
 }
 
 void I8042_FirstPortInterruptHandler()
@@ -417,15 +408,12 @@ void I8042_FirstPortInterruptHandler()
             printf("Got Keyboard Event scancode: 0x%x\n",keycode);
             if (keycode == 0x48) 
             {
-                Screen_MoveScrollOffset(-1);
             }
             else if (keycode == 0x50)
             {
-                Screen_MoveScrollOffset(1);
             }
         }
     }
-    Interrupt_SendEOI_PIC1();
 }
 
 void I8042_SecondPortInterruptHandler()
@@ -435,7 +423,6 @@ void I8042_SecondPortInterruptHandler()
     uint8_t data = I8042_ReadDataPort();
     if (I8042_Debug) 
     printf("I8042: Got data 0x%x\n",data);
-    Interrupt_SendEOI_PIC2();
 }
 
 // Debugging ===================================================================

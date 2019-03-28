@@ -6,16 +6,17 @@
 #include <stdio.h>
 #include <string.h>
 
-uint8_t ATA_Debug = 1;
+uint8_t ATA_Debug;
 ATA_Channel ATA_Channels[2];
-ATA_IDEDevice ATA_IDEDevices[4];
 
 unsigned char ATA_IDEBuffer[2048] = {0};
-unsigned static char ATA_IDEIrqInvoked = 0;
-unsigned static char ATA_ATAPIPacket[12] = {0};
+unsigned char ATA_IDEIrqInvoked = 0;
+unsigned char ATA_ATAPIPacket[12] = {0};
+unsigned char ATA_ATAPIPackage[16] = {0};
 
 void ATA_Constructor()
 {
+    ATA_Debug = 1;
     printf("ATA: Constructing\n");
     memset(ATA_IDEBuffer,0,2048);
     memset(ATA_Channels,0,sizeof(ATA_Channel)*2);
@@ -25,8 +26,13 @@ void ATA_Constructor()
     PCI_ConfigHeader* ata_device = PCI_GetATADevice();
     if (ata_device)
     {
+        uint8_t readInterruptLine = PCI_DeviceReadConfig8b(ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+        if (ATA_Debug)
+        {
+            printf("ATA: Current Interrupt Line 0x%x\n",readInterruptLine);
+        }
         PCI_DeviceWriteConfig8b(ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET, 0xFE);
-        uint8_t readInterruptLine = PCI_DeviceReadConfig8b(ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+        readInterruptLine = PCI_DeviceReadConfig8b(ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
 
         // This Device needs IRQ assignment.
         if (readInterruptLine != 0xFE)
@@ -152,7 +158,7 @@ void ATA_IDEInit( unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsig
                 if (ATA_Debug) printf("ATA: Polling %d,%d - No Device\n",i,j);
                 continue; // If Status = 0, No Device.
             }
-            if (ATA_Debug) printf("ATA: After Polling\n");
+
             while(1)
             {
                 status = ATA_IDERead(i, ATA_REG_STATUS);
@@ -210,13 +216,12 @@ void ATA_IDEInit( unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsig
             if (ATA_IDEDevices[count].commandsets & (1<<26))
             {
                 // Device uses 48-Bit Addressing:
-                ATA_IDEDevices[count].size   = ((unsigned int   *) (ATA_IDEBuffer + ATA_IDENT_MAX_LBA_EXT   ))[0];
-                // Note that Quafios is 32-Bit Operating System, So last 2 Words are ignored.
+                ATA_IDEDevices[count].size   = ((unsigned int*) (ATA_IDEBuffer + ATA_IDENT_MAX_LBA_EXT))[0];
             }
             else
             {
                 // Device uses CHS or 28-bit Addressing:
-                ATA_IDEDevices[count].size   = ((unsigned int   *) (ATA_IDEBuffer + ATA_IDENT_MAX_LBA   ))[0];
+                ATA_IDEDevices[count].size   = ((unsigned int*) (ATA_IDEBuffer + ATA_IDENT_MAX_LBA))[0];
             }
 
             // (VIII) String indicates model of device (like Western Digital HDD and SONY DVD-RW...):
@@ -230,20 +235,19 @@ void ATA_IDEInit( unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsig
             count++;
         }
     }
-    if (ATA_Debug) printf("ATA: After for loops\n");
     // 4- Print Summary:
     for (i = 0; i < 4; i++)
     {
         if (ATA_IDEDevices[i].reserved == 1)
         {
-            printf("\tFound %s Drive %d MB - %s\n",
+            printf("\t%d: Found %s Drive %d MB - %s\n", i, 
                    (const char *[]){"ATA", "ATAPI"}[ATA_IDEDevices[i].type],         /* Type */
                     ATA_IDEDevices[i].size/1024/2,               /* Size */
                     ATA_IDEDevices[i].model);
         }
         else
         {
-            if (ATA_Debug) printf("ATA: No summary for device %d\n",i);
+            if (ATA_Debug) printf("\t%d: No summary for device\n",i);
         }
     }
 }
@@ -251,7 +255,8 @@ void ATA_IDEInit( unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsig
 unsigned char ATA_IDERead(unsigned char channel, unsigned char reg)
 {
 
-    if (ATA_Debug) {
+    if (ATA_Debug) 
+    {
         printf("ATA: Read ch:%d reg:%d\n",channel,reg);
     }
     unsigned char result;
@@ -475,34 +480,6 @@ unsigned char ATA_IDEPrintError(unsigned int drive, unsigned char err)
     return err;
 }
 
-/**
- * ATA/ATAPI Read/Write Modes:
-* ++++++++++++++++++++++++++++++++
-*  Addressing Modes:
-*  ================
-*   - LBA28 Mode.
-*   - LBA48 Mode.
-*   - CHS.
-*  Reading Modes:
-*  ================
-*   - PIO Modes (0 : 6) - Slower than DMA, but not a problem.
-*   - Single Word DMA Modes (0, 1, 2).
-*   - Double Word DMA Modes (0, 1, 2).
-*   - Ultra DMA Modes (0 : 6).
-*  Polling Modes:
-*  ================
-*   - IRQs
-*   - Polling Status - Suitable for Singletasking
-*
-* @brief This Function reads/writes sectors from ATA-Drive.
-* @param direction if == 0 we are reading, else we are writing.
-* @param drive, is drive number which can be from 0 to 3.
-* @param lba, is the LBA Address which allows us to access disks up to 2TB.
-* @param numsects, number of sectors to be read, it is a char, as reading more than 256 sector immediately may cause the OS to hang. notice that if numsects = 0, controller will know that we want 256 sectors.
-* @param selector segment selector to read from, or write to.
-* @param edi offset in the segment.
-*/
-
 unsigned char ATA_IDEAccess
 (unsigned char direction, unsigned char drive, unsigned int lba,
 unsigned char numsects, unsigned short selector, unsigned int edi)
@@ -526,8 +503,8 @@ unsigned char numsects, unsigned short selector, unsigned int edi)
     unsigned int  words = 256;
     unsigned short cyl;
     unsigned short i;
-    unsigned char ide_irq_invoked;
-    ATA_IDEWrite(channel, ATA_REG_CONTROL, ATA_Channels[channel].nIEN = (ide_irq_invoked = 0x0) + 0x02);
+    //unsigned char ATA_IDEIrqInvoked;
+    ATA_IDEWrite(channel, ATA_REG_CONTROL, ATA_Channels[channel].nIEN = (ATA_IDEIrqInvoked = 0x0) + 0x02);
 
     // (I) Select one from LBA28, LBA48 or CHS;
     if (lba >= 0x10000000)
@@ -606,54 +583,21 @@ unsigned char numsects, unsigned short selector, unsigned int edi)
     // If (!DMA & LBA48)   DO_PIO_EXT;
     // If (!DMA & LBA28)   DO_PIO_LBA;
     // If (!DMA & !LBA#)   DO_PIO_CHS;
-    if (lba_mode == 0 && dma == 0 && direction == 0)
-    {
-        cmd = ATA_CMD_READ_PIO;
-    }
-    else if (lba_mode == 1 && dma == 0 && direction == 0)
-    {
-        cmd = ATA_CMD_READ_PIO;
-    }
-    else if (lba_mode == 2 && dma == 0 && direction == 0)
-    {
-        cmd = ATA_CMD_READ_PIO_EXT;
-    }
-    else if (lba_mode == 0 && dma == 1 && direction == 0)
-    {
-        cmd = ATA_CMD_READ_DMA;
-    }
-    else if (lba_mode == 1 && dma == 1 && direction == 0)
-    {
-        cmd = ATA_CMD_READ_DMA;
-    }
-    else if (lba_mode == 2 && dma == 1 && direction == 0)
-    {
-        cmd = ATA_CMD_READ_DMA_EXT;
-    }
-    else if (lba_mode == 0 && dma == 0 && direction == 1)
-    {
-        cmd = ATA_CMD_WRITE_PIO;
-    }
-    else if (lba_mode == 1 && dma == 0 && direction == 1)
-    {
-        cmd = ATA_CMD_WRITE_PIO;
-    }
-    else if (lba_mode == 2 && dma == 0 && direction == 1)
-    {
-        cmd = ATA_CMD_WRITE_PIO_EXT;
-    }
-    else if (lba_mode == 0 && dma == 1 && direction == 1)
-    {
-        cmd = ATA_CMD_WRITE_DMA;
-    }
-    else if (lba_mode == 1 && dma == 1 && direction == 1)
-    {
-        cmd = ATA_CMD_WRITE_DMA;
-    }
-    else if (lba_mode == 2 && dma == 1 && direction == 1)
-    {
-        cmd = ATA_CMD_WRITE_DMA_EXT;
-    }
+
+    // Read Modes
+    if (lba_mode == 0 && dma == 0 && direction == 0)      cmd = ATA_CMD_READ_PIO;
+    else if (lba_mode == 1 && dma == 0 && direction == 0) cmd = ATA_CMD_READ_PIO;
+    else if (lba_mode == 2 && dma == 0 && direction == 0) cmd = ATA_CMD_READ_PIO_EXT;
+    else if (lba_mode == 0 && dma == 1 && direction == 0) cmd = ATA_CMD_READ_DMA;
+    else if (lba_mode == 1 && dma == 1 && direction == 0) cmd = ATA_CMD_READ_DMA;
+    else if (lba_mode == 2 && dma == 1 && direction == 0) cmd = ATA_CMD_READ_DMA_EXT;
+    // Write Modes
+    else if (lba_mode == 0 && dma == 0 && direction == 1) cmd = ATA_CMD_WRITE_PIO;
+    else if (lba_mode == 1 && dma == 0 && direction == 1) cmd = ATA_CMD_WRITE_PIO;
+    else if (lba_mode == 2 && dma == 0 && direction == 1) cmd = ATA_CMD_WRITE_PIO_EXT;
+    else if (lba_mode == 0 && dma == 1 && direction == 1) cmd = ATA_CMD_WRITE_DMA;
+    else if (lba_mode == 1 && dma == 1 && direction == 1) cmd = ATA_CMD_WRITE_DMA;
+    else if (lba_mode == 2 && dma == 1 && direction == 1) cmd = ATA_CMD_WRITE_DMA_EXT;
 
     ATA_IDEWrite(channel, ATA_REG_COMMAND, cmd);               // Send the Command.
 
@@ -710,7 +654,256 @@ unsigned char numsects, unsigned short selector, unsigned int edi)
             ATA_IDEPolling(channel, 0); // Polling.
         }
 
-        return 0; // Easy, ... Isn't it?
+        return 0;
     }
 }
 
+void ATA_IDEWaitForIrq() 
+{
+   while (!ATA_IDEIrqInvoked);
+   ATA_IDEIrqInvoked = 0;
+}
+
+
+//when an IRQ happens, the following function should be executed by ISR:
+void ATA_IDEIrq() 
+{
+   ATA_IDEIrqInvoked = 1;
+}
+
+unsigned char ATA_IDEAtapiRead(unsigned char drive, unsigned int lba, unsigned char numsects, unsigned short selector, unsigned int edi) 
+{
+    unsigned int channel = ATA_IDEDevices[drive].channel;
+    unsigned int slavebit = ATA_IDEDevices[drive].drive;
+    unsigned int bus = ATA_Channels[channel].base;
+    unsigned int words = 2048 / 2; // Sector Size in Words, Almost All ATAPI Drives has a sector size of 2048 bytes.
+    unsigned char err; 
+    int i;
+
+      // Enable IRQs:
+   ATA_IDEWrite(channel, ATA_REG_CONTROL, ATA_Channels[channel].nIEN = ATA_IDEIrqInvoked = 0x0);
+   // (I): Setup SCSI Packet:
+   // ------------------------------------------------------------------
+   ATA_ATAPIPacket[ 0] = ATAPI_CMD_READ;
+   ATA_ATAPIPacket[ 1] = 0x0;
+   ATA_ATAPIPacket[ 2] = (lba>>24) & 0xFF;
+   ATA_ATAPIPacket[ 3] = (lba>>16) & 0xFF;
+   ATA_ATAPIPacket[ 4] = (lba>> 8) & 0xFF;
+   ATA_ATAPIPacket[ 5] = (lba>> 0) & 0xFF;
+   ATA_ATAPIPacket[ 6] = 0x0;
+   ATA_ATAPIPacket[ 7] = 0x0;
+   ATA_ATAPIPacket[ 8] = 0x0;
+   ATA_ATAPIPacket[ 9] = numsects;
+   ATA_ATAPIPacket[10] = 0x0;
+   ATA_ATAPIPacket[11] = 0x0;
+    // (II): Select the Drive:
+   // ------------------------------------------------------------------
+   ATA_IDEWrite(channel, ATA_REG_HDDEVSEL, slavebit<<4);
+   // (III): Delay 400 nanosecond for select to complete:
+   // ------------------------------------------------------------------
+   ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+   ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+   ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+   ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+    // (IV): Inform the Controller that we use PIO mode:
+   // ------------------------------------------------------------------
+   ATA_IDEWrite(channel, ATA_REG_FEATURES, 0);         // PIO mode.
+
+
+   // (V): Tell the Controller the size of buffer:
+   // ------------------------------------------------------------------
+   ATA_IDEWrite(channel, ATA_REG_LBA1, (words * 2) & 0xFF);   // Lower Byte of Sector Size.
+   ATA_IDEWrite(channel, ATA_REG_LBA2, (words * 2)>>8);   // Upper Byte of Sector Size.
+
+
+   // (VI): Send the Packet Command:
+   // ------------------------------------------------------------------
+   ATA_IDEWrite(channel, ATA_REG_COMMAND, ATA_CMD_PACKET);      // Send the Command.
+
+
+   // (VII): Waiting for the driver to finish or invoke an error:
+   // ------------------------------------------------------------------
+   if (err = ATA_IDEPolling(channel, 1)) return err;         // Polling and return if error.
+
+
+   // (VIII): Sending the packet data:
+   // ------------------------------------------------------------------
+   asm("rep   outsw"::"c"(6), "d"(bus), "S"(ATA_ATAPIPacket));   // Send Packet Data
+
+   // (IX): Recieving Data:
+   // ------------------------------------------------------------------
+   for (i = 0; i < numsects; i++) 
+   {
+      ATA_IDEWaitForIrq();                  // Wait for an IRQ.
+      if (err = ATA_IDEPolling(channel, 1)) return err;      // Polling and return if error.
+      asm("pushw %es");
+      asm("mov %%ax, %%es"::"a"(selector));
+      asm("rep insw"::"c"(words), "d"(bus), "D"(edi));// Receive Data.
+      asm("popw %es");
+      edi += (words*2);
+   }
+
+   // (X): Waiting for an IRQ:
+   // ------------------------------------------------------------------
+   ATA_IDEWaitForIrq();
+
+   // (XI): Waiting for BSY & DRQ to clear:
+   // ------------------------------------------------------------------
+   while (ATA_IDERead(channel, ATA_REG_STATUS) & (ATA_SR_BSY | ATA_SR_DRQ));
+
+   return 0; // Easy, ... Isn't it?
+}
+
+void ATA_IDEReadSectors
+(unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi) 
+{
+   // 1: Check if the drive presents:
+   // ==================================
+   if (drive > 3 || ATA_IDEDevices[drive].reserved == 0) 
+   {
+       ATA_ATAPIPackage[0] = 0x1;      // Drive Not Found!
+   }
+
+   // 2: Check if inputs are valid:
+   // ==================================
+   else if (((lba + numsects) > ATA_IDEDevices[drive].size) && (ATA_IDEDevices[drive].type == IDE_ATA))
+   {
+      ATA_ATAPIPackage[0] = 0x2;                     // Seeking to invalid position.
+   }
+   // 3: Read in PIO Mode through Polling & IRQs:
+   // ============================================
+   else 
+   {
+      unsigned char err;
+      if (ATA_IDEDevices[drive].type == IDE_ATA)
+      {
+         err = ATA_IDEAccess(ATA_READ, drive, lba, numsects, es, edi);
+      }
+      else if (ATA_IDEDevices[drive].type == IDE_ATAPI)
+      {
+         int i;
+        for (i = 0; i < numsects; i++)
+        {
+            err = ATA_IDEAtapiRead(drive, lba + i, 1, es, edi + (i*2048));
+        }
+      }
+      ATA_ATAPIPackage[0] = ATA_IDEPrintError(drive, err);
+   }
+}
+// ATA_ATAPIPackage[0] is an entry of array, this entry specifies the Error Code, you can replace that.
+
+void ATA_IDEWriteSectors
+(unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi) 
+{
+   // 1: Check if the drive presents:
+   // ==================================
+   if (drive > 3 || ATA_IDEDevices[drive].reserved == 0) ATA_ATAPIPackage[0] = 0x1;      // Drive Not Found!
+   // 2: Check if inputs are valid:
+   // ==================================
+   else if (((lba + numsects) > ATA_IDEDevices[drive].size) && (ATA_IDEDevices[drive].type == IDE_ATA))
+      ATA_ATAPIPackage[0] = 0x2;                     // Seeking to invalid position.
+   // 3: Read in PIO Mode through Polling & IRQs:
+   // ============================================
+   else 
+   {
+      unsigned char err;
+      if (ATA_IDEDevices[drive].type == IDE_ATA)
+      {
+         err = ATA_IDEAccess(ATA_WRITE, drive, lba, numsects, es, edi);
+      }
+      else if (ATA_IDEDevices[drive].type == IDE_ATAPI)
+      {
+         err = 4; // Write-Protected.
+      }
+      ATA_ATAPIPackage[0] = ATA_IDEPrintError(drive, err);
+   }
+}
+
+void ATA_IDEAtapiEject(unsigned char drive) 
+{
+   unsigned int   channel      = ATA_IDEDevices[drive].channel;
+   unsigned int   slavebit      = ATA_IDEDevices[drive].drive;
+   unsigned int   bus      = ATA_Channels[channel].base;
+   unsigned int   words      = 2048 / 2;               // Sector Size in Words.
+   unsigned char  err = 0;
+   ATA_IDEIrqInvoked = 0;
+
+   // 1: Check if the drive presents:
+   // ==================================
+   if (drive > 3 || ATA_IDEDevices[drive].reserved == 0) 
+   {
+       ATA_ATAPIPackage[0] = 0x1;      // Drive Not Found!
+   }
+   // 2: Check if drive isn't ATAPI:
+   // ==================================
+   else if (ATA_IDEDevices[drive].type == IDE_ATA) 
+   {
+       ATA_ATAPIPackage[0] = 20;         // Command Aborted.
+   }
+   // 3: Eject ATAPI Driver:
+   // ============================================
+   else 
+   {
+      // Enable IRQs:
+      ATA_IDEWrite(channel, ATA_REG_CONTROL, ATA_Channels[channel].nIEN = ATA_IDEIrqInvoked = 0x0);
+
+      // (I): Setup SCSI Packet:
+      // ------------------------------------------------------------------
+      ATA_ATAPIPacket[ 0] = ATAPI_CMD_EJECT;
+      ATA_ATAPIPacket[ 1] = 0x00;
+      ATA_ATAPIPacket[ 2] = 0x00;
+      ATA_ATAPIPacket[ 3] = 0x00;
+      ATA_ATAPIPacket[ 4] = 0x02;
+      ATA_ATAPIPacket[ 5] = 0x00;
+      ATA_ATAPIPacket[ 6] = 0x00;
+      ATA_ATAPIPacket[ 7] = 0x00;
+      ATA_ATAPIPacket[ 8] = 0x00;
+      ATA_ATAPIPacket[ 9] = 0x00;
+      ATA_ATAPIPacket[10] = 0x00;
+      ATA_ATAPIPacket[11] = 0x00;
+
+      // (II): Select the Drive:
+      // ------------------------------------------------------------------
+      ATA_IDEWrite(channel, ATA_REG_HDDEVSEL, slavebit<<4);
+
+      // (III): Delay 400 nanosecond for select to complete:
+      // ------------------------------------------------------------------
+      ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+      ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+      ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+      ATA_IDERead(channel, ATA_REG_ALTSTATUS); // Reading Alternate Status Port wastes 100ns.
+
+      // (IV): Send the Packet Command:
+      // ------------------------------------------------------------------
+      ATA_IDEWrite(channel, ATA_REG_COMMAND, ATA_CMD_PACKET);      // Send the Command.
+
+      // (V): Waiting for the driver to finish or invoke an error:
+      // ------------------------------------------------------------------
+      if (err = ATA_IDEPolling(channel, 1));            // Polling and stop if error.
+
+      // (VI): Sending the packet data:
+      // ------------------------------------------------------------------
+      else 
+      {
+         asm("rep   outsw"::"c"(6), "d"(bus), "S"(ATA_ATAPIPacket));// Send Packet Data
+         ATA_IDEWaitForIrq();                  // Wait for an IRQ.
+         err = ATA_IDEPolling(channel, 1);            // Polling and get error code.
+         if (err == 3) err = 0; // DRQ is not needed here.
+      }
+      ATA_ATAPIPackage[0] = ATA_IDEPrintError(drive, err); // Return;
+   }
+}
+
+uint8_t ATA_DeviceUsesLBA48(ATA_IDEDevice device)
+{
+    // Device uses 48-Bit Addressing:
+    if (device.commandsets & (1<<26))
+    {
+        return 1;
+    }
+    // Device uses CHS or 28-bit Addressing:
+    else
+    {
+        return 0;
+    }
+}

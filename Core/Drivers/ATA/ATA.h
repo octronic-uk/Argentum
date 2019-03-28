@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 /*
    Lovingly inspired by
    https://forum.osdev.org/viewtopic.php?f=1&p=167798
@@ -95,6 +97,10 @@ Bit Abbreviation	Function
 #define ATA_READ  0x00
 #define ATA_WRITE 0x01
 
+// ATAPI Commands
+#define      ATAPI_CMD_READ      0xA8
+#define      ATAPI_CMD_EJECT      0x1B
+
 typedef struct 
 {
    unsigned short base;  // I/O Base.
@@ -116,6 +122,8 @@ typedef struct
    unsigned char  model[41];   // Model in string.
 } ATA_IDEDevice;
 
+ATA_IDEDevice ATA_IDEDevices[4];
+
 void ATA_Constructor();
 unsigned char ATA_IDERead(unsigned char channel, unsigned char reg);
 void ATA_IDEWrite(unsigned char channel, unsigned char reg, unsigned char data);
@@ -123,3 +131,50 @@ unsigned char ATA_IDEPolling(unsigned char channel, unsigned int advanced_check)
 unsigned char ATA_IDEPrintError(unsigned int drive, unsigned char err) ;
 void ATA_IDEReadBuffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) ;
 void ATA_IDEInit (unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);
+void ATA_IDEWaitForIrq();
+void ATA_IDEIrq();
+unsigned char ATA_IDEAtapiRead(unsigned char drive, unsigned int lba, unsigned char numsects, unsigned short selector, unsigned int edi); 
+void ATA_IDEReadSectors(unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi);
+void ATA_IDEWriteSectors(unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi);
+void ATA_IDEAtapiEject(unsigned char drive);
+uint8_t ATA_DeviceUsesLBA48(ATA_IDEDevice device);
+
+/**
+* ATA/ATAPI Read/Write Modes:
+* ++++++++++++++++++++++++++++++++
+*  Addressing Modes:
+*  ================
+*   - LBA28 Mode.
+*   - LBA48 Mode.
+*   - CHS.
+*  Reading Modes:
+*  ================
+*   - PIO Modes (0 : 6) - Slower than DMA, but not a problem.
+*   - Single Word DMA Modes (0, 1, 2).
+*   - Double Word DMA Modes (0, 1, 2).
+*   - Ultra DMA Modes (0 : 6).
+*  Polling Modes:
+*  ================
+*   - IRQs
+*   - Polling Status - Suitable for Singletasking
+*
+* @brief This Function reads/writes sectors from ATA-Drive.
+*
+* @param direction if == 0 we are reading, else we are writing.
+*
+* @param drive, is drive number which can be from 0 to 3.
+*
+* @param lba, is the LBA Address which allows us to access disks up to 2TB.
+*
+* @param numsects, number of sectors to be read, it is a char, as reading more 
+*    than 256 sector immediately may cause the OS to hang. 
+*    notice that if numsects = 0, controller will know that we want 256 sectors.
+*
+* @param selector segment selector to read from, or write to. 
+*
+* @param edi (i/o buffer)
+*/
+
+unsigned char ATA_IDEAccess
+(unsigned char direction, unsigned char drive, unsigned int lba,
+unsigned char numsects, unsigned short selector, unsigned int edi);

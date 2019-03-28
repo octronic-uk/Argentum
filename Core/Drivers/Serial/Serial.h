@@ -7,9 +7,6 @@
 #define SERIAL_PORT_3_ADDRESS 0x03E8
 #define SERIAL_PORT_4_ADDRESS 0x02E8
 
-#define SERIAL_PORT_1_IDT_INDEX 0x24
-#define SERIAL_PORT_2_IDT_INDEX 0x23
-
 #define SERIAL_DLAB_DIVISOR_LSB_REGISTER_OFFSET 0x00
 #define SERIAL_DLAB_DIVISOR_MSB_REGISTER_OFFSET 0x01
 
@@ -116,7 +113,7 @@ static volatile Serial_PortDescriptor Serial_Port1_8N1  =
 
     .mPortID = 1,
     .mCanRead = 0,
-    .mCanWrite = 0,
+    .mCanWrite = 1,
     .mBaudRate = BAUD_115200,
     .mDataBits = 8,
     .mParity = PARITY_None,
@@ -154,7 +151,6 @@ uint8_t Serial_ReadInterruptIDRegister(volatile Serial_PortDescriptor* desc);
 void Serial_ReadLineStatusRegister(volatile Serial_PortDescriptor* desc);
 
 // Interrupts
-extern void Serial_Port1InterruptHandlerASM();
 void Serial_Port1InterruptHandler();
 void Serial_SetupInterruptForPort1();
 

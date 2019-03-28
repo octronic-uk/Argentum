@@ -4,7 +4,14 @@
 #include <itoa.h>
 #include <stdio.h>
 #include <string.h>
-#include <Drivers/Screen/Screen.h>
+
+#ifdef vsprintf
+#undef vsprintf
+#endif
+
+#ifdef sprintf
+#undef sprintf
+#endif
 
 void outputchar(char **str, char c)
 {
@@ -19,7 +26,8 @@ void outputchar(char **str, char c)
 	}
 }
 
-enum flags {
+enum flags 
+{
 	PAD_ZERO	= 1,
 	PAD_RIGHT	= 2,
 };
@@ -169,7 +177,7 @@ int vsprintf(char **out, const char *format, va_list ap)
 				}
 			}
 			switch (*format)
-            {
+      {
 				case('d'):
 					u.i = va_arg(ap, int);
 					pc += outputi(out, u.i, 10, 1, width, flags, 'a');
@@ -331,7 +339,6 @@ int printf(const char *fmt, ...)
 	va_start(ap, fmt);
 	r = vsprintf(NULL, fmt, ap);
 	va_end(ap);
-	Screen_Update();
 	return r;
 }
 

@@ -1,19 +1,17 @@
 #include "PCI.h"
 #include <Drivers/IO/IO.h>
-#include <Drivers/Memory/Memory.h>
+#include <Memory/Memory.h>
 #include <stdio.h>
 #include <string.h>
 
-LinkedList* PCI_ConfigHeaderList = 0;
-uint8_t PCI_Debug = 0;
-
-void PCI_SetDebug(uint32_t debug)
-{
-	PCI_Debug = debug;
-}
+LinkedList* PCI_ConfigHeaderList;
+uint8_t PCI_Debug;
 
 void PCI_Constructor()
 {
+	PCI_ConfigHeaderList = 0;
+	PCI_Debug = 1;
+
     PCI_ConfigHeaderList = LinkedList_Constructor();
 	if (PCI_Debug) {
 		printf("PCI: Initialising\n");
@@ -39,6 +37,11 @@ void PCI_Constructor()
 	if (PCI_Debug) {
 		printf("PCI: Init Complete\n");
 	}
+}
+
+void PCI_SetDebug(uint32_t debug)
+{
+	PCI_Debug = debug;
 }
 
 void PCI_DumpDevices()
@@ -122,8 +125,9 @@ PCI_ConfigHeader* PCI_GetATADevice()
 PCI_ConfigHeader* PCI_ReadConfigHeader
 (uint8_t bus, uint8_t device, uint8_t function)
 {
-	if (PCI_Debug) {
-		printf("PCI: Reading Header %d/%d/%d\n",bus,device,function);
+	if (PCI_Debug) 
+	{
+		//printf("PCI: Reading Header %d/%d/%d\n",bus,device,function);
 	}
 
 	uint16_t vid = PCI_GetVendorID(bus,device,function);

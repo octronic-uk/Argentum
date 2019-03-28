@@ -6,14 +6,15 @@
 #include <Drivers/Interrupt/Interrupt.h>
 
 uint16_t Serial_PortAddresses[4];
-uint8_t Serial_Debug = 1;
-Interrupt_DescriptorTableEntry Serial_Port1_IDTEntry;
+uint8_t Serial_Debug;
 
 void Serial_Constructor()
 {
+    Serial_Debug = 0;
     printf("Serial: Constructing\n");
     Serial_SetPortAddressTable();
     Serial_SetupPort(&Serial_Port1_8N1);
+	Serial_SetInterruptEnableRegister(&Serial_Port1_8N1);
 }
 
 void Serial_Destructor()
@@ -247,36 +248,28 @@ uint8_t Serial_Read8b(volatile Serial_PortDescriptor* desc)
     uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
     desc->mCanRead = 0;
     uint16_t data = IO_ReadPort8b(baseAddress);
-    //desc->mFifoControl = 0x03;
-    //Serial_SetFifoControlRegister(desc);
     if (Serial_Debug) printf("Serial <- Read %c from port %d\n",data, desc->mPortID);
     return data;
 }
 
 void Serial_Write8b(volatile Serial_PortDescriptor* desc, uint8_t data)
 {
-    while (!desc->mCanWrite) if (Serial_Debug) printf("Waiting for write = 1\n");
+    // TODO = This does not seem to be set, so disabling
+    // while (!desc->mCanWrite) {}
 
     if (Serial_Debug) printf("Serial: -> Writing char on port %d\n", desc->mPortID);
     uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
     desc->mCanWrite = 0;
     IO_WritePort8b(baseAddress, data);
-    //desc->mFifoControl = 0x05;
-    //Serial_SetFifoControlRegister(desc);
 }
 
 void Serial_WriteString(volatile Serial_PortDescriptor* desc, const char* string)
 {
     if (Serial_Debug) printf("Serial: Writing string out on port %d...\n",desc->mPortID);
-    switch (desc->mPortID)
+    while (*string)
     {
-        case 1:
-            while (*string)
-            {
-                Serial_Write8b(desc, *string);
-                string++;
-            }
-        break;
+        Serial_Write8b(desc, *string);
+        string++;
     }
 }
 
@@ -370,20 +363,16 @@ void Serial_DebugInterruptID(volatile Serial_PortDescriptor* desc)
 void Serial_SetupInterruptForPort1()
 {
     if(Serial_Debug) printf("Serial: Setting up interrupt handler function for port 1\n");
-    memset(&Serial_Port1_IDTEntry,0,sizeof(Interrupt_DescriptorTableEntry));
-    uint32_t serial_port1_asm = (uint32_t)Serial_Port1InterruptHandlerASM;
-	Serial_Port1_IDTEntry.mOffsetLowerBits = serial_port1_asm & 0xffff;
-	Serial_Port1_IDTEntry.mOffsetHigherBits = (serial_port1_asm & 0xffff0000) >> 16;
-	Serial_Port1_IDTEntry.mSelector = INTERRUPT_KERNEL_CODE_SEGMENT_OFFSET;
-	Serial_Port1_IDTEntry.mZero = 0;
-	Serial_Port1_IDTEntry.mTypeAttribute = INTERRUPT_GATE;
-	Interrupt_SetIDTEntry(SERIAL_PORT_1_IDT_INDEX,Serial_Port1_IDTEntry);
+	Interrupt_SetHandlerFunction(4,Serial_Port1InterruptHandler);
 }
 
 void Serial_Port1InterruptHandler()
 {
     volatile Serial_PortDescriptor* desc = &Serial_Port1_8N1;
-    if (Serial_Debug) printf("Serial: Interrupt on Port 1\n");
+    if (Serial_Debug) 
+    {
+        printf("Serial: Interrupt on Port 1\n");
+    }
     Serial_ReadLineStatusRegister(desc);
     Serial_ReadInterruptIDRegister(desc);
 
@@ -396,8 +385,10 @@ void Serial_Port1InterruptHandler()
         desc->mCanRead = 1;
     }
 
-    if (Serial_Debug) printf("Serial: Interrupt on port 1 done\n");
-	Interrupt_SendEOI_PIC1();
+    if (Serial_Debug) 
+    {
+        printf("Serial: Interrupt on port 1 done\n");
+    }
 }
 
 // API Level Functions ========================================================
@@ -434,9 +425,10 @@ void Serial_SetupPort(volatile Serial_PortDescriptor* desc)
 
 void Serial_TestPort1()
 {
-    char* test_str = "Hello, World!\n";
+    char* test_str = "\n\nHello, World! From COM1\n\n";
     printf("Serial: Writing a test string to port %d\n", Serial_Port1_8N1.mPortID);
     Serial_WriteString(&Serial_Port1_8N1, test_str);
+    /*
     int bMax = 64;
     int i;
     printf("Serial: Read %d bytes data\n\n",bMax);
@@ -444,4 +436,5 @@ void Serial_TestPort1()
     {
         printf("%c",Serial_Read8b(&Serial_Port1_8N1));
     }
+    */
 }

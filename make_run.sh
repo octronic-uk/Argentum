@@ -8,8 +8,8 @@ if [ "$?" -ne 0 ]; then
 fi
 
 # Run in QEMU
-qemu-system-i386 -M q35\
+qemu-system-i386 \
     -m 32 \
     -kernel Boot/TaskieKernel \
-    -drive format=raw,if=ide,file=Tools/TaskieDisk.img \
+    -drive format=raw,if=ide,file=Tools/FAT32_64m.img \
     -serial stdio

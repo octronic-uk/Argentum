@@ -17,6 +17,7 @@ int sprintf(char *buf, const char *fmt, ...);
 int printf(const char* __restrict, ...);
 int putchar(int);
 int puts(const char*);
+void print_to_serial();
 
 #ifdef __cplusplus
 }

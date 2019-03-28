@@ -100,7 +100,5 @@ void I8042_DeviceCMD_ResetSecondPort();
 void I8042_EnableInterrupts();
 void I8042_SetupInterruptHandlers();
 
-extern void I8042_FirstPortInterruptHandlerASM();
 void I8042_FirstPortInterruptHandler();
-extern void I8042_SecondPortInterruptHandlerASM();
 void I8042_SecondPortInterruptHandler();
