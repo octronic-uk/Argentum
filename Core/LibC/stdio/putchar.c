@@ -20,7 +20,7 @@ int putchar(int ic)
 	return ic;
 }
 
-void print_to_serial()
+void printf_to_serial()
 {
 	printf("Writing stdout to COM1\n");
 	_print_to_serial = 1;

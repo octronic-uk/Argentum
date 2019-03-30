@@ -11,5 +11,5 @@ fi
 qemu-system-i386 \
     -m 32 \
     -kernel Boot/TaskieKernel \
-    -drive format=raw,if=ide,file=Tools/FAT32_64m.img \
+    -drive format=raw,if=ide,file=Tools/MBR_FAT32_64m.img \
     -serial stdio

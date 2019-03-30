@@ -13,11 +13,12 @@ Interrupt_DescriptorTableEntry I8042_SecondPort_IDT_Entry;
 uint8_t I8042_Debug;
 uint8_t I8042_SecondPortExists;
 I8042_KeyboardNextByte I8042_KeyboardNextByteExpected;
+volatile uint8_t I8042_WaitingForKeyPress = 0;
 
 void I8042_Constructor()
 {
     printf("I8042: Constructing\n");
-    I8042_Debug = 1;
+    I8042_Debug = 0;
     I8042_SecondPortExists = 0;
     I8042_KeyboardNextByteExpected = Status;
 
@@ -397,29 +398,22 @@ void I8042_SetupInterruptHandlers()
 
 void I8042_FirstPortInterruptHandler()
 {
-    if (I8042_Debug) 
-    printf("I8042: First Port Interrupt\n");
+    if (I8042_Debug) printf("I8042: First Port Interrupt\n");
     if (I8042_ReadStatusRegister() & I8042_STATUS_REG_OUTPUT_BUFFER) 
     {
         int8_t keycode = (int8_t)I8042_ReadDataPort();
         if (keycode >= 0)
         {
-            if (I8042_Debug) 
-            printf("Got Keyboard Event scancode: 0x%x\n",keycode);
-            if (keycode == 0x48) 
-            {
-            }
-            else if (keycode == 0x50)
-            {
-            }
+            if (I8042_Debug) printf("Got Keyboard Event scancode: 0x%x\n",keycode);
+
+            I8042_WaitingForKeyPress = 0;
         }
     }
 }
 
 void I8042_SecondPortInterruptHandler()
 {
-    if (I8042_Debug) 
-    printf("I8042: Second Port Interrupt\n");
+    if (I8042_Debug)  printf("I8042: Second Port Interrupt\n");
     uint8_t data = I8042_ReadDataPort();
     if (I8042_Debug) 
     printf("I8042: Got data 0x%x\n",data);
@@ -430,4 +424,12 @@ void I8042_SecondPortInterruptHandler()
 void I8042_SetDebug(uint8_t debug)
 {
     I8042_Debug = debug;
+}
+
+
+void I8042_WaitForKeyPress()
+{
+    printf("\nI8042: Waiting for Key Press...\n\n");
+    I8042_WaitingForKeyPress = 1;
+    while  (I8042_WaitingForKeyPress) {}
 }

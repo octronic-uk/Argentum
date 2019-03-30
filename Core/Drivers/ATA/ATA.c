@@ -16,7 +16,7 @@ unsigned char ATA_ATAPIPackage[16] = {0};
 
 void ATA_Constructor()
 {
-    ATA_Debug = 1;
+    ATA_Debug = 0;
     printf("ATA: Constructing\n");
     memset(ATA_IDEBuffer,0,2048);
     memset(ATA_Channels,0,sizeof(ATA_Channel)*2);
@@ -510,6 +510,7 @@ unsigned char numsects, unsigned short selector, unsigned int edi)
     if (lba >= 0x10000000)
     { // Sure Drive should support LBA in this case, or you are giving a wrong LBA.
         // LBA48:
+        if (ATA_Debug) printf("ATA: Using LBA48\n");
         lba_mode = 2;
         lba_io[0] = (lba & 0x000000FF)>> 0;
         lba_io[1] = (lba & 0x0000FF00)>> 8;
@@ -522,6 +523,7 @@ unsigned char numsects, unsigned short selector, unsigned int edi)
     else if (ATA_IDEDevices[drive].capabilities & 0x200)
     { // Drive supports LBA?
         // LBA28:
+        if (ATA_Debug) printf("ATA: Using LBA28\n");
         lba_mode = 1;
         lba_io[0] = (lba & 0x00000FF)>> 0;
         lba_io[1] = (lba & 0x000FF00)>> 8;
@@ -534,6 +536,7 @@ unsigned char numsects, unsigned short selector, unsigned int edi)
     else
     {
         // CHS:
+        if (ATA_Debug) printf("ATA: Using CHS\n");
         lba_mode  = 0;
         sect = (lba % 63) + 1;
         cyl = (lba + 1  - sect)/(16*63);

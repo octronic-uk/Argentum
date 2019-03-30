@@ -102,3 +102,6 @@ void I8042_SetupInterruptHandlers();
 
 void I8042_FirstPortInterruptHandler();
 void I8042_SecondPortInterruptHandler();
+
+
+void I8042_WaitForKeyPress();

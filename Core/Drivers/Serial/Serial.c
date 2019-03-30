@@ -254,8 +254,12 @@ uint8_t Serial_Read8b(volatile Serial_PortDescriptor* desc)
 
 void Serial_Write8b(volatile Serial_PortDescriptor* desc, uint8_t data)
 {
-    // TODO = This does not seem to be set, so disabling
-    // while (!desc->mCanWrite) {}
+    /* 
+        TODO 
+        * This does not seem to be set
+        * Possible interrupt block while waiting, not 100% sure
+    */
+    while (!desc->mCanWrite) {}
 
     if (Serial_Debug) printf("Serial: -> Writing char on port %d\n", desc->mPortID);
     uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
