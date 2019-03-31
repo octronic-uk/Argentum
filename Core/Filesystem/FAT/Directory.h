@@ -47,20 +47,6 @@ typedef struct
 } __attribute__((packed))
 FatDirectory;
 
-typedef struct
-{
-    uint8_t Index;
-    uint8_t Characters[10];
-    uint8_t Attributes;
-    uint8_t EntryType;
-    uint8_t Checksum;
-    uint8_t Characters2[12];
-    uint16_t Zero;
-    uint8_t Characters3[4];
-} 
-__attribute__((packed))
-FatLongFileName;
-
 void FatDirectory_Debug(FatDirectory* fd);
 void FatDirectory_DebugAttributes(uint8_t attributes);
 uint8_t FatDirectory_HasAttribute(FatDirectory* dir, uint8_t attr);

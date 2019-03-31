@@ -19,12 +19,12 @@
 void Kernel_Constructor
 (multiboot_info_t * mbi)
 {
-	Memory_Constructor(mbi);
 	Screen_Initialize();
+	printf("Taskie Kernel 1.0\n");
+	Memory_Constructor(mbi);
 	Interrupt_Constructor();
 	Serial_Constructor();
 	Serial_TestPort1();
-	printf("Taskie Kernel 1.0\n");
 	//printf_to_serial();
 
 	I8042_Constructor();
@@ -32,6 +32,8 @@ void Kernel_Constructor
 	ACPI_Constructor();
 	PCI_Constructor();
 	ATA_Constructor();
+
+    I8042_WaitForKeyPress();
 
 	Kernel_InitStorageManager();
 }

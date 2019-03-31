@@ -6,6 +6,7 @@
 #include <Filesystem/MBR/MBR.h>
 #include <Drivers/PS2/Intel8042.h>
 #include <Filesystem/FAT/Directory.h>
+#include <Filesystem/FAT/LongFileName.h>
 
 uint8_t FatVolume_Debug = 1;
 
@@ -43,58 +44,52 @@ FatVolume* FatVolume_Constructor(uint8_t ata_device_id, uint8_t partition_id)
     }
     I8042_WaitForKeyPress();
 
-    /*
-    uint32_t first_cluster_number = root_directory->FirstClusterNumber;
-    
+    uint8_t* first_cluster = volume->RootDirSectorData+sizeof(FatDirectory);
+    FatVolume_DebugSector(first_cluster);
 
-    uint32_t first_cluster_sector = FatVolume_GetFirstSectorOfCluster(
-        first_cluster_number, bpb->SectorsPerCluster, volume->FirstSector);
+    I8042_WaitForKeyPress();
+    printf("FatVolume: Checking for LFN...\n");
 
-    printf("FatVolume: First Cluster Number 0x%x, Sector 0x%x\n",
-            first_cluster_number, first_cluster_sector);
+    FatLongFileName* lfn = (FatLongFileName*)first_cluster;
+    if (!FatLongFileName_IsLfn(lfn))
+    {
+        printf("FatVolume: This entry is not an LFN\n");
+        I8042_WaitForKeyPress();
+        FatDirectory* dir = (FatDirectory*)first_cluster;
+    }
+    else
+    {
+        FatLongFileName_Debug(lfn);
+        I8042_WaitForKeyPress();
+    }
 
-    uint8_t first_cluster_data[512];
-    memset(first_cluster_data,0,512);
-
-    ata_error = ATA_IDEAccess(
-        0, // Direction (Read)
-        volume->AtaDeviceId, // Device
-        // Remember to use the volume's first sector as the base
-        first_cluster_sector, // LBA
-        1, // NumSectors
-        0, // Selector
-        (uint32_t)first_cluster_data // Buffer
-    );
-
-    FatVolume_DebugSector(first_cluster_data);
-    */
+    I8042_WaitForKeyPress();
 
     return volume;
 }
 
 bool FatVolume_ReadMBR(FatVolume* volume)
 {
-    volume->MasterBootRecord = (MBR_Record*)&volume->MasterBootRecordData[0]; 
-    MBR_RecordPreallocatedConstructor(volume->MasterBootRecord, volume->AtaDeviceId);
+    MBR_RecordPreallocatedConstructor(&volume->MasterBootRecord, volume->AtaDeviceId);
 
     // Read the MBR to find out where the volume is located 
     switch (volume->PartitionId)
     {
         case 0:
-            volume->FirstSector = volume->MasterBootRecord->PartitionEntry1.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord->PartitionEntry1.SectorCount;
+            volume->FirstSector = volume->MasterBootRecord.PartitionEntry1.LBAFirstSector;
+            volume->SectorCount = volume->MasterBootRecord.PartitionEntry1.SectorCount;
             break;
         case 1:
-            volume->FirstSector = volume->MasterBootRecord->PartitionEntry2.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord->PartitionEntry2.SectorCount;
+            volume->FirstSector = volume->MasterBootRecord.PartitionEntry2.LBAFirstSector;
+            volume->SectorCount = volume->MasterBootRecord.PartitionEntry2.SectorCount;
             break;
         case 2:
-            volume->FirstSector = volume->MasterBootRecord->PartitionEntry3.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord->PartitionEntry3.SectorCount;
+            volume->FirstSector = volume->MasterBootRecord.PartitionEntry3.LBAFirstSector;
+            volume->SectorCount = volume->MasterBootRecord.PartitionEntry3.SectorCount;
             break;
         case 3:
-            volume->FirstSector = volume->MasterBootRecord->PartitionEntry4.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord->PartitionEntry4.SectorCount;
+            volume->FirstSector = volume->MasterBootRecord.PartitionEntry4.LBAFirstSector;
+            volume->SectorCount = volume->MasterBootRecord.PartitionEntry4.SectorCount;
             break;        
         default:
             volume->FirstSector = 0;
@@ -108,35 +103,30 @@ bool FatVolume_ReadMBR(FatVolume* volume)
 bool FatVolume_ReadBPB(FatVolume* volume)
 {
     // Read the BPB from first sector of partition
-    if (FatVolume_Debug) printf("FatVolume: Reading BPB...\n");
-    uint8_t ata_error = ATA_IDEAccess(
-        0,                     // Direction (Read)
-        volume->AtaDeviceId,   // Device
-        volume->FirstSector,   // LBA
-        1,                     // NumSectors
-        0,                     // Selector
-        (uint32_t)&volume->BiosParameterBlockData[0] // Buffer
-    );
 
-    if (ata_error)
+	uint8_t biosParameterBlockData[512];
+    if (FatVolume_Debug) printf("FatVolume: Reading BPB...\n");
+    if (!FatVolume_ReadSector(volume,0,&biosParameterBlockData[0]))
     {
         printf("FatVolume: ATA error reading BPB\n");
         return false;
     }
 
-    volume->BiosParameterBlock = (FatBiosParameterBlock*)&volume->BiosParameterBlockData[0];
-    volume->ExtendedBootRecord16 = (FatExtendedBootRecord16*)volume->BiosParameterBlock->ExtendedBootRecord;
+    memcpy(&volume->BiosParameterBlock, biosParameterBlockData,sizeof(FatBiosParameterBlock));
+
+    FatBiosParameterBlock* bpb_tmp = (FatBiosParameterBlock*)biosParameterBlockData;
+    memcpy(&volume->ExtendedBootRecord16, bpb_tmp->ExtendedBootRecord, sizeof(FatExtendedBootRecord16));
 
     if (FatVolume_Debug)
     {
-        FatBPB_Debug(volume->BiosParameterBlock);
+        FatBPB_Debug(&volume->BiosParameterBlock);
         I8042_WaitForKeyPress();
 
-        FatBPB_DebugEBR16(volume->ExtendedBootRecord16);
+        FatBPB_DebugEBR16(&volume->ExtendedBootRecord16);
         I8042_WaitForKeyPress();
     }
 
-    volume->RootDirSectorNumber = FatBPB_GetFirstRootDirectorySector(volume->BiosParameterBlock);
+    volume->RootDirSectorNumber = FatBPB_GetFirstRootDirectorySector(&volume->BiosParameterBlock);
 
     printf("FatVolume: Root Directory Sector at 0x%x\n", volume->RootDirSectorNumber);
     return true;
@@ -144,17 +134,7 @@ bool FatVolume_ReadBPB(FatVolume* volume)
 
 bool FatVolume_ReadRootDirectorySector(FatVolume* volume)
 {
-    uint8_t ata_error = ATA_IDEAccess(
-        0, // Direction (Read)
-        volume->AtaDeviceId, // Device
-        // Remember to use the volume's first sector as the base
-        volume->FirstSector + volume->RootDirSectorNumber, // LBA
-        1, // NumSectors
-        0, // Selector
-        (uint32_t)&volume->RootDirSectorData[0] // Buffer
-    );
-
-    if (ata_error)
+    if (!FatVolume_ReadSector(volume, volume->RootDirSectorNumber, &volume->RootDirSectorData[0]))
     {
         printf("FatVolume: ATA Error while reading first data sector\n");
         return false;
@@ -231,4 +211,27 @@ execution:
 void FatVolume_ParseEntriesInCluster(uint8_t* cluster)
 {
     
+}
+
+bool FatVolume_ReadSector(FatVolume* volume,uint32_t sector,uint8_t* buffer)
+{
+    // Read the BPB from first sector of partition
+    uint32_t physical_sector = volume->FirstSector+sector;
+    if (FatVolume_Debug) printf("FatVolume: Reading volume sector 0x%x (Physical sector 0x%x)\n",sector,physical_sector);
+    uint8_t ata_error = ATA_IDEAccess(
+        0, // Direction (Read)
+        volume->AtaDeviceId, // Device
+        physical_sector, // LBA
+        1, // NumSectors
+        0, // Selector
+        (uint32_t)buffer// Buffer
+    );
+
+    if (ata_error)
+    {
+        printf("FatVolume: Error - ATA Error reading sector.\n");
+        return false;
+    }
+
+    return true;
 }

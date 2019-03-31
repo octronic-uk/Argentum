@@ -4,7 +4,10 @@ project(Taskie C)
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -nostartfiles -nostdlib")
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
+
+# For YCM Completion
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set (TASKIE_BUILD_DOC OFF)
 

@@ -52,12 +52,16 @@ bool MBR_RecordPreallocatedConstructor(MBR_Record* record, uint8_t ata_device_id
         return false;
     }
 
-    ATA_IDEAccess(0,ata_device_id,0,1,0,(uint32_t)record);
+    uint8_t buffer[512];
+
+    ATA_IDEAccess(0,ata_device_id,0,1,0,(uint32_t)buffer);
 
     if (MBR_Debug)
     {
         MBR_DebugRecord(record);
     }
+
+    memcpy(record,buffer,sizeof(*record));
 }
 
 void MBR_DebugRecord(MBR_Record* record)

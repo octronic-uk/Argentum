@@ -10,3 +10,4 @@ Boot/TaskieKernel
 *.includes
 *.files
 *.config
+compile_commands.json

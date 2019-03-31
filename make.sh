@@ -1,6 +1,7 @@
 #/bin/bash
 
 _CMAKE_BUILD_DIR=_build
+CMD_FLAGS_FILE=compile_commands.json
 
 # Build Taskie Library
 rm -rf ${_CMAKE_BUILD_DIR}
@@ -33,3 +34,6 @@ if [ "$MAKE_RESULT" -ne 0 ]; then
     echo "Kernel Compilation/Linking Flopped ):"
     exit 1
 fi
+
+# Copy Compile Flags for YCM
+cp ${_CMAKE_BUILD_DIR}/${CMD_FLAGS_FILE} ./${CMD_FLAGS_FILE}

@@ -13,13 +13,11 @@ typedef struct
 	uint32_t     FirstSector;
 	uint32_t     SectorCount;
 	// MBR
-	uint8_t       MasterBootRecordData[512];
-	MBR_Record*   MasterBootRecord;
+	MBR_Record   MasterBootRecord;
 	// Bios Param Block
-	uint8_t BiosParameterBlockData[512];
-	FatBiosParameterBlock*   BiosParameterBlock;
-	FatExtendedBootRecord16* ExtendedBootRecord16;
-	FatExtendedBootRecord32* ExtendedBootRecord32;
+	FatBiosParameterBlock   BiosParameterBlock;
+	FatExtendedBootRecord16 ExtendedBootRecord16;
+	FatExtendedBootRecord32 ExtendedBootRecord32;
 	// Root Directory
 	uint8_t RootDirSectorData[512];
 	FatDirectory* RootDirectory;
@@ -39,3 +37,5 @@ bool FatVolume_ReadBPB(FatVolume* volume);
 bool FatVolume_ReadRootDirectorySector(FatVolume* volume);
 
 void FatVolume_DebugSector(uint8_t* sector);
+
+bool FatVolume_ReadSector(FatVolume* volume,uint32_t sector,uint8_t* buffer);
