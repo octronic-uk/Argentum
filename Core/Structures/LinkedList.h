@@ -1,28 +1,26 @@
 #pragma once
 
+struct Memory;
 
-struct LinkedListNode_t
+struct LinkedListNode
 {
-  void* data;
-  struct LinkedListNode_t* next;
+  void* Data;
+  struct LinkedListNode* Next;
 };
 
-
-struct LinkedList_t
+struct LinkedList
 {
-  struct LinkedListNode_t* head;
+  struct Memory* Memory;
+  struct LinkedListNode* Head;
 };
 
-typedef struct LinkedListNode_t LinkedListNode;
-typedef struct LinkedList_t LinkedList;
+void LinkedList_Constructor(struct LinkedList* self, struct Memory* memory);
+void LinkedList_Destructor(struct LinkedList* self);
+void LinkedList_PushBack(struct LinkedList* self, void* data);
+void LinkedList_Delete(struct LinkedList* self, void* data);
+void LinkedList_Display(struct LinkedList* self);
+void LinkedList_Reverse(struct LinkedList* self);
+struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data);
 
-LinkedList* LinkedList_Constructor();
-void LinkedList_Destructor(LinkedList* list);
-void LinkedList_PushBack(LinkedList* list, void* data);
-void LinkedList_Delete(LinkedList* list, void* data);
-void LinkedList_Display(LinkedList* list);
-void LinkedList_Reverse(LinkedList* list);
-LinkedListNode* LinkedList_CreateNode(void* data);
-
-unsigned int LinkedList_Size(LinkedList* list);
-void* LinkedList_At(LinkedList* list, unsigned int index);
+unsigned int LinkedList_Size(struct LinkedList* self);
+void* LinkedList_At(struct LinkedList* self, unsigned int index);

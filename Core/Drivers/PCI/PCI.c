@@ -4,64 +4,66 @@
 #include <stdio.h>
 #include <string.h>
 
-LinkedList* PCI_ConfigHeaderList;
-uint8_t PCI_Debug;
 
-void PCI_Constructor()
+
+void PCI_Constructor(struct PCI* self, struct Memory* memory)
 {
-	PCI_ConfigHeaderList = 0;
-	PCI_Debug = 1;
+	self->Memory = memory;
+	self->Debug = 1;
 
-    PCI_ConfigHeaderList = LinkedList_Constructor();
-	if (PCI_Debug) {
+    LinkedList_Constructor(&self->ConfigHeaderList, self->Memory);
+
+	if (self->Debug) 
+	{
 		printf("PCI: Initialising\n");
 	}
 
 	uint8_t bus, device, function;
-	PCI_ConfigHeader* tmp = 0;
+	struct PCI_ConfigHeader* tmp = 0;
 	for (bus = 0; bus < 128; bus++)
 	{
 		for (device = 0; device < 32; device++)
 		{
 			for (function = 0; function < 8; function++)
 			{
-				tmp = PCI_ReadConfigHeader(bus,device,function);
+				tmp = PCI_ReadConfigHeader(self, bus,device,function);
 				if (tmp)
 				{
-					LinkedList_PushBack(PCI_ConfigHeaderList,tmp);
+					LinkedList_PushBack(&self->ConfigHeaderList,tmp);
 				}
 			}
 		}
 	}
-	PCI_DumpDevices();
-	if (PCI_Debug) {
+	PCI_DumpDevices(self);
+	if (self->Debug) 
+	{
 		printf("PCI: Init Complete\n");
 	}
 }
 
-void PCI_SetDebug(uint32_t debug)
+void PCI_SetDebug(struct PCI* self, uint32_t debug)
 {
-	PCI_Debug = debug;
+	self->Debug = debug;
 }
 
-void PCI_DumpDevices()
+void PCI_DumpDevices(struct PCI* self)
 {
-	unsigned int size = LinkedList_Size(PCI_ConfigHeaderList);
+	unsigned int size = LinkedList_Size(&self->ConfigHeaderList);
 	for (unsigned int i=0; i<size; i++)
 	{
-		PCI_ConfigHeader* header = LinkedList_At(PCI_ConfigHeaderList,i);
-		PCI_DumpDevice(header);
+		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
+		PCI_DumpDevice(self, header);
 	}
 }
 
-void PCI_DumpDevice(const PCI_ConfigHeader* header)
+void PCI_DumpDevice(struct PCI* self, const struct PCI_ConfigHeader* header)
 {
 	printf(
 		"PCI: %d/%d/%d (%x:%x)\n",
 		header->mBus, header->mDevice, header->mFunction,
 		header->mVendorID, header->mDeviceID);
 
-	if (PCI_Debug)
+	if (self->Debug)
 	{
 		printf("\tType: 0x%x\n",header->mHeaderType);
 		printf("\tClass: 0x%x\n",	header->mClassCode);
@@ -75,13 +77,13 @@ void PCI_DumpDevice(const PCI_ConfigHeader* header)
 	}
 }
 
-PCI_ConfigHeader* PCI_GetConfigHeader(uint8_t bus, uint8_t device, uint8_t function)
+struct PCI_ConfigHeader* PCI_GetConfigHeader(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	uint16_t nHeaders = LinkedList_Size(PCI_ConfigHeaderList);
+	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		PCI_ConfigHeader* header = LinkedList_At(PCI_ConfigHeaderList,i);
+		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
 		if (header->mBus == bus && header->mDevice == device && header->mFunction == function)
 		{
 			return header;
@@ -90,13 +92,13 @@ PCI_ConfigHeader* PCI_GetConfigHeader(uint8_t bus, uint8_t device, uint8_t funct
 	return 0;
 }
 
-PCI_ConfigHeader* PCI_GetIsaBridgeConfigHeader()
+struct PCI_ConfigHeader* PCI_GetIsaBridgeConfigHeader(struct PCI* self)
 {
-	uint16_t nHeaders = LinkedList_Size(PCI_ConfigHeaderList);
+	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		PCI_ConfigHeader* header = LinkedList_At(PCI_ConfigHeaderList,i);
+		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
 		if (header->mSubclassCode == PCI_SUB_CLASS_PCI_TO_ISA_BRIDGE)
 		{
 			return header;
@@ -105,13 +107,13 @@ PCI_ConfigHeader* PCI_GetIsaBridgeConfigHeader()
 	return 0;
 }
 
-PCI_ConfigHeader* PCI_GetATADevice()
+struct PCI_ConfigHeader* PCI_GetATADevice(struct PCI* self)
 {
-	uint16_t nHeaders = LinkedList_Size(PCI_ConfigHeaderList);
+	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		PCI_ConfigHeader* header = LinkedList_At(PCI_ConfigHeaderList,i);
+		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
 		if (header->mClassCode == 0x01 && header->mSubclassCode == 0x01)
 		{
 			return header;
@@ -122,154 +124,157 @@ PCI_ConfigHeader* PCI_GetATADevice()
 
 // Direct IO Functions ========================================================
 
-PCI_ConfigHeader* PCI_ReadConfigHeader
-(uint8_t bus, uint8_t device, uint8_t function)
+struct PCI_ConfigHeader* PCI_ReadConfigHeader
+(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	if (PCI_Debug) 
+	self->Debug = false;
+
+	if (self->Debug) 
 	{
-		//printf("PCI: Reading Header %d/%d/%d\n",bus,device,function);
+		printf("PCI: Reading Header %d/%d/%d\n",bus,device,function);
 	}
 
-	uint16_t vid = PCI_GetVendorID(bus,device,function);
+	uint16_t vid = PCI_GetVendorID(self, bus,device,function);
 
 	if (vid == PCI_INVALID_VENDOR_ID)
 	{
 		return 0;
 	}
 
-	PCI_ConfigHeader* header = Memory_Allocate(sizeof(PCI_ConfigHeader));
-	memset(header,0,sizeof(PCI_ConfigHeader));
+	struct PCI_ConfigHeader* header = Memory_Allocate(self->Memory, sizeof(struct PCI_ConfigHeader));
+	memset(header,0,sizeof(struct PCI_ConfigHeader));
 
 	header->mVendorID = vid;
 	header->mBus = bus;
 	header->mDevice = device;
 	header->mFunction = function;
-	header->mHeaderType = PCI_GetHeaderType(bus, device, function);
-	header->mDeviceID = PCI_GetDeviceID(bus,device,function);
-	header->mStatus = PCI_GetStatus(bus,device,function);
-	header->mCommand = PCI_GetCommand(bus,device,function);
-	header->mClassCode = PCI_GetClassCode(bus,device,function);
-	header->mInterruptLine = PCI_GetInterruptLine(bus,device,function);
-	header->mInterruptPin = PCI_GetInterruptPin(bus,device,function);
-	header->mSubclassCode = PCI_GetSubClass(bus,device,function);
-	header->mProgIF = PCI_GetProgIF(bus,device,function);
+	header->mHeaderType = PCI_GetHeaderType(self, bus, device, function);
+	header->mDeviceID = PCI_GetDeviceID(self, bus,device,function);
+	header->mStatus = PCI_GetStatus(self, bus,device,function);
+	header->mCommand = PCI_GetCommand(self, bus,device,function);
+	header->mClassCode = PCI_GetClassCode(self, bus,device,function);
+	header->mInterruptLine = PCI_GetInterruptLine(self, bus,device,function);
+	header->mInterruptPin = PCI_GetInterruptPin(self, bus,device,function);
+	header->mSubclassCode = PCI_GetSubClass(self, bus,device,function);
+	header->mProgIF = PCI_GetProgIF(self, bus,device,function);
 
 	switch (header->mHeaderType)
 	{
 		case 0x00:
-			header->mBAR0 = PCI_GetBAR0(bus,device,function);
-			header->mBAR1 = PCI_GetBAR1(bus,device,function);
-			header->mBAR2 = PCI_GetBAR2(bus,device,function);
-			header->mBAR3 = PCI_GetBAR3(bus,device,function);
-			header->mBAR4 = PCI_GetBAR4(bus,device,function);
-			header->mBAR5 = PCI_GetBAR5(bus,device,function);
+			header->mBAR0 = PCI_GetBAR0(self, bus,device,function);
+			header->mBAR1 = PCI_GetBAR1(self, bus,device,function);
+			header->mBAR2 = PCI_GetBAR2(self, bus,device,function);
+			header->mBAR3 = PCI_GetBAR3(self, bus,device,function);
+			header->mBAR4 = PCI_GetBAR4(self, bus,device,function);
+			header->mBAR5 = PCI_GetBAR5(self, bus,device,function);
 			break;
 		case 0x01:
-			header->mPrimaryBus = PCI_GetPrimaryBus(bus,device,function);
-			header->mSecondaryBus = PCI_GetSecondaryBus(bus,device,function);
-			header->mBAR0 = PCI_GetBAR0(bus,device,function);
-			header->mBAR1 = PCI_GetBAR1(bus,device,function);
+			header->mPrimaryBus = PCI_GetPrimaryBus(self, bus,device,function);
+			header->mSecondaryBus = PCI_GetSecondaryBus(self, bus,device,function);
+			header->mBAR0 = PCI_GetBAR0(self, bus,device,function);
+			header->mBAR1 = PCI_GetBAR1(self, bus,device,function);
 			break;
 	}
-	if (PCI_Debug) {
+	if (self->Debug) 
+	{
 		printf("PCI: Got Header OK\n");
 	}
 	return header;
 }
 
-uint8_t PCI_isMultifunctionDevice(uint8_t headerType)
+uint8_t PCI_isMultifunctionDevice(struct PCI* self, uint8_t headerType)
 {
 	return ((headerType & PCI_HEADER_TYPE_MULTIFUNCTION) != 0);
 }
 
-uint8_t PCI_GetHeaderType(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetHeaderType(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus, device, function, PCI_DEVICE_HEADER_TYPE_OFFSET);
+	return PCI_ReadConfig8b(self, bus, device, function, PCI_DEVICE_HEADER_TYPE_OFFSET);
 }
 
-uint16_t PCI_GetVendorID(uint8_t bus, uint8_t device, uint8_t function)
+uint16_t PCI_GetVendorID(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig16b(bus,device,function,PCI_DEVICE_VENDOR_ID_OFFSET);
+	return PCI_ReadConfig16b(self, bus,device,function,PCI_DEVICE_VENDOR_ID_OFFSET);
 }
 
-uint16_t PCI_GetDeviceID(uint8_t bus, uint8_t device, uint8_t function)
+uint16_t PCI_GetDeviceID(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig16b(bus,device,function,PCI_DEVICE_DEVICE_ID_OFFSET);
+	return PCI_ReadConfig16b(self, bus,device,function,PCI_DEVICE_DEVICE_ID_OFFSET);
 }
 
-uint8_t PCI_GetClassCode(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetClassCode(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_SUBCLASS_CLASS_CODE_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_SUBCLASS_CLASS_CODE_OFFSET);
 }
 
-uint8_t PCI_GetSubClass(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetSubClass(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_SUBCLASS_CLASS_CODE_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_SUBCLASS_CLASS_CODE_OFFSET);
 }
 
-uint16_t PCI_GetStatus(uint8_t bus, uint8_t device, uint8_t function)
+uint16_t PCI_GetStatus(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig16b(bus,device,function,PCI_DEVICE_STATUS_OFFSET);
+	return PCI_ReadConfig16b(self, bus,device,function,PCI_DEVICE_STATUS_OFFSET);
 }
 
-uint16_t PCI_GetCommand(uint8_t bus, uint8_t device, uint8_t function)
+uint16_t PCI_GetCommand(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig16b(bus,device,function,PCI_DEVICE_COMMAND_OFFSET);
+	return PCI_ReadConfig16b(self, bus,device,function,PCI_DEVICE_COMMAND_OFFSET);
 }
 
-uint32_t PCI_GetBAR0(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t PCI_GetBAR0(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig32b(bus,device,function,PCI_DEVICE_BAR0L_OFFSET);
+	return PCI_ReadConfig32b(self, bus,device,function,PCI_DEVICE_BAR0L_OFFSET);
 }
 
-uint32_t PCI_GetBAR1(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t PCI_GetBAR1(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig32b(bus,device,function,PCI_DEVICE_BAR1L_OFFSET);
+	return PCI_ReadConfig32b(self, bus,device,function,PCI_DEVICE_BAR1L_OFFSET);
 }
 
-uint32_t PCI_GetBAR2(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t PCI_GetBAR2(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig32b(bus,device,function,PCI_DEVICE_BAR2L_OFFSET);
+	return PCI_ReadConfig32b(self, bus,device,function,PCI_DEVICE_BAR2L_OFFSET);
 }
 
-uint32_t PCI_GetBAR3(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t PCI_GetBAR3(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig32b(bus,device,function,PCI_DEVICE_BAR3L_OFFSET);
+	return PCI_ReadConfig32b(self, bus,device,function,PCI_DEVICE_BAR3L_OFFSET);
 }
 
-uint32_t PCI_GetBAR4(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t PCI_GetBAR4(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig32b(bus,device,function,PCI_DEVICE_BAR4L_OFFSET);
+	return PCI_ReadConfig32b(self, bus,device,function,PCI_DEVICE_BAR4L_OFFSET);
 }
 
-uint32_t PCI_GetBAR5(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t PCI_GetBAR5(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig32b(bus,device,function,PCI_DEVICE_BAR5L_OFFSET);
+	return PCI_ReadConfig32b(self, bus,device,function,PCI_DEVICE_BAR5L_OFFSET);
 }
 
-uint8_t PCI_GetPrimaryBus(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetPrimaryBus(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_PRIMARY_BUS_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_PRIMARY_BUS_OFFSET);
 }
 
-uint8_t PCI_GetSecondaryBus(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetSecondaryBus(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_SECONDARY_BUS_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_SECONDARY_BUS_OFFSET);
 }
 
-uint8_t PCI_GetInterruptLine(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetInterruptLine(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
 }
 
-uint8_t PCI_GetInterruptPin(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetInterruptPin(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_INTERRUPT_PIN_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_INTERRUPT_PIN_OFFSET);
 }
 
-uint8_t PCI_GetProgIF(uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCI_GetProgIF(struct PCI* self, uint8_t bus, uint8_t device, uint8_t function)
 {
-	return PCI_ReadConfig8b(bus,device,function,PCI_DEVICE_PROG_IF_OFFSET);
+	return PCI_ReadConfig8b(self, bus,device,function,PCI_DEVICE_PROG_IF_OFFSET);
 }
 
 // Addressing =================================================================
@@ -278,7 +283,7 @@ uint8_t PCI_GetProgIF(uint8_t bus, uint8_t device, uint8_t function)
 | 31         | 30 - 24  | 23 - 16    | 15 - 11       | 10 - 8          | 7 - 0
 | Enable Bit | Reserved | Bus Number | Device Number | Function Number | Register Offset
 */
-void PCI_ConfigSetAddress(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
+void PCI_ConfigSetAddress(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
 {
 	uint32_t address;
 	uint32_t lbus  = (uint32_t)bus;
@@ -299,70 +304,70 @@ void PCI_ConfigSetAddress(uint8_t bus, uint8_t device, uint8_t func, uint8_t off
 
 // Read =======================================================================
 
-uint32_t PCI_ReadConfig32b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
+uint32_t PCI_ReadConfig32b(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
 {
-	PCI_ConfigSetAddress(bus,device,func,offset);
+	PCI_ConfigSetAddress(self, bus,device,func,offset);
 	return  IO_ReadPort32b(PCI_CONFIG_DATA);
 }
 
-uint16_t PCI_ReadConfig16b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
+uint16_t PCI_ReadConfig16b(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
 {
-	PCI_ConfigSetAddress(bus,device,func,offset);
+	PCI_ConfigSetAddress(self, bus,device,func,offset);
 	return (uint16_t)((IO_ReadPort32b(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xffff);
 }
 
-uint8_t PCI_ReadConfig8b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
+uint8_t PCI_ReadConfig8b(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
 {
-	PCI_ConfigSetAddress(bus,device,func,offset);
+	PCI_ConfigSetAddress(self, bus,device,func,offset);
 	return (uint8_t)((IO_ReadPort32b(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xff);
 }
 
-uint32_t PCI_DeviceReadConfig32b(PCI_ConfigHeader* device, uint8_t offset)
+uint32_t PCI_DeviceReadConfig32b(struct PCI* self, struct PCI_ConfigHeader* device, uint8_t offset)
 {
-	return PCI_ReadConfig32b(device->mBus, device->mDevice, device->mFunction, offset);
+	return PCI_ReadConfig32b(self, device->mBus, device->mDevice, device->mFunction, offset);
 }
 
-uint16_t PCI_DeviceReadConfig16b(PCI_ConfigHeader* device, uint8_t offset)
+uint16_t PCI_DeviceReadConfig16b(struct PCI* self, struct PCI_ConfigHeader* device, uint8_t offset)
 {
-	return PCI_ReadConfig16b(device->mBus, device->mDevice, device->mFunction, offset);
+	return PCI_ReadConfig16b(self, device->mBus, device->mDevice, device->mFunction, offset);
 }
 
-uint8_t PCI_DeviceReadConfig8b(PCI_ConfigHeader* device, uint8_t offset)
+uint8_t PCI_DeviceReadConfig8b(struct PCI* self, struct PCI_ConfigHeader* device, uint8_t offset)
 {
-	return PCI_ReadConfig8b(device->mBus, device->mDevice, device->mFunction, offset);
+	return PCI_ReadConfig8b(self, device->mBus, device->mDevice, device->mFunction, offset);
 }
 
 // Write =======================================================================
 
-void PCI_WriteConfig32b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t data)
+void PCI_WriteConfig32b(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t data)
 {
-	PCI_ConfigSetAddress(bus,device,func,offset);
+	PCI_ConfigSetAddress(self, bus,device,func,offset);
 	IO_WritePort32b(PCI_CONFIG_DATA,data);
 }
 
-void PCI_WriteConfig16b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint16_t data)
+void PCI_WriteConfig16b(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint16_t data)
 {
-	PCI_ConfigSetAddress(bus,device,func,offset);
+	PCI_ConfigSetAddress(self, bus,device,func,offset);
 	IO_WritePort16b(PCI_CONFIG_DATA,data);
 }
 
-void PCI_WriteConfig8b(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint8_t data)
+void PCI_WriteConfig8b(struct PCI* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint8_t data)
 {
-	PCI_ConfigSetAddress(bus,device,func,offset);
+	PCI_ConfigSetAddress(self, bus,device,func,offset);
 	IO_WritePort8b(PCI_CONFIG_DATA,data);
 }
 
-void PCI_DeviceWriteConfig32b(PCI_ConfigHeader* device, uint8_t offset, uint32_t data)
+void PCI_DeviceWriteConfig32b(struct PCI* self, struct PCI_ConfigHeader* device, uint8_t offset, uint32_t data)
 {
-	PCI_WriteConfig32b(device->mBus, device->mDevice, device->mFunction, offset, data);
+	PCI_WriteConfig32b(self, device->mBus, device->mDevice, device->mFunction, offset, data);
 }
 
-void PCI_DeviceWriteConfig16b(PCI_ConfigHeader* device, uint8_t offset, uint16_t data)
+void PCI_DeviceWriteConfig16b(struct PCI* self, struct PCI_ConfigHeader* device, uint8_t offset, uint16_t data)
 {
-	PCI_WriteConfig16b(device->mBus, device->mDevice, device->mFunction, offset, data);
+	PCI_WriteConfig16b(self, device->mBus, device->mDevice, device->mFunction, offset, data);
 }
 
-void PCI_DeviceWriteConfig8b(PCI_ConfigHeader* device, uint8_t offset, uint8_t data)
+void PCI_DeviceWriteConfig8b(struct PCI* self, struct PCI_ConfigHeader* device, uint8_t offset, uint8_t data)
 {
-	PCI_WriteConfig8b(device->mBus, device->mDevice, device->mFunction, offset, data);
+	PCI_WriteConfig8b(self, device->mBus, device->mDevice, device->mFunction, offset, data);
 }

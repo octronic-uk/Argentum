@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+struct PCI;
+
 /*
    Lovingly inspired by
    https://forum.osdev.org/viewtopic.php?f=1&p=167798
@@ -101,15 +103,15 @@ Bit Abbreviation	Function
 #define      ATAPI_CMD_READ      0xA8
 #define      ATAPI_CMD_EJECT      0x1B
 
-typedef struct 
+struct ATA_Channel
 {
    unsigned short base;  // I/O Base.
    unsigned short ctrl;  // Control Base
    unsigned short bmide; // Bus Master IDE
    unsigned char  nIEN;  // nIEN (No Interrupt);
-} ATA_Channel;
+};
 
-typedef struct 
+struct ATA_IDEDevice
 {
    unsigned char  reserved;    // 0 (Empty) or 1 (This Drive really exists).
    unsigned char  channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
@@ -120,24 +122,35 @@ typedef struct
    unsigned int   commandsets; // Command Sets Supported.
    unsigned int   size;       // Size in Sectors.
    unsigned char  model[41];   // Model in string.
-} ATA_IDEDevice;
+};
 
-ATA_IDEDevice ATA_IDEDevices[4];
+struct ATA
+{
+   struct PCI* PCI;
+   struct ATA_IDEDevice IDEDevices[4];
+   uint8_t Debug;
+   struct ATA_Channel Channels[2];
+   unsigned char IDEBuffer[2048];
+   unsigned char IDEIrqInvoked; 
+   unsigned char ATAPIPacket[12]; 
+   unsigned char ATAPIPackage[16];
+};
 
-void ATA_Constructor();
-unsigned char ATA_IDERead(unsigned char channel, unsigned char reg);
-void ATA_IDEWrite(unsigned char channel, unsigned char reg, unsigned char data);
-unsigned char ATA_IDEPolling(unsigned char channel, unsigned int advanced_check);
-unsigned char ATA_IDEPrintError(unsigned int drive, unsigned char err) ;
-void ATA_IDEReadBuffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) ;
-void ATA_IDEInit (unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);
-void ATA_IDEWaitForIrq();
-void ATA_IDEIrq();
-unsigned char ATA_IDEAtapiRead(unsigned char drive, unsigned int lba, unsigned char numsects, unsigned short selector, unsigned int edi); 
-void ATA_IDEReadSectors(unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi);
-void ATA_IDEWriteSectors(unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi);
-void ATA_IDEAtapiEject(unsigned char drive);
-uint8_t ATA_DeviceUsesLBA48(ATA_IDEDevice device);
+
+void ATA_Constructor(struct ATA* self, struct PCI* pci);
+unsigned char ATA_IDERead(struct ATA* self, unsigned char channel, unsigned char reg);
+void ATA_IDEWrite(struct ATA* self, unsigned char channel, unsigned char reg, unsigned char data);
+unsigned char ATA_IDEPolling(struct ATA* self, unsigned char channel, unsigned int advanced_check);
+unsigned char ATA_IDEPrintError(struct ATA* self, unsigned int drive, unsigned char err) ;
+void ATA_IDEReadBuffer(struct ATA* self, unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) ;
+void ATA_IDEInit (struct ATA* self, unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,unsigned int BAR4);
+void ATA_IDEWaitForIrq(struct ATA* self);
+void ATA_IDEIrq(struct ATA* self);
+unsigned char ATA_IDEAtapiRead(struct ATA* self, unsigned char drive, unsigned int lba, unsigned char numsects, unsigned short selector, unsigned int edi); 
+void ATA_IDEReadSectors(struct ATA* self, unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi);
+void ATA_IDEWriteSectors(struct ATA* self, unsigned char drive, unsigned char numsects, unsigned int lba, unsigned short es, unsigned int edi);
+void ATA_IDEAtapiEject(struct ATA* self, unsigned char drive);
+uint8_t ATA_DeviceUsesLBA48(struct ATA* self, struct ATA_IDEDevice device);
 
 /**
 * ATA/ATAPI Read/Write Modes:
@@ -175,6 +188,8 @@ uint8_t ATA_DeviceUsesLBA48(ATA_IDEDevice device);
 * @param edi (i/o buffer)
 */
 
+
+
 unsigned char ATA_IDEAccess
-(unsigned char direction, unsigned char drive, unsigned int lba,
+(struct ATA* self, unsigned char direction, unsigned char drive, unsigned int lba,
 unsigned char numsects, unsigned short selector, unsigned int edi);

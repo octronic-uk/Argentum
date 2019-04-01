@@ -3,26 +3,26 @@
 #include <stdio.h>
 #include <string.h>
 
-void FatBPB_Debug(FatBiosParameterBlock* block)
+void FatBPB_Debug(struct FatBiosParameterBlock* self)
 {
     printf("FAT BPB:\n");
-    printf("\tJMP:                   0x%x 0x%x 0x%x\n", block->Jmp[0], block->Jmp[1], block->Jmp[2]);
-	printf("\tOEM ID:                %s\n",   block->OEMIdentifier);
-	printf("\tBytes per Sector:      0x%x\n", block->BytesPerSector);
-	printf("\tSectors per Cluster:   0x%x\n", block->SectorsPerCluster);
-	printf("\tReserved Sector Count: 0x%x\n", block->ReservedSectorCount);
-	printf("\tTable Count:           0x%x\n", block->TableCount);
-	printf("\tRoot Entry Count:      0x%x\n", block->RootEntryCount);
-	printf("\tTotal Sectors 16:      0x%x\n", block->TotalSectors16);
-	printf("\tMedia Type:            0x%x\n", block->MediaType);
-	printf("\tTable Size 16:         0x%x\n", block->TableSize16);
-	printf("\tSectors Per Track:     0x%x\n", block->SectorsPerTrack);
-	printf("\tHead Size Count:       0x%x\n", block->HeadSideCount);
-	printf("\tHidden Sector Count:   0x%x\n", block->HiddenSectorCount);
-	printf("\tTotal Sectors 32:      0x%x\n", block->TotalSectors32);
+    printf("\tJMP:                   0x%x 0x%x 0x%x\n", self->Jmp[0], self->Jmp[1], self->Jmp[2]);
+	printf("\tOEM ID:                %s\n",   self->OEMIdentifier);
+	printf("\tBytes per Sector:      0x%x\n", self->BytesPerSector);
+	printf("\tSectors per Cluster:   0x%x\n", self->SectorsPerCluster);
+	printf("\tReserved Sector Count: 0x%x\n", self->ReservedSectorCount);
+	printf("\tTable Count:           0x%x\n", self->TableCount);
+	printf("\tRoot Entry Count:      0x%x\n", self->RootEntryCount);
+	printf("\tTotal Sectors 16:      0x%x\n", self->TotalSectors16);
+	printf("\tMedia Type:            0x%x\n", self->MediaType);
+	printf("\tTable Size 16:         0x%x\n", self->TableSize16);
+	printf("\tSectors Per Track:     0x%x\n", self->SectorsPerTrack);
+	printf("\tHead Size Count:       0x%x\n", self->HeadSideCount);
+	printf("\tHidden Sector Count:   0x%x\n", self->HiddenSectorCount);
+	printf("\tTotal Sectors 32:      0x%x\n", self->TotalSectors32);
 }
 
-void FatBPB_DebugEBR16(FatExtendedBootRecord16* ebr)
+void FatBPB_DebugEBR16(struct FatExtendedBootRecord16* ebr)
 {
 	char vol_label[12], sys_id[9];
 	memset(vol_label,0,12);
@@ -41,7 +41,7 @@ void FatBPB_DebugEBR16(FatExtendedBootRecord16* ebr)
 	printf("\tBoot Partition Signature: 0x%x\n", ebr->BootPartitionSignature);
 }
 
-void FatBPB_DebugEBR32(FatExtendedBootRecord32* ebr)
+void FatBPB_DebugEBR32(struct FatExtendedBootRecord32* ebr)
 {
 	printf("\tFAT32 EBR Begins ----------\n");
 	printf("\tSectors Per FAT:          0x%x\n",ebr->SectorsPerFAT);
@@ -59,79 +59,79 @@ void FatBPB_DebugEBR32(FatExtendedBootRecord32* ebr)
 	printf("\tBoot Pertition Signature: 0x%x\n",ebr->BootPartitionSignature);
 }
 
-uint32_t FatBPB_GetTotalSectors(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetTotalSectors(struct FatBiosParameterBlock* self)
 {
-	if (bpb->TotalSectors16 == 0)
+	if (self->TotalSectors16 == 0)
 	{
-		return bpb->TotalSectors32; 
+		return self->TotalSectors32; 
 	}
 	else
 	{
-		return (uint32_t)bpb->TotalSectors16;
+		return (uint32_t)self->TotalSectors16;
 	}
 }
 
-uint32_t FatBPB_GetFatSizeInSectors(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetFatSizeInSectors(struct FatBiosParameterBlock* self)
 {
-	if (bpb->TableSize16 == 0)
+	if (self->TableSize16 == 0)
 	{
-		FatExtendedBootRecord32* bpb32;
-		bpb32 = (FatExtendedBootRecord32*)&bpb->ExtendedBootRecord[0];
-		return bpb32->SectorsPerFAT;
+		struct FatExtendedBootRecord32* ebr32;
+		ebr32 = (struct FatExtendedBootRecord32*)&self->ExtendedBootRecord[0];
+		return ebr32->SectorsPerFAT;
 	}
 	else
 	{
-		return bpb->TableSize16;
+		return self->TableSize16;
 	}
 }
 
-uint32_t FatBPB_GetRootDirectorySizeInSectors(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetRootDirectorySizeInSectors(struct FatBiosParameterBlock* self)
 {
 	// 32 is the size of a FAT directory in bytes.
 	return 
 	(
-		(bpb->RootEntryCount * 32) + 
-		(bpb->BytesPerSector - 1)
-	) / bpb->BytesPerSector;
+		(self->RootEntryCount * 32) + 
+		(self->BytesPerSector - 1)
+	) / self->BytesPerSector;
 }
 
-uint32_t FatBPB_GetFirstDataSector(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetFirstDataSector(struct FatBiosParameterBlock* self)
 {
 	uint32_t first_data_sector = 
-		bpb->ReservedSectorCount + 
-		(bpb->TableCount * FatBPB_GetFatSizeInSectors(bpb)) + // was fat_size) + 
-		FatBPB_GetRootDirectorySizeInSectors(bpb);//root_dir_sectors;
+		self->ReservedSectorCount + 
+		(self->TableCount * FatBPB_GetFatSizeInSectors(self)) + // was fat_size) + 
+		FatBPB_GetRootDirectorySizeInSectors(self);//root_dir_sectors;
 	return first_data_sector;
 }
 
-uint32_t FatBPB_GetFirstFATSector(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetFirstFATSector(struct FatBiosParameterBlock* self)
 {
-	return bpb->ReservedSectorCount;
+	return self->ReservedSectorCount;
 }
 
-uint32_t FatBPB_GetTotalDataSectors(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetTotalDataSectors(struct FatBiosParameterBlock* self)
 {
 	uint32_t data_sectors = 
-		FatBPB_GetTotalSectors(bpb) - 
+		FatBPB_GetTotalSectors(self) - 
 		(
-			bpb->ReservedSectorCount + 
-			(bpb->TableCount * FatBPB_GetFatSizeInSectors(bpb)) + 
-			FatBPB_GetRootDirectorySizeInSectors(bpb)
+			self->ReservedSectorCount + 
+			(self->TableCount * FatBPB_GetFatSizeInSectors(self)) + 
+			FatBPB_GetRootDirectorySizeInSectors(self)
 			//root_dir_sectors
 		);
 	return data_sectors;
 }
 
-uint32_t FatBPB_GetTotalClusters(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetTotalClusters(struct FatBiosParameterBlock* self)
 {
-	return FatBPB_GetTotalDataSectors(bpb) / bpb->SectorsPerCluster;
+	return FatBPB_GetTotalDataSectors(self) / self->SectorsPerCluster;
 }
 
-FatType FatBPB_GetFATType(FatBiosParameterBlock* bpb)
+enum FatType FatBPB_GetFATType(struct FatBiosParameterBlock* self)
 {
-	FatType fat_type;
+	enum FatType fat_type;
 
-	uint32_t total_clusters = FatBPB_GetTotalClusters(bpb);
+	uint32_t total_clusters = FatBPB_GetTotalClusters(self);
 
 	if(total_clusters < 4085) 
 	{
@@ -152,9 +152,9 @@ FatType FatBPB_GetFATType(FatBiosParameterBlock* bpb)
 	return fat_type;
 }
 
-uint32_t FatBPB_GetFirstRootDirectorySector(FatBiosParameterBlock* bpb)
+uint32_t FatBPB_GetFirstRootDirectorySector(struct FatBiosParameterBlock* self)
 {
-	uint32_t first_data_sector = FatBPB_GetFirstDataSector(bpb);
-	uint32_t root_dir_sectors = FatBPB_GetRootDirectorySizeInSectors(bpb);
+	uint32_t first_data_sector = FatBPB_GetFirstDataSector(self);
+	uint32_t root_dir_sectors = FatBPB_GetRootDirectorySizeInSectors(self);
 	return first_data_sector - root_dir_sectors;
 }

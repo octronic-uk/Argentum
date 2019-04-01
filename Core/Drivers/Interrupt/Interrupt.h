@@ -33,30 +33,36 @@ extern int irq13();
 extern int irq14();
 extern int irq15();
 
-typedef struct
+struct Interrupt_DescriptorTableEntry
 {
 	uint16_t OffsetLowerBits;
 	uint16_t Selector;
 	uint8_t  Zero;
 	uint8_t  TypeAttribute;
 	uint16_t OffsetHigherBits;
-} __attribute__((packed)) Interrupt_DescriptorTableEntry;
+} __attribute__((packed));
 
-void Interrupt_Constructor();
-void Interrupt_SetHandlerFunction(uint8_t index, void(*fn)(void));
-void Interrupt_WriteDescriptorTable();
-void Interrupt_lidt(void* base, uint16_t size);
-void Interrupt_Enable_STI();
-void Interrupt_Disable_CLI();
-void Interrupt_SendEOI(uint8_t irq);
-void Interrupt_SendEOI_PIC1();
-void Interrupt_SendEOI_PIC2();
-void Interrupt_SetMask_PIC1(uint8_t mask);
-void Interrupt_SetMask_PIC2(uint8_t mask);
-uint8_t Interrupt_ReadISR_PIC1();
-uint8_t Interrupt_ReadISR_PIC2();
-uint8_t Interrupt_ReadIRR_PIC1();
-uint8_t Interrupt_ReadIRR_PIC2();
+struct Interrupt
+{
+	struct Interrupt_DescriptorTableEntry DescriptorTable[INTERRUPT_IDT_SIZE];
+	void(*HandlerFunctions[INTERRUPT_HANDLER_FUNCTIONS_COUNT])(void);
+};
+
+void Interrupt_Constructor(struct Interrupt* self);
+void Interrupt_SetHandlerFunction(struct Interrupt* self, uint8_t index, void(*fn)(void));
+void Interrupt_WriteDescriptorTable(struct Interrupt* self);
+void Interrupt_lidt(struct Interrupt* self, void* base, uint16_t size);
+void Interrupt_Enable_STI(struct Interrupt* self);
+void Interrupt_Disable_CLI(struct Interrupt* self);
+void Interrupt_SendEOI(struct Interrupt* self, uint8_t irq);
+void Interrupt_SendEOI_PIC1(struct Interrupt* self);
+void Interrupt_SendEOI_PIC2(struct Interrupt* self);
+void Interrupt_SetMask_PIC1(struct Interrupt* self, uint8_t mask);
+void Interrupt_SetMask_PIC2(struct Interrupt* self, uint8_t mask);
+uint8_t Interrupt_ReadISR_PIC1(struct Interrupt* self);
+uint8_t Interrupt_ReadISR_PIC2(struct Interrupt* self);
+uint8_t Interrupt_ReadIRR_PIC1(struct Interrupt* self);
+uint8_t Interrupt_ReadIRR_PIC2(struct Interrupt* self);
 
 void Interrupt_SetupDescriptorTable();
 void irq0_handler();

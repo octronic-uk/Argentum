@@ -2,26 +2,26 @@
 #include <stdio.h>
 #include <string.h>
 
-void FatDirectory_Debug(FatDirectory* fd)
+void FatDirectory_Debug(struct FatDirectory* self)
 {
     printf("FatDirectory: Structure\n");
     char name[9] = {0};
     char ext[4] = {0};
-    memcpy(name,fd->Name,8);
-    memcpy(ext,fd->Extension,3);
+    memcpy(name,self->Name,8);
+    memcpy(ext,self->Extension,3);
 
     printf("\tName:                    <%s>.<%s>\n",  name, ext);
-    FatDirectory_DebugAttributes(fd->Attributes);
-    printf("\tReserved 1:              0x%x\n", fd->Reserved1);
-    printf("\tCreation Time Seconds:   0x%x\n", fd->CreationTimeMilliSeconds);
-    printf("\tCreation Time:           0x%x\n", fd->CreationTime);
-    printf("\tCreation Date:           0x%x\n", fd->CreationDate);
-    printf("\tLast Accessed Date:      0x%x\n", fd->LastAccessedDate);
-    printf("\tReserved 2:              0x%x\n", fd->Reserved2);
-    printf("\tLast Modified Time:      0x%x\n", fd->LastModificationTime);
-    printf("\tLast Modified Date:      0x%x\n", fd->LastModificationDate);
-    printf("\tFirst Cluster Number:    0x%x\n", fd->FirstClusterNumber);
-    printf("\tFile Size:               0x%x\n", fd->FileSize);
+    FatDirectory_DebugAttributes(self->Attributes);
+    printf("\tReserved 1:              0x%x\n", self->Reserved1);
+    printf("\tCreation Time Seconds:   0x%x\n", self->CreationTimeMilliSeconds);
+    printf("\tCreation Time:           0x%x\n", self->CreationTime);
+    printf("\tCreation Date:           0x%x\n", self->CreationDate);
+    printf("\tLast Accessed Date:      0x%x\n", self->LastAccessedDate);
+    printf("\tReserved 2:              0x%x\n", self->Reserved2);
+    printf("\tLast Modified Time:      0x%x\n", self->LastModificationTime);
+    printf("\tLast Modified Date:      0x%x\n", self->LastModificationDate);
+    printf("\tFirst Cluster Number:    0x%x\n", self->FirstClusterNumber);
+    printf("\tFile Size:               0x%x\n", self->FileSize);
 }
 
 void FatDirectory_DebugAttributes(uint8_t attributes)
@@ -61,7 +61,7 @@ void FatDirectory_DebugAttributes(uint8_t attributes)
     }
 }
 
-uint8_t FatDirectory_HasAttribute(FatDirectory* dir, uint8_t attr)
+uint8_t FatDirectory_HasAttribute(struct FatDirectory* dir, uint8_t attr)
 {
     return (dir->Attributes & attr ) != 0;
 }

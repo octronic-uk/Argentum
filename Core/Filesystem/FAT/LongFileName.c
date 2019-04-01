@@ -2,67 +2,67 @@
 #include <string.h>
 #include <Filesystem/FAT/LongFileName.h>
 
-void FatLongFileName_Debug(FatLongFileName* lfn)
+void FatLongFileName_Debug(struct FatLongFileName* self)
 {
     uint8_t chars1[11], chars2[13], chars3[5];
     uint8_t full_name[FAT_LFN_NAME_FULL_SIZE];
 
     memset(chars1,0,11);
-    memcpy(chars1, lfn->Characters1, 10);
+    memcpy(chars1, self->Characters1, 10);
 
     memset(chars2,0,13);
-    memcpy(chars2, lfn->Characters2, 12);
+    memcpy(chars2, self->Characters2, 12);
 
     memset(chars3,0,5);
-    memcpy(chars3, lfn->Characters3, 4);
+    memcpy(chars3, self->Characters3, 4);
 
-    FatLongFileName_GetFileName(lfn, full_name);
+    FatLongFileName_GetFileName(self, full_name);
 
     int i;
 
     printf(
         "FatLongFileName: Entry number %d, Last: %s\n",
-        FatLongFileName_GetEntryNumber(lfn),
-        FatLongFileName_IsLastEntry(lfn) == true ? "Yes" : "No" 
+        FatLongFileName_GetEntryNumber(self),
+        FatLongFileName_IsLastEntry(self) == true ? "Yes" : "No" 
     );
-    printf("\tIndex:       0x%x\n", lfn->Index);
+    printf("\tIndex:       0x%x\n", self->Index);
 
     printf("\tCharacters1: ");
-    for (i=0;i<FAT_LFN_NAME_1_SIZE; i++) printf("%c",lfn->Characters1[i] ? lfn->Characters1[i] : ' ');
+    for (i=0;i<FAT_LFN_NAME_1_SIZE; i++) printf("%c",self->Characters1[i] ? self->Characters1[i] : ' ');
     printf("\n");
 
-    printf("\tAttributes:  0x%x\n", lfn->Attributes);
-    printf("\tEntryType:   0x%x\n", lfn->EntryType);
-    printf("\tChecksum:    0x%x\n", lfn->Checksum);
+    printf("\tAttributes:  0x%x\n", self->Attributes);
+    printf("\tEntryType:   0x%x\n", self->EntryType);
+    printf("\tChecksum:    0x%x\n", self->Checksum);
 
     printf("\tCharacters2: ");
-    for (i=0;i<FAT_LFN_NAME_2_SIZE; i++) printf("%c",lfn->Characters2[i] ? lfn->Characters2[i] : ' ');
+    for (i=0;i<FAT_LFN_NAME_2_SIZE; i++) printf("%c",self->Characters2[i] ? self->Characters2[i] : ' ');
     printf("\n");
 
-    printf("\tZero:        0x%x\n", lfn->Zero);
+    printf("\tZero:        0x%x\n", self->Zero);
     printf("\tCharacters3: ");
-    for (i=0;i<FAT_LFN_NAME_3_SIZE; i++) printf("%c",lfn->Characters3[i] ? lfn->Characters3[i] : ' ');
+    for (i=0;i<FAT_LFN_NAME_3_SIZE; i++) printf("%c",self->Characters3[i] ? self->Characters3[i] : ' ');
     printf("\n");
 
     printf("\tFull Name:   %s\n",   full_name);
 }
 
-uint8_t FatLongFileName_GetEntryNumber(FatLongFileName* lfn)
+uint8_t FatLongFileName_GetEntryNumber(struct FatLongFileName* self)
 {
-    return lfn->Index & FAT_LFN_ENTRY_NUMBER;
+    return self->Index & FAT_LFN_ENTRY_NUMBER;
 }
 
-bool FatLongFileName_IsLastEntry(FatLongFileName* lfn)
+bool FatLongFileName_IsLastEntry(struct FatLongFileName* self)
 {
-    return (lfn->Index & FAT_LFN_LAST_ENTRY) == FAT_LFN_LAST_ENTRY;
+    return (self->Index & FAT_LFN_LAST_ENTRY) == FAT_LFN_LAST_ENTRY;
 }
 
-bool FatLongFileName_IsLfn(FatLongFileName* lfn)
+bool FatLongFileName_IsLfn(struct FatLongFileName* self)
 {
-    return (lfn->Attributes & FAT_LFN_ATTR_IS_LFN) == FAT_LFN_ATTR_IS_LFN;
+    return (self->Attributes & FAT_LFN_ATTR_IS_LFN) == FAT_LFN_ATTR_IS_LFN;
 }
 
-void FatLongFileName_GetFileName(FatLongFileName* lfn, uint8_t* buffer)
+void FatLongFileName_GetFileName(struct FatLongFileName* self, uint8_t* buffer)
 {
    memset(buffer,0,FAT_LFN_NAME_FULL_SIZE);
    int i, j;
@@ -71,15 +71,15 @@ void FatLongFileName_GetFileName(FatLongFileName* lfn, uint8_t* buffer)
         uint8_t next = 0;
         if (i < FAT_LFN_NAME_1_SIZE)
         {
-            next = lfn->Characters1[i];
+            next = self->Characters1[i];
         }
         else if (i < FAT_LFN_NAME_1_SIZE + FAT_LFN_NAME_2_SIZE)
         {
-            next = lfn->Characters2[i-FAT_LFN_NAME_1_SIZE];
+            next = self->Characters2[i-FAT_LFN_NAME_1_SIZE];
         }
         else if (i < FAT_LFN_NAME_1_SIZE + FAT_LFN_NAME_2_SIZE + FAT_LFN_NAME_3_SIZE)
         {
-           next = lfn->Characters3[i-(FAT_LFN_NAME_1_SIZE+FAT_LFN_NAME_2_SIZE)];
+           next = self->Characters3[i-(FAT_LFN_NAME_1_SIZE+FAT_LFN_NAME_2_SIZE)];
         }
 
         if (!next)

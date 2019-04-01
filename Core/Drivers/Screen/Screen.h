@@ -23,13 +23,20 @@ enum Screen_VgaColor
 	VGA_COLOR_WHITE = 15,
 };
 
-uint8_t Screen_VgaEntryColor(enum Screen_VgaColor fg, enum Screen_VgaColor bg);
-uint16_t Screen_VgaEntry(unsigned char uc, uint8_t color);
+struct Screen 
+{
+	uint8_t* VideoBasePointer;
+	size_t   CurrentRow;
+	size_t   CurrentColumn;
+	uint8_t  Color;
+} ;
 
-void Screen_Initialize(void);
-void Screen_PutChar(char c);
-void Screen_Write(const char* data, size_t size);
-void Screen_WriteString(const char* data);
-void Screen_Update();
-void Screen_Clear();
-void Screen_Scroll();
+void Screen_Constructor(struct Screen* self);
+void Screen_PutChar(struct Screen* self, char c);
+void Screen_Write(struct Screen* self, const char* data, size_t size);
+void Screen_WriteString(struct Screen* self, const char* data);
+void Screen_Update(struct Screen* self);
+void Screen_Clear(struct Screen* self);
+void Screen_Scroll(struct Screen* self);
+uint8_t Screen_VgaEntryColor(struct Screen* self, enum Screen_VgaColor fg, enum Screen_VgaColor bg);
+uint16_t Screen_VgaEntry(struct Screen* self, unsigned char uc, uint8_t color);

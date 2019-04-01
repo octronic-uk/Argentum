@@ -28,7 +28,7 @@ struct FatVolume;
         Day	  5 bits
 */
 
-typedef struct
+struct FatDirectory
 {
    /* Offset */
    /*00*/ uint8_t  Name[8]; 
@@ -44,9 +44,8 @@ typedef struct
    /*24*/ uint16_t LastModificationDate;
    /*26*/ uint16_t FirstClusterNumber;
    /*28*/ uint32_t FileSize;
-} __attribute__((packed))
-FatDirectory;
+} __attribute__((packed));
 
-void FatDirectory_Debug(FatDirectory* fd);
+void FatDirectory_Debug(struct FatDirectory* self);
 void FatDirectory_DebugAttributes(uint8_t attributes);
-uint8_t FatDirectory_HasAttribute(FatDirectory* dir, uint8_t attr);
+uint8_t FatDirectory_HasAttribute(struct FatDirectory* self, uint8_t attr);

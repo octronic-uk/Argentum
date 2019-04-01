@@ -13,118 +13,113 @@
 #define SCREEN_ROW_SIZE_BYTES (SCREEN_COLUMNS * SCREEN_BYTES_PER_ELEMENT)
 #define SCREEN_SIZE_BYTES (SCREEN_CHAR_SIZE * SCREEN_BYTES_PER_ELEMENT)
 
-uint8_t* Screen_VideoBasePointer = (uint8_t*)SCREEN_VBP;
-size_t   Screen_CurrentRow;
-size_t   Screen_CurrentColumn;
-uint8_t  Screen_Color;
-
-void Screen_Initialize(void)
+void Screen_Constructor(struct Screen* self)
 {
-	Screen_CurrentRow = 0;
-	Screen_CurrentColumn = 0;
-	Screen_CurrentRow = 0;
-	Screen_CurrentColumn = 0;
-	Screen_Color = 0;
-	Screen_Color = Screen_VgaEntryColor(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-	Screen_Clear();
+	self->VideoBasePointer = (uint8_t*)SCREEN_VBP;
+	self->CurrentRow = 0;
+	self->CurrentColumn = 0;
+	self->CurrentRow = 0;
+	self->CurrentColumn = 0;
+	self->Color = Screen_VgaEntryColor(self, VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+	Screen_Clear(self);
 }
 
-void Screen_SetColor(uint8_t color)
+void Screen_SetColor(struct Screen* self, uint8_t color)
 {
-	Screen_Color = color;
+	self->Color = color;
 }
 
-void Screen_PutEntryAt(unsigned char c, uint8_t color, size_t x, size_t y)
+void Screen_PutEntryAt(struct Screen* self, unsigned char c, uint8_t color, size_t x, size_t y)
 {
 	size_t index = (y * SCREEN_COLUMNS * SCREEN_BYTES_PER_ELEMENT) + (x*SCREEN_BYTES_PER_ELEMENT);
-	Screen_VideoBasePointer[index] = c;
-	Screen_VideoBasePointer[index+1] = color;
+	self->VideoBasePointer[index] = c;
+	self->VideoBasePointer[index+1] = color;
 }
 
-void Screen_PutChar(char c)
+void Screen_PutChar(struct Screen* self, char c)
 {
 	unsigned char uc = c;
     if (c == '\n')
     {
-        Screen_CurrentRow++;
-        Screen_CurrentColumn = 0;
-		if (Screen_CurrentRow >= SCREEN_ROWS)
+        self->CurrentRow++;
+        self->CurrentColumn = 0;
+		if (self->CurrentRow >= SCREEN_ROWS)
 		{
-			Screen_Scroll();
+			Screen_Scroll(self);
 		}
         return;
     }
 
     if (c == '\t')
     {
-        Screen_CurrentColumn += SCREEN_TAB_SIZE;
+        self->CurrentColumn += SCREEN_TAB_SIZE;
         return;
     }
 
-	Screen_PutEntryAt(uc, Screen_Color, Screen_CurrentColumn, Screen_CurrentRow);
-	if (++Screen_CurrentColumn == SCREEN_COLUMNS)
+	Screen_PutEntryAt(self, uc, self->Color, self->CurrentColumn, self->CurrentRow);
+	if (++self->CurrentColumn == SCREEN_COLUMNS)
     {
-		Screen_CurrentColumn = 0;
-		if (++Screen_CurrentRow == SCREEN_ROWS)
+		self->CurrentColumn = 0;
+		if (++self->CurrentRow == SCREEN_ROWS)
         {
-			Screen_CurrentRow = 0;
+			self->CurrentRow = 0;
         }
 	}
     
 }
 
-void Screen_Write(const char* data, size_t size)
+void Screen_Write(struct Screen* self, const char* data, size_t size)
 {
 	for (size_t i = 0; i < size; i++)
     {
-		Screen_PutChar(data[i]);
+		Screen_PutChar(self, data[i]);
     }
 }
 
-void Screen_WriteString(const char* data)
+void Screen_WriteString(struct Screen* self, const char* data)
 {
-	Screen_Write(data, strlen(data));
+	Screen_Write(self, data, strlen(data));
 }
 
-void Screen_Clear()
+void Screen_Clear(struct Screen* self)
 {
 	for (size_t y = 0; y < SCREEN_ROWS; y++)
     {
 		for (size_t x = 0; x < SCREEN_COLUMNS; x++)
         {
 			const size_t index = y * SCREEN_COLUMNS + x;
-			Screen_PutEntryAt(' ',Screen_Color, x,y);
+			Screen_PutEntryAt(self, ' ',self->Color, x,y);
 		}
 	}
-	Screen_CurrentColumn = 0;
-	Screen_CurrentRow = 0;
+	self->CurrentColumn = 0;
+	self->CurrentRow = 0;
 }
 
-uint8_t Screen_VgaEntryColor(enum Screen_VgaColor fg, enum Screen_VgaColor bg)
+uint8_t Screen_VgaEntryColor(struct Screen* self, enum Screen_VgaColor fg, enum Screen_VgaColor bg)
 {
 	return fg | bg << 4;
 }
 
-uint16_t Screen_VgaEntry(unsigned char uc, uint8_t color)
+uint16_t Screen_VgaEntry(struct Screen* self, unsigned char uc, uint8_t color)
 {
 	return (uint16_t) uc | (uint16_t) color << 8;
 }
 
-void Screen_Scroll()
+void Screen_Scroll(struct Screen* self)
 {
 	int row;
 	for (row = 1; row < SCREEN_ROWS; row++)
 	{
 		memcpy(
-			&Screen_VideoBasePointer[SCREEN_ROW_SIZE_BYTES*(row-1)], 
-			&Screen_VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row],
+			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*(row-1)], 
+			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row],
 			SCREEN_ROW_SIZE_BYTES
 		);
 		memset(
-			&Screen_VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row],
+			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row],
 			0,
 			SCREEN_ROW_SIZE_BYTES
 		);
 	}
-	Screen_CurrentRow = SCREEN_ROWS-1;
+	self->CurrentRow = SCREEN_ROWS-1;
 }

@@ -18,7 +18,7 @@
 #define FAT_LFN_LAST_ENTRY   0x40
 
 
-typedef struct
+struct FatLongFileName
 {
     uint8_t Index;
     uint8_t Characters1[FAT_LFN_NAME_1_SIZE];
@@ -28,14 +28,12 @@ typedef struct
     uint8_t Characters2[FAT_LFN_NAME_2_SIZE];
     uint16_t Zero;
     uint8_t Characters3[FAT_LFN_NAME_3_SIZE];
-} 
-__attribute__((packed))
-FatLongFileName;
+} __attribute__((packed));
 
 
-void FatLongFileName_Debug(FatLongFileName* lfn);
+void FatLongFileName_Debug(struct FatLongFileName* self);
 
-bool FatLongFileName_IsLfn(FatLongFileName* lfn);
-uint8_t FatLongFileName_GetEntryNumber(FatLongFileName* lfn);
-bool FatLongFileName_IsLastEntry(FatLongFileName* lfn);
-void FatLongFileName_GetFileName(FatLongFileName* lfn, uint8_t* buffer);
+bool FatLongFileName_IsLfn(struct FatLongFileName* self);
+uint8_t FatLongFileName_GetEntryNumber(struct FatLongFileName* self);
+bool FatLongFileName_IsLastEntry(struct FatLongFileName* self);
+void FatLongFileName_GetFileName(struct FatLongFileName* self, uint8_t* buffer);

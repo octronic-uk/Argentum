@@ -1,68 +1,75 @@
 #include "Scheduler.h"
-#include "Task.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
-uint8_t Scheduler_Debug = 0;
-static LinkedList* SchedulerTasks = 0;
+#include "Task.h"
 
-void Scheduler_Constructor()
+
+void Scheduler_Constructor(struct Scheduler* self, struct Memory* memory)
 {
-	Scheduler_SetDebug(1);
-	if (Scheduler_Debug)
+	self->Memory = memory;
+	Scheduler_SetDebug(self, true);
+	if (self->Debug)
 	{
 		printf("Scheduler: Constructing\n");
 	}
-    SchedulerTasks = LinkedList_Constructor();
+	LinkedList_Constructor(&self->TaskList, self->Memory);
 }
 
-void Scheduler_SetDebug(uint8_t debug)
+void Scheduler_SetDebug(struct Scheduler* self, uint8_t debug)
 {
-	Scheduler_Debug = debug;
+	self->Debug = debug;
 }
 
-Task* Scheduler_CreateTask(const char* name, void(*e)(void))
+void Scheduler_CreateTask(struct Scheduler* self, struct Task* task, const char* name, void(*e)(void))
 {
-	if (Scheduler_Debug) {
+	if (self->Debug) 
+	{
 		printf("Scheduler: Creating a new task");
 	}
-	Task* task = Task_Constructor(name, e);
 
-	if (Scheduler_Debug) {
+	Task_Constructor(task, name, e);
+
+	if (self->Debug) 
+	{
 		printf("Scheduler: Created task at 0x%x\n", task);
 	}
-	LinkedList_PushBack(SchedulerTasks,task);
-	return task;
+	LinkedList_PushBack(&self->TaskList, task);
 }
 
-void Scheduler_ExecuteTasks()
+void Scheduler_ExecuteTasks(struct Scheduler* self)
 {
-	if (Scheduler_Debug) {
+	if (self->Debug) 
+	{
 	    printf("Scheduler: Entering Task Loop\n");
 	}
-	uint32_t numTasks = LinkedList_Size(SchedulerTasks);
+	uint32_t numTasks = LinkedList_Size(&self->TaskList);
 	int i;
 	for (i=0;i<numTasks;i++)
 	{
-		LinkedListNode* current = LinkedList_At(SchedulerTasks,i);
-        Task* currentTask = (Task*)current->data;
+		struct LinkedListNode* current = LinkedList_At(&self->TaskList,i);
+        struct Task* currentTask = (struct Task*)current->Data;
 
-		if (currentTask->mExecutable)
+		if (currentTask->Executable)
 		{
-			if (Scheduler_Debug) {
-			    printf("Scheduler: Executing Task [%d] %s\n", currentTask->mID, currentTask->mName);
+			if (self->Debug) 
+			{
+			    printf("Scheduler: Executing Task [%d] %s\n", currentTask->ID, currentTask->Name);
 			}
-			currentTask->mExecutable();
+			currentTask->Executable();
 		}
 		else
 		{
-			if (Scheduler_Debug) {
-				printf("Scheduler: No function for Task [%d] %s\n", currentTask->mID, currentTask->mName);
+			if (self->Debug) 
+			{
+				printf("Scheduler: No function for Task [%d] %s\n", currentTask->ID, currentTask->Name);
 			}
 		}
 	}
-	if (Scheduler_Debug) {
+	if (self->Debug) 
+	{
 		printf("Scheduler: Reached end of Task list\n");
 	}
 }

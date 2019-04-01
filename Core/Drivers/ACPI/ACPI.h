@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <Structures/LinkedList.h>
 
 #define ACPI_EBDA_POINTER_ADDR 0x040E
 #define ACPI_BIOS_SEARCH_BEGIN 0x000E0000
@@ -94,7 +95,9 @@ const static char* ACPI_RSDP_HEADER_STR  = "RSD PTR ";
 #define ACPI_MADT_FLAGS_ACTIVE_LOW      0x02
 #define ACPI_MADT_FLAGS_LEVEL_TRIGGERED 0x08
 
-typedef struct  
+struct Interrupt;
+
+struct ACPI_RsdpDescriptorV1
 {
     char Signature[8];
     uint8_t Checksum;
@@ -102,19 +105,18 @@ typedef struct
     uint8_t Revision;
     void* RsdtAddress;
 } __attribute__ ((packed)) 
-ACPI_RsdpDescriptorV1;
+;
 
-typedef struct  
+struct ACPI_RsdpDescriptorV2
 {
-    ACPI_RsdpDescriptorV1 V1Descriptor;
+    struct ACPI_RsdpDescriptorV1 V1Descriptor;
     uint32_t Length;
     uint64_t XsdtAddress;
     uint8_t ExtendedChecksum;
     uint8_t Reserved[3];
-} __attribute__ ((packed))
-ACPI_RsdpDescriptorV2;
+} __attribute__ ((packed));
 
-typedef struct  
+struct ACPI_SDTHeader
 {
   char Signature[4];
   uint32_t Length;
@@ -125,22 +127,20 @@ typedef struct
   uint32_t OEMRevision;
   uint32_t CreatorID;
   uint32_t CreatorRevision;
-} __attribute__((packed)) 
-ACPI_SDTHeader;
+} __attribute__((packed));
 
-typedef struct 
+struct ACPI_GenericAddressStructure
 {
   uint8_t AddressSpace;
   uint8_t BitWidth;
   uint8_t BitOffset;
   uint8_t AccessSize;
   uint64_t Address;
-} __attribute__((packed))
-ACPI_GenericAddressStructure;
+} __attribute__((packed));
 
-typedef struct
+struct ACPI_FADT
 {
-    ACPI_SDTHeader h;
+    struct ACPI_SDTHeader h;
     uint32_t FirmwareCtrl;
     uint32_t Dsdt;
  
@@ -187,7 +187,7 @@ typedef struct
     uint32_t Flags;
  
     // 12 byte structure; see below for details
-    ACPI_GenericAddressStructure ResetReg;
+    struct ACPI_GenericAddressStructure ResetReg;
  
     uint8_t  ResetValue;
     uint8_t  Reserved3[3];
@@ -196,29 +196,29 @@ typedef struct
     uint64_t                X_FirmwareControl;
     uint64_t                X_Dsdt;
  
-    ACPI_GenericAddressStructure X_PM1aEventBlock;
-    ACPI_GenericAddressStructure X_PM1bEventBlock;
-    ACPI_GenericAddressStructure X_PM1aControlBlock;
-    ACPI_GenericAddressStructure X_PM1bControlBlock;
-    ACPI_GenericAddressStructure X_PM2ControlBlock;
-    ACPI_GenericAddressStructure X_PMTimerBlock;
-    ACPI_GenericAddressStructure X_GPE0Block;
-    ACPI_GenericAddressStructure X_GPE1Block;
-}  __attribute__((packed)) ACPI_FADT;
+    struct ACPI_GenericAddressStructure X_PM1aEventBlock;
+    struct ACPI_GenericAddressStructure X_PM1bEventBlock;
+    struct ACPI_GenericAddressStructure X_PM1aControlBlock;
+    struct ACPI_GenericAddressStructure X_PM1bControlBlock;
+    struct ACPI_GenericAddressStructure X_PM2ControlBlock;
+    struct ACPI_GenericAddressStructure X_PMTimerBlock;
+    struct ACPI_GenericAddressStructure X_GPE0Block;
+    struct ACPI_GenericAddressStructure X_GPE1Block;
+}  __attribute__((packed));
 
-typedef struct  
+struct ACPI_RSDT 
 {
-    ACPI_SDTHeader h;
+    struct ACPI_SDTHeader h;
     uint32_t PointerToOtherSDT; // (h.Length - sizeof(h)) / 4;
-} ACPI_RSDT;
+};
 
-typedef struct  
+struct ACPI_XSDT
 {
-    ACPI_SDTHeader h;
+    struct ACPI_SDTHeader h;
     uint64_t PointerToOtherSDT; // (h.Length - sizeof(h)) / 8;
-} ACPI_XSDT;
+};
 
-typedef struct
+struct ACPI_FACS
 {
     char     Signature[4];           /* ASCII table signature */
     uint32_t Length;                 /* Length of structure, in bytes */
@@ -232,70 +232,64 @@ typedef struct
     uint32_t OspmFlags;              /* Flags to be set by OSPM (ACPI 4.0) */
     uint8_t  Reserved1[24];          /* Reserved, must be zero */
 
-} ACPI_FACS;
+}__attribute__((packed));
 
-typedef struct 
+struct  ACPI_MADT
 {
-    ACPI_SDTHeader h;
+    struct ACPI_SDTHeader h;
     uint32_t LocalAPICAddress;
     uint32_t Flags;
     uint8_t RecordsStart;
-} ACPI_MADT;
+};
 
-typedef struct
+struct ACPI_MADTRecordBase
 {
     uint8_t RecordType;
     uint8_t Length;
-}__attribute__((packed))
-ACPI_MADTRecordBase;
+}__attribute__((packed));
 
-typedef struct
+struct ACPI_MADTRecordApic
 {
-    ACPI_MADTRecordBase Base;
+    struct ACPI_MADTRecordBase Base;
     uint8_t AcpiProcessorId;
     uint8_t AcpiId;
     uint32_t Flags;
-} __attribute__((packed))
-ACPI_MADTRecordApic;
+} __attribute__((packed));
 
-typedef struct
+struct ACPI_MADTRecordIoApic
 {
-    ACPI_MADTRecordBase Base;
+    struct ACPI_MADTRecordBase Base;
     uint8_t IoApicId;
     uint8_t Reserved;
     uint32_t IoApicAddress;
     uint32_t GlobalSystemInterruptBase; 
-} __attribute__((packed))
-ACPI_MADTRecordIoApic;
+} __attribute__((packed));
 
-typedef struct
+struct ACPI_MADTRecordInputSourceOverride
 {
-    ACPI_MADTRecordBase Base;
+    struct ACPI_MADTRecordBase Base;
     uint8_t BusSource;
     uint8_t IrqSource;
     uint32_t GlobalSystemInterrupt;
     uint16_t Flags;
-} __attribute__((packed))
-ACPI_MADTRecordInputSourceOverride;
+} __attribute__((packed));
 
-typedef struct
+struct ACPI_MADTRecordNonMaskableInterrupt
 {
-    ACPI_MADTRecordBase Base;
+    struct ACPI_MADTRecordBase Base;
     uint8_t ApicProcessorId;
     uint16_t Flags;
     uint8_t LintNumber;
-} __attribute__((packed))
-ACPI_MADTRecordNonMaskableInterrupt;
+} __attribute__((packed));
 
-typedef struct
+struct ACPI_MADTRecordLocalApicAddressOverride
 {
-    ACPI_MADTRecordBase Base;
+    struct ACPI_MADTRecordBase Base;
     uint8_t Reserved;
     uint64_t LocalApic;
-} __attribute__((packed))
-ACPI_MADTRecordLocalApicAddressOverride;
+} __attribute__((packed));
 
-typedef union
+union ACPI_IoApicRedirectionEntry
 {
     struct
     {
@@ -315,10 +309,10 @@ typedef union
         uint32_t lowerDword;
         uint32_t upperDword;
     };
-} ACPI_IoApicRedirectionEntry;
+};
 
 
-typedef struct
+struct ACPI_IoApic
 {
     uint32_t IoApicAddress;
     uint32_t Id;
@@ -326,28 +320,39 @@ typedef struct
     uint32_t Arbitration;
     // Redirects
     uint8_t IrqRedirectEntries;
-    ACPI_IoApicRedirectionEntry IrqRedirections[24];
-} ACPI_IoApic;
+    union ACPI_IoApicRedirectionEntry IrqRedirections[24];
+};
 
+struct ACPI
+{
+    struct Memory* Memory;
+    struct Interrupt* Interrupt;
+    uint8_t Debug;
+    uint32_t FacsPointer;
+    uint32_t DsdtPointer;
+    uint16_t SciInterrupt;
+    struct LinkedList IoApicRecordPointers;
+    struct LinkedList InterruptSourceOverrideRecordPointers;
+} ;
 
-void ACPI_Constructor();
-void ACPI_Destructor();
+void ACPI_Constructor(struct ACPI* self, struct Interrupt*, struct Memory* memory);
+void ACPI_Destructor(struct ACPI* self);
 
-void* ACPI_GetEbdaPointer();
-void* ACPI_FindRsdpPointer();
+void* ACPI_GetEbdaPointer(struct ACPI* self);
+void* ACPI_FindRsdpPointer(struct ACPI* self);
 
-uint8_t ACPI_CheckRsdpChecksum(ACPI_RsdpDescriptorV1* rsdp, uint8_t version);
-uint8_t ACPI_CheckSDTChecksum(ACPI_SDTHeader *tableHeader);
+uint8_t ACPI_CheckRsdpChecksum(struct ACPI* self, struct ACPI_RsdpDescriptorV1* rsdp, uint8_t version);
+uint8_t ACPI_CheckSDTChecksum(struct ACPI* self, struct ACPI_SDTHeader *tableHeader);
 
-void* ACPI_FindSDTBySignature(const char* sig, void* RootSDT, uint8_t version);
+void* ACPI_FindSDTBySignature(struct ACPI* self, const char* sig, void* RootSDT, uint8_t version);
 
-void ACPI_SetFacsPointer(uint32_t ptr);
-void ACPI_SetSciInterrupt(uint16_t sci);
-void ACPI_SetDsdtPointer(uint32_t dsdt);
-void APCI_SetDebug(uint8_t debug);
+void ACPI_SetFacsPointer(struct ACPI* self, uint32_t ptr);
+void ACPI_SetSciInterrupt(struct ACPI* self, uint16_t sci);
+void ACPI_SetDsdtPointer(struct ACPI* self, uint32_t dsdt);
+void APCI_SetDebug(struct ACPI* self, uint8_t debug);
 
-void ACPI_ProcessMADT(ACPI_MADT* madt);
+void ACPI_ProcessMADT(struct ACPI* self, struct ACPI_MADT* madt);
 
-void ACPI_DebugIoApic(ACPI_MADTRecordIoApic* record);
-void ACPI_DebugInterruptSourceOverride(ACPI_MADTRecordInputSourceOverride* record);
-void ACPI_DebugMADT();
+void ACPI_DebugIoApic(struct ACPI* self, struct ACPI_MADTRecordIoApic* record);
+void ACPI_DebugInterruptSourceOverride(struct ACPI* self, struct ACPI_MADTRecordInputSourceOverride* record);
+void ACPI_DebugMADT(struct ACPI* self);

@@ -9,98 +9,128 @@
 #include <Structures/LinkedList.h>
 #include <Memory/Memory.h>
 
-uint8_t ACPI_Debug = 1;
-
-uint32_t ACPI_FacsPointer = 0;
-uint32_t ACPI_DsdtPointer = 0;
-uint16_t ACPI_SciInterrupt = 0;
-LinkedList* ACPI_IoApicRecordPointers = 0;
-LinkedList* ACPI_InterruptSourceOverrideRecordPointers = 0;
-
-void ACPI_Constructor()
+void ACPI_Constructor(struct ACPI* self, struct Interrupt* interrupt, struct Memory* memory)
 {
     printf("ACPI: Constructing\n");
-    ACPI_InterruptSourceOverrideRecordPointers = LinkedList_Constructor();
-    ACPI_IoApicRecordPointers = LinkedList_Constructor();
-    void* rsdpPointer = ACPI_FindRsdpPointer();
+    self->Memory = memory;
+    self->Interrupt = interrupt;
+    self->Debug = 1;
+    self->FacsPointer = 0;
+    self->DsdtPointer = 0;
+    self->SciInterrupt = 0;
 
-    if (ACPI_Debug)
-    printf("ACPI: RSDP Pointer found: 0x%x\n",rsdpPointer);
-    ACPI_RsdpDescriptorV1* v1Header = (ACPI_RsdpDescriptorV1*)rsdpPointer;
 
-    //if (ACPI_Debug) printf("ACPI: OEM ID (%s)\n",v1Header->OEMID);
+    LinkedList_Constructor(&self->InterruptSourceOverrideRecordPointers, self->Memory);
+    LinkedList_Constructor(&self->IoApicRecordPointers, self->Memory);
+
+    void* rsdpPointer = ACPI_FindRsdpPointer(self);
+
+    if (self->Debug)
+    {
+        printf("ACPI: RSDP Pointer found: 0x%x\n",rsdpPointer);
+    }
+
+    struct ACPI_RsdpDescriptorV1* v1Header = (struct ACPI_RsdpDescriptorV1*)rsdpPointer;
+
+    if (self->Debug) 
+    {
+        printf("ACPI: OEM ID (%s)\n",v1Header->OEMID);
+    }
 
     // ACPI V1
     uint8_t version  = v1Header->Revision;
     if (version == 0)
     {
-        if (ACPI_Debug) printf("ACPI: Version == 1.0\n");
+        if (self->Debug) 
+        {
+            printf("ACPI: Version == 1.0\n");
+        }
     }
     // ACPI v2 to v6.1
     else if (version == 2)
     {
-        if (ACPI_Debug) printf("ACPI: Version >= 2.0\n");
+        if (self->Debug) 
+        {
+            printf("ACPI: Version >= 2.0\n");
+        }
     }
     else
     {
-        if (ACPI_Debug)
-        printf("ACPI: Version is INVALID\n");
+        if (self->Debug)
+        {
+            printf("ACPI: Version is INVALID\n");
+        }
         return;
     }
-    if (!ACPI_CheckRsdpChecksum(v1Header,version))
+    if (!ACPI_CheckRsdpChecksum(self, v1Header,version))
     {
-        if (ACPI_Debug)
+        if (self->Debug)
         printf("ACPI: RSDT Checksum is invalid\n");
         return;
     }
 
     void* rsdt = v1Header->RsdtAddress;
-    if (ACPI_Debug) printf("ACPI: Using RsdtAddress 0x%x\n",rsdt);
-    ACPI_FADT* facp = ACPI_FindSDTBySignature(ACPI_SIG_FACP, rsdt,version);
-    if (facp)
+    if (self->Debug) 
     {
-       if (ACPI_Debug) printf("ACPI: Found FACP\n");
-       ACPI_SetFacsPointer(facp->FirmwareCtrl);
-       ACPI_SetDsdtPointer(facp->Dsdt);
-       ACPI_SetSciInterrupt(facp->SCI_Interrupt);
+        printf("ACPI: Using RsdtAddress 0x%x\n",rsdt);
     }
 
-    ACPI_SDTHeader* madt_sdt = ACPI_FindSDTBySignature(ACPI_SIG_APIC, rsdt,version);
+    struct ACPI_FADT* facp = ACPI_FindSDTBySignature(self, ACPI_SIG_FACP, rsdt,version);
+    if (facp)
+    {
+       if (self->Debug) 
+       {
+           printf("ACPI: Found FACP\n");
+       }
+       ACPI_SetFacsPointer(self, facp->FirmwareCtrl);
+       ACPI_SetDsdtPointer(self, facp->Dsdt);
+       ACPI_SetSciInterrupt(self, facp->SCI_Interrupt);
+    }
+
+    struct ACPI_SDTHeader* madt_sdt = ACPI_FindSDTBySignature(self, ACPI_SIG_APIC, rsdt,version);
+
     if (madt_sdt)
     {
-        ACPI_MADT* madt = (ACPI_MADT*)madt_sdt;
-        ACPI_ProcessMADT(madt);
+        struct ACPI_MADT* madt = (struct ACPI_MADT*)madt_sdt;
+        ACPI_ProcessMADT(self, madt);
     }
 }
 
-void ACPI_Destructor()
+void ACPI_Destructor(struct ACPI* self)
 {
-    if (ACPI_Debug)
+    if (self->Debug)
     {
         printf("ACPI: Destructing\n");
     }
-    LinkedList_Destructor(ACPI_IoApicRecordPointers);
-    LinkedList_Destructor(ACPI_InterruptSourceOverrideRecordPointers);
+
+    LinkedList_Destructor(&self->IoApicRecordPointers);
+    LinkedList_Destructor(&self->InterruptSourceOverrideRecordPointers);
 }
 
-void* ACPI_GetEbdaPointer()
+void* ACPI_GetEbdaPointer(struct ACPI* self)
 {
-    //if (ACPI_Debug) printf("ACPI: Getting RSDP Pointer\n");
+    if (self->Debug) 
+    {
+        printf("ACPI: Getting RSDP Pointer\n");
+    }
     uint16_t* ptr = (uint16_t*)ACPI_EBDA_POINTER_ADDR;
     void* vPtr = (void*)(0x0000FFFF & (uint16_t)*ptr);
     return vPtr;
 }
 
-void* ACPI_FindRsdpPointer()
+void* ACPI_FindRsdpPointer(struct ACPI* self)
 {
     void* currentAddr;
-    void* ebdaStart = ACPI_GetEbdaPointer();
+    void* ebdaStart = ACPI_GetEbdaPointer(self);
 
     for (currentAddr = ebdaStart; currentAddr < ebdaStart + 1024; currentAddr+=16)
     {
         if (!strncmp((char*)currentAddr,ACPI_RSDP_HEADER_STR,8))
         {
-           if (ACPI_Debug)  printf("ACPI: Found RSDP Header in EBDA at 0x%x\n",(uint32_t)currentAddr);
+            if (self->Debug)  
+            {
+               printf("ACPI: Found RSDP Header in EBDA at 0x%x\n",(uint32_t)currentAddr);
+            }
             return currentAddr;
         }
     }
@@ -111,7 +141,10 @@ void* ACPI_FindRsdpPointer()
     {
         if (!strncmp((char*)currentAddr,ACPI_RSDP_HEADER_STR,8))
         {
-            if (ACPI_Debug) printf("ACPI: Found RSDP Header in EBDA at 0x%x\n",(uint32_t)currentAddr);
+            if (self->Debug) 
+            {
+                printf("ACPI: Found RSDP Header in EBDA at 0x%x\n",(uint32_t)currentAddr);
+            }
             return currentAddr;
         }
     }
@@ -122,52 +155,70 @@ void* ACPI_FindRsdpPointer()
     {
         if (!strncmp((char*)currentAddr,ACPI_RSDP_HEADER_STR,8))
         {
-            if (ACPI_Debug) printf("ACPI: Found RSDP Header in higher ram at 0x%x\n",(uint32_t)currentAddr);
+            if (self->Debug) 
+            {
+                printf("ACPI: Found RSDP Header in higher ram at 0x%x\n",(uint32_t)currentAddr);
+            }
             return currentAddr;
         }
     }
     return 0;
 }
 
-uint8_t ACPI_CheckRsdpChecksum(ACPI_RsdpDescriptorV1* rsdp, uint8_t version)
+uint8_t ACPI_CheckRsdpChecksum(struct ACPI* self, struct ACPI_RsdpDescriptorV1* rsdp, uint8_t version)
 {
     uint32_t result = 0;
     uint8_t* headerBytes = (uint8_t*)rsdp;
-    uint32_t rsdpLen = sizeof(ACPI_RsdpDescriptorV1);
+    uint32_t rsdpLen = sizeof(struct ACPI_RsdpDescriptorV1);
     int i;
     for (i=0; i<rsdpLen; i++)
     {
         result += headerBytes[i];
     }
-    if (ACPI_Debug) printf("ACPI: V1 Checksum Result 0x%x\n",result);
+    if (self->Debug) 
+    {
+        printf("ACPI: V1 Checksum Result 0x%x\n",result);
+    }
     result &= 0x000000FF;
     result = (result == 0x00);
     
     if (result)
     {
-        if (ACPI_Debug) printf("ACPI: V1 Checksum Valid\n");
+        if (self->Debug) printf("ACPI: V1 Checksum Valid\n");
         if (version)
         {
-            ACPI_RsdpDescriptorV2* v2 = (ACPI_RsdpDescriptorV2*)rsdp;
-            if (ACPI_Debug) printf("ACPI: Version 2 > check not implemented\n");
+            struct ACPI_RsdpDescriptorV2* v2 = (struct ACPI_RsdpDescriptorV2*)rsdp;
+            if (self->Debug) 
+            {
+                printf("ACPI: Version 2 > check not implemented\n");
+            }
         }
     }
     else
     {
-        if (ACPI_Debug) printf("ACPI: Checksum Invalid\n");
+        if (self->Debug) 
+        {
+            printf("ACPI: Checksum Invalid\n");
+        }
     }
 
     return result;
 }
 
 
-uint8_t ACPI_CheckSDTChecksum(ACPI_SDTHeader *tableHeader)
+uint8_t ACPI_CheckSDTChecksum(struct ACPI* self, struct ACPI_SDTHeader *tableHeader)
 {
     unsigned char sum = 0;
-    if (ACPI_Debug) printf("ACPI: Checking SDT Checksum for table of length %d\n", tableHeader->Length);
+    if (self->Debug) 
+    {
+        printf("ACPI: Checking SDT Checksum for table of length %d\n", tableHeader->Length);
+    }
     if (tableHeader->Length > 0xFFFF)
     {
-        if (ACPI_Debug) printf("ACPI: table is too long for me %d\n",0xFFFF);
+        if (self->Debug) 
+        {
+            printf("ACPI: table is too long for me %d\n",0xFFFF);
+        }
         return 0;
     }
     for (int i = 0; i < tableHeader->Length; i++)
@@ -179,18 +230,18 @@ uint8_t ACPI_CheckSDTChecksum(ACPI_SDTHeader *tableHeader)
 }
 
 
-void* ACPI_FindSDTBySignature(const char* sig, void* RootSDT, uint8_t version)
+void* ACPI_FindSDTBySignature(struct ACPI* self, const char* sig, void* RootSDT, uint8_t version)
 {
     void* rsdt = 0;
     int entries = 0;
-    uint32_t  headerLen = sizeof(ACPI_SDTHeader);
+    uint32_t  headerLen = sizeof(struct ACPI_SDTHeader);
 
     if (version)
     {
         /* Version 2.0 > */
-        ACPI_XSDT* rsdt = (ACPI_XSDT*)RootSDT;
+        struct ACPI_XSDT* rsdt = (struct ACPI_XSDT*)RootSDT;
         entries = (rsdt->h.Length - headerLen) / 8;
-        if (ACPI_Debug) 
+        if (self->Debug) 
         {
             printf(
                 "ACPI: V2 - There are %d entries in length %d, header %d\n",
@@ -201,8 +252,8 @@ void* ACPI_FindSDTBySignature(const char* sig, void* RootSDT, uint8_t version)
 
         for (int i = 0; i < entries; i++)
         {
-            ACPI_SDTHeader *h =  (ACPI_SDTHeader*) (uint32_t)start[i];
-            if (ACPI_Debug) printf("ACPI: Found signature (%c%c%c%c)\n",
+            struct ACPI_SDTHeader *h =  (struct ACPI_SDTHeader*) (uint32_t)start[i];
+            if (self->Debug) printf("ACPI: Found signature (%c%c%c%c)\n",
                 h->Signature[0],
                 h->Signature[1],
                 h->Signature[2],
@@ -210,14 +261,14 @@ void* ACPI_FindSDTBySignature(const char* sig, void* RootSDT, uint8_t version)
             );
             if (!strncmp(h->Signature, sig, 4))
             {
-                if (ACPI_Debug) printf("ACPI: at 0x%x\n",h);
-                if (!ACPI_CheckSDTChecksum(h))
+                if (self->Debug) printf("ACPI: at 0x%x\n",h);
+                if (!ACPI_CheckSDTChecksum(self, h))
                 {
-                    if (ACPI_Debug) printf("ACPI: SDT Checksum is invalid\n");
+                    if (self->Debug) printf("ACPI: SDT Checksum is invalid\n");
                 }
                 else
                 {
-                    if (ACPI_Debug) printf("ACPI: SDT Checksum is valid\n");
+                    if (self->Debug) printf("ACPI: SDT Checksum is valid\n");
                     return (void *) h;
                 }
             }
@@ -226,18 +277,18 @@ void* ACPI_FindSDTBySignature(const char* sig, void* RootSDT, uint8_t version)
     else
     {
         /* Version 1.0 */
-        ACPI_RSDT *rsdt = (ACPI_RSDT*) RootSDT;
+        struct ACPI_RSDT *rsdt = (struct ACPI_RSDT*) RootSDT;
         entries = (rsdt->h.Length - headerLen) / 4;
-        if (ACPI_Debug) printf(
+        if (self->Debug) printf(
             "ACPI: V1 - There are %d entries in length %d - header %d = %d\n",
             entries,rsdt->h.Length,headerLen, rsdt->h.Length-headerLen
         );
 
-        ACPI_SDTHeader** start = (ACPI_SDTHeader**) &rsdt->PointerToOtherSDT;
+        struct ACPI_SDTHeader** start = (struct ACPI_SDTHeader**) &rsdt->PointerToOtherSDT;
         for (int i = 0; i < entries; i++)
         {
-            ACPI_SDTHeader *h =  start[i];
-            if (ACPI_Debug) printf("ACPI: Found signature (%c%c%c%c) at 0x%x\n",
+            struct ACPI_SDTHeader *h =  start[i];
+            if (self->Debug) printf("ACPI: Found signature (%c%c%c%c) at 0x%x\n",
                 h->Signature[0],
                 h->Signature[1],
                 h->Signature[2],
@@ -246,57 +297,63 @@ void* ACPI_FindSDTBySignature(const char* sig, void* RootSDT, uint8_t version)
             );
             if (!strncmp(h->Signature, sig, 4))
             {
-                if (ACPI_Debug) printf("ACPI: at 0x%x\n",h);
+                if (self->Debug) printf("ACPI: at 0x%x\n",h);
 
-                if (!ACPI_CheckSDTChecksum(h))
+                if (!ACPI_CheckSDTChecksum(self, h))
                 {
-                   if (ACPI_Debug)  printf("ACPI: SDT Checksum is invalid\n");
+                   if (self->Debug)  printf("ACPI: SDT Checksum is invalid\n");
                 }
                 else
                 {
-                    if (ACPI_Debug)  printf("ACPI: SDT Checksum is valid\n");
+                    if (self->Debug)  printf("ACPI: SDT Checksum is valid\n");
                     return (void *) h;
                 }
             }
         }
     }
 
-    if (ACPI_Debug) printf("ACPI: Could not find %s Signature\n",sig);
+    if (self->Debug) printf("ACPI: Could not find %s Signature\n",sig);
     // No FACP found
     return 0;
 }
 
-void ACPI_SetFacsPointer(uint32_t ptr)
+void ACPI_SetFacsPointer(struct ACPI* self, uint32_t ptr)
 {
-    ACPI_FacsPointer = ptr;
-    if (ACPI_Debug) printf("ACPI: Set FACS Pointer 0x%x\n",ACPI_FacsPointer);
+    self->FacsPointer = ptr;
+    if (self->Debug) 
+    {
+        printf("ACPI: Set FACS Pointer 0x%x\n",self->FacsPointer);
+    }
 }
 
-void ACPI_SetSciInterrupt(uint16_t sci)
+void ACPI_SetSciInterrupt(struct ACPI* self, uint16_t sci)
 {
-    ACPI_SciInterrupt = sci;
-    if (ACPI_Debug) printf("ACPI: Set SCI Interrupt 0x%x\n",ACPI_SciInterrupt);
+    self->SciInterrupt = sci;
+    if (self->Debug) 
+    {
+        printf("ACPI: Set SCI Interrupt 0x%x\n",self->SciInterrupt);
+    }
 }
 
-void ACPI_SetDsdtPointer(uint32_t dsdt)
+void ACPI_SetDsdtPointer(struct ACPI* self, uint32_t dsdt)
 {
-    ACPI_DsdtPointer = dsdt;
-    if (ACPI_Debug) printf("ACPI: Set DSDT pointer 0x%x\n",ACPI_DsdtPointer);
+    self->DsdtPointer = dsdt;
+    if (self->Debug) printf("ACPI: Set DSDT pointer 0x%x\n",self->DsdtPointer);
 }
 
-void APCI_SetDebug(uint8_t debug)
+void APCI_SetDebug(struct ACPI* self, uint8_t debug)
 {
-    ACPI_Debug = debug;
+    self->Debug = debug;
 }
 
-void ACPI_ProcessMADT(ACPI_MADT* madt)
+void ACPI_ProcessMADT(struct ACPI* self, struct ACPI_MADT* madt)
 {
     if (madt->Flags == 0x01)
     {
-        if (ACPI_Debug)
+        if (self->Debug)
         printf("ACPI: Found 8259 in MADT, disabling interrupts\n");
-	    Interrupt_SetMask_PIC1(0x00);
-	    Interrupt_SetMask_PIC2(0x00);
+	    Interrupt_SetMask_PIC1(self->Interrupt, 0x00);
+	    Interrupt_SetMask_PIC2(self->Interrupt, 0x00);
     }
 
     uint32_t recordsBegin = (uint32_t)&madt->RecordsStart;
@@ -306,84 +363,84 @@ void ACPI_ProcessMADT(ACPI_MADT* madt)
     uint8_t error = 0;
     while (current < recordsEnd && !error)
     {
-        ACPI_MADTRecordBase* currentRecord = (ACPI_MADTRecordBase*)current;
+        struct ACPI_MADTRecordBase* currentRecord = (struct ACPI_MADTRecordBase*)current;
 
         switch (currentRecord->RecordType)
         {
             case ACPI_MADT_RECORD_TYPE_PROC_LOCAL_APIC:
             {
-                if (ACPI_Debug)
+                if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Processor Local Apic\n");
                 }
-                ACPI_MADTRecordApic* apic = (ACPI_MADTRecordApic*)current;
+                struct ACPI_MADTRecordApic* apic = (struct ACPI_MADTRecordApic*)current;
                 current += apic->Base.Length;
                 break;
             }
             case ACPI_MADT_RECORD_TYPE_IOAPIC:
             {
-                if (ACPI_Debug)
+                if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: I/O Apic\n");
                 }
-                ACPI_MADTRecordIoApic* ioapic = (ACPI_MADTRecordIoApic*)current;
-                LinkedList_PushBack(ACPI_IoApicRecordPointers, ioapic);
+                struct ACPI_MADTRecordIoApic* ioapic = (struct ACPI_MADTRecordIoApic*)current;
+                LinkedList_PushBack(&self->IoApicRecordPointers, ioapic);
                 current += ioapic->Base.Length;
                 break;
             }
             case ACPI_MADT_RECORD_TYPE_ISO:
             {
-                if (ACPI_Debug)
+                if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Interrupt Source Override\n");
                 }
 
-                ACPI_MADTRecordInputSourceOverride* intSrcOvr = 0;
-                intSrcOvr = (ACPI_MADTRecordInputSourceOverride*)current;
-                LinkedList_PushBack(ACPI_InterruptSourceOverrideRecordPointers,intSrcOvr);
+                struct ACPI_MADTRecordInputSourceOverride* intSrcOvr = 0;
+                intSrcOvr = (struct ACPI_MADTRecordInputSourceOverride*)current;
+                LinkedList_PushBack(&self->InterruptSourceOverrideRecordPointers,intSrcOvr);
                 current += intSrcOvr->Base.Length;
                 break;
             }
             case ACPI_MADT_RECORD_TYPE_NMI:
             {
-                if (ACPI_Debug)
+                if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Non-Maskable Interrupt\n");
                 }
 
-                ACPI_MADTRecordNonMaskableInterrupt* nmi = (ACPI_MADTRecordNonMaskableInterrupt*)current;
+                struct ACPI_MADTRecordNonMaskableInterrupt* nmi = (struct ACPI_MADTRecordNonMaskableInterrupt*)current;
                 current += nmi->Base.Length;
                 break;
             }
             case ACPI_MADT_RECORD_TYPE_LOCAL_APIC_OVR:
             {
-                if (ACPI_Debug)
+                if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Local Apic Address Override\n");
                 }
 
-                ACPI_MADTRecordLocalApicAddressOverride* localApicAddrOvr = (ACPI_MADTRecordLocalApicAddressOverride*)current;
+                struct ACPI_MADTRecordLocalApicAddressOverride* localApicAddrOvr = (struct ACPI_MADTRecordLocalApicAddressOverride*)current;
                 current += localApicAddrOvr->Base.Length;
                 break;
             }
             default:
             {
-                if (ACPI_Debug)
+                if (self->Debug)
                     printf("ACPI: Error unrecognised MADT Record type 0x%x\n",currentRecord->RecordType);
                 error = 1;
                 break;
             }
         }
     }
-    if (ACPI_Debug)
+    if (self->Debug)
     {
-        ACPI_DebugMADT();
+        ACPI_DebugMADT(self);
     }
 }
 
-ACPI_IoApic ACPI_GenerateIoApic(ACPI_MADTRecordIoApic* ioapic)
+struct ACPI_IoApic ACPI_GenerateIoApic(struct ACPI* self, struct ACPI_MADTRecordIoApic* ioapic)
 {
-    ACPI_IoApic device;
+    struct ACPI_IoApic device;
 
     *(volatile uint32_t*)(ioapic->IoApicAddress) = 0;
     device.Id = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
@@ -394,7 +451,6 @@ ACPI_IoApic ACPI_GenerateIoApic(ACPI_MADTRecordIoApic* ioapic)
 
     *(volatile uint32_t*)(ioapic->IoApicAddress) = 2;
     device.Arbitration = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
-
 
     int i, j;
 
@@ -409,9 +465,9 @@ ACPI_IoApic ACPI_GenerateIoApic(ACPI_MADTRecordIoApic* ioapic)
     return device;
 }
 
-void ACPI_DebugIoApic(ACPI_MADTRecordIoApic* record)
+void ACPI_DebugIoApic(struct ACPI* self, struct ACPI_MADTRecordIoApic* record)
 {
-    ACPI_IoApic device = ACPI_GenerateIoApic(record);
+    struct ACPI_IoApic device = ACPI_GenerateIoApic(self, record);
     printf("ACPI: I/0 Apic Record\n",record->IoApicId);
     printf("\tAddress: 0x%x\n",record->IoApicAddress);
     printf("\tGSI Base: 0x%x\n",record->GlobalSystemInterruptBase);
@@ -422,7 +478,7 @@ void ACPI_DebugIoApic(ACPI_MADTRecordIoApic* record)
     int i;
     for (i=0; i<device.IrqRedirectEntries; i++)
     {
-        ACPI_IoApicRedirectionEntry r = device.IrqRedirections[i];
+        union ACPI_IoApicRedirectionEntry r = device.IrqRedirections[i];
         printf("\t\t- %d ----------------------------------------\n",i);
         printf("\t\t\tLow 0x%x High 0x%x\n",r.lowerDword, r.upperDword);
         printf("\t\t\tVector 0x%x\n",r.vector);
@@ -437,7 +493,7 @@ void ACPI_DebugIoApic(ACPI_MADTRecordIoApic* record)
     }
 }
 
-void ACPI_DebugInterruptSourceOverride(ACPI_MADTRecordInputSourceOverride* record)
+void ACPI_DebugInterruptSourceOverride(struct ACPI* self, struct ACPI_MADTRecordInputSourceOverride* record)
 {
     printf("ACPI: Interrupt Source Override\n");
     printf("\tBus Source: 0x%x\n",record->BusSource);
@@ -446,20 +502,20 @@ void ACPI_DebugInterruptSourceOverride(ACPI_MADTRecordInputSourceOverride* recor
     printf("\tFlags: 0x%x\n",record->Flags);
 }
 
-void ACPI_DebugMADT()
+void ACPI_DebugMADT(struct ACPI* self)
 {
     int nElements, i;
     /*
     for (nElements = LinkedList_Size(ACPI_IoApicRecordPointers), i=0; i<nElements; i++)
     {
         ACPI_MADTRecordIoApic* ioapic = LinkedList_At(ACPI_IoApicRecordPointers,i);
-        ACPI_DebugIoApic(ioapic);
+        self->DebugIoApic(ioapic);
     }
     */
 
-    for (nElements = LinkedList_Size(ACPI_InterruptSourceOverrideRecordPointers), i=0; i<nElements; i++)
+    for (nElements = LinkedList_Size(&self->InterruptSourceOverrideRecordPointers), i=0; i<nElements; i++)
     {
-        ACPI_MADTRecordInputSourceOverride* iso = LinkedList_At(ACPI_InterruptSourceOverrideRecordPointers, i);
-        ACPI_DebugInterruptSourceOverride(iso);
+        struct ACPI_MADTRecordInputSourceOverride* iso = LinkedList_At(&self->InterruptSourceOverrideRecordPointers, i);
+        ACPI_DebugInterruptSourceOverride(self, iso);
     }
 }

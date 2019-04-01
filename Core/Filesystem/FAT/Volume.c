@@ -2,153 +2,150 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <Kernel.h>
 #include <Memory/Memory.h>
 #include <Filesystem/MBR/MBR.h>
-#include <Drivers/PS2/Intel8042.h>
+#include <Drivers/PS2/PS2.h>
 #include <Filesystem/FAT/Directory.h>
 #include <Filesystem/FAT/LongFileName.h>
+#include <Filesystem/API/Directory.h>
 
 uint8_t FatVolume_Debug = 1;
 
-FatVolume* FatVolume_Constructor(uint8_t ata_device_id, uint8_t partition_id)
+extern struct Kernel kernel;
+
+bool FatVolume_Constructor(struct FatVolume* self, struct ATA* ata, uint8_t ata_device_id, uint8_t partition_id)
 {
     printf("FatVolume Constructor\n");
-    FatVolume* volume = Memory_Allocate(sizeof (FatVolume));
-    volume->AtaDeviceId = ata_device_id;
-    volume->PartitionId = partition_id;
+    self->ATA = ata;
+    self->AtaDeviceId = ata_device_id;
+    self->PartitionId = partition_id;
 
-    if(!FatVolume_ReadMBR(volume))
+    if(!FatVolume_ReadMBR(self))
     {
-        Memory_Free(volume);
-        return 0;
+        return false;
     }
 
     if (FatVolume_Debug)
     {
-        printf("FatVolume: FirstSector: 0x%x, SectorCount: 0x%x\n",
-            volume->FirstSector, volume->SectorCount);
+        printf("FatVolume: FirstSector: 0x%x, SectorCount: 0x%x\n", self->FirstSector, self->SectorCount);
     }
-    I8042_WaitForKeyPress();
 
-    if (!FatVolume_ReadBPB(volume))
+    if (!FatVolume_ReadBPB(self))
     {
-        Memory_Free(volume);
-        return 0;
+        return false;
     }
-    I8042_WaitForKeyPress();
 
-    if(!FatVolume_ReadRootDirectorySector(volume))
+    if(!FatVolume_ReadRootDirectorySector(self))
     {
-        Memory_Free(volume);
-        return 0;
+        return false;
     }
-    I8042_WaitForKeyPress();
+}
 
-    uint8_t* first_cluster = volume->RootDirSectorData+sizeof(FatDirectory);
-    FatVolume_DebugSector(first_cluster);
+bool FatVolume_GetRootDirectory(struct FatVolume* self, struct Directory* dir)
+{
+    uint8_t* first_cluster = self->RootDirSectorData+sizeof(struct FatDirectory);
+    FatVolume_DebugSector(self, first_cluster);
 
-    I8042_WaitForKeyPress();
+    printf("FatVolume: Reading Root Directory\n");
     printf("FatVolume: Checking for LFN...\n");
 
-    FatLongFileName* lfn = (FatLongFileName*)first_cluster;
+    struct FatLongFileName* lfn = (struct FatLongFileName*)first_cluster;
     if (!FatLongFileName_IsLfn(lfn))
     {
         printf("FatVolume: This entry is not an LFN\n");
-        I8042_WaitForKeyPress();
-        FatDirectory* dir = (FatDirectory*)first_cluster;
+        struct FatDirectory* dir = (struct FatDirectory*)first_cluster;
     }
     else
     {
         FatLongFileName_Debug(lfn);
-        I8042_WaitForKeyPress();
     }
 
-    I8042_WaitForKeyPress();
-
-    return volume;
+    PS2_WaitForKeyPress(&kernel.PS2);
+    return 0;
 }
 
-bool FatVolume_ReadMBR(FatVolume* volume)
+bool FatVolume_ReadMBR(struct FatVolume* self)
 {
-    MBR_RecordPreallocatedConstructor(&volume->MasterBootRecord, volume->AtaDeviceId);
+    MbrConstructor(&self->MasterBootRecord, self->ATA, self->AtaDeviceId);
 
     // Read the MBR to find out where the volume is located 
-    switch (volume->PartitionId)
+    switch (self->PartitionId)
     {
         case 0:
-            volume->FirstSector = volume->MasterBootRecord.PartitionEntry1.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord.PartitionEntry1.SectorCount;
+            self->FirstSector = self->MasterBootRecord.Record.PartitionEntry1.LBAFirstSector;
+            self->SectorCount = self->MasterBootRecord.Record.PartitionEntry1.SectorCount;
             break;
         case 1:
-            volume->FirstSector = volume->MasterBootRecord.PartitionEntry2.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord.PartitionEntry2.SectorCount;
+            self->FirstSector = self->MasterBootRecord.Record.PartitionEntry2.LBAFirstSector;
+            self->SectorCount = self->MasterBootRecord.Record.PartitionEntry2.SectorCount;
             break;
         case 2:
-            volume->FirstSector = volume->MasterBootRecord.PartitionEntry3.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord.PartitionEntry3.SectorCount;
+            self->FirstSector = self->MasterBootRecord.Record.PartitionEntry3.LBAFirstSector;
+            self->SectorCount = self->MasterBootRecord.Record.PartitionEntry3.SectorCount;
             break;
         case 3:
-            volume->FirstSector = volume->MasterBootRecord.PartitionEntry4.LBAFirstSector;
-            volume->SectorCount = volume->MasterBootRecord.PartitionEntry4.SectorCount;
+            self->FirstSector = self->MasterBootRecord.Record.PartitionEntry4.LBAFirstSector;
+            self->SectorCount = self->MasterBootRecord.Record.PartitionEntry4.SectorCount;
             break;        
         default:
-            volume->FirstSector = 0;
-            volume->SectorCount = 0;
+            self->FirstSector = 0;
+            self->SectorCount = 0;
             return false;
             break;
     }
     return true;
 }
 
-bool FatVolume_ReadBPB(FatVolume* volume)
+bool FatVolume_ReadBPB(struct FatVolume* self)
 {
     // Read the BPB from first sector of partition
 
 	uint8_t biosParameterBlockData[512];
     if (FatVolume_Debug) printf("FatVolume: Reading BPB...\n");
-    if (!FatVolume_ReadSector(volume,0,&biosParameterBlockData[0]))
+    if (!FatVolume_ReadSector(self,0,&biosParameterBlockData[0]))
     {
         printf("FatVolume: ATA error reading BPB\n");
         return false;
     }
 
-    memcpy(&volume->BiosParameterBlock, biosParameterBlockData,sizeof(FatBiosParameterBlock));
+    memcpy(&self->BiosParameterBlock, biosParameterBlockData,sizeof(struct FatBiosParameterBlock));
 
-    FatBiosParameterBlock* bpb_tmp = (FatBiosParameterBlock*)biosParameterBlockData;
-    memcpy(&volume->ExtendedBootRecord16, bpb_tmp->ExtendedBootRecord, sizeof(FatExtendedBootRecord16));
+    struct FatBiosParameterBlock* bpb_tmp = (struct FatBiosParameterBlock*)biosParameterBlockData;
+    memcpy(&self->ExtendedBootRecord16, bpb_tmp->ExtendedBootRecord, sizeof(struct FatExtendedBootRecord16));
 
     if (FatVolume_Debug)
     {
-        FatBPB_Debug(&volume->BiosParameterBlock);
-        I8042_WaitForKeyPress();
+        FatBPB_Debug(&self->BiosParameterBlock);
+        PS2_WaitForKeyPress(&kernel.PS2);
 
-        FatBPB_DebugEBR16(&volume->ExtendedBootRecord16);
-        I8042_WaitForKeyPress();
+        FatBPB_DebugEBR16(&self->ExtendedBootRecord16);
+        PS2_WaitForKeyPress(&kernel.PS2);
     }
 
-    volume->RootDirSectorNumber = FatBPB_GetFirstRootDirectorySector(&volume->BiosParameterBlock);
+    self->RootDirSectorNumber = FatBPB_GetFirstRootDirectorySector(&self->BiosParameterBlock);
 
-    printf("FatVolume: Root Directory Sector at 0x%x\n", volume->RootDirSectorNumber);
+    printf("FatVolume: Root Directory Sector at 0x%x\n", self->RootDirSectorNumber);
     return true;
 }
 
-bool FatVolume_ReadRootDirectorySector(FatVolume* volume)
+bool FatVolume_ReadRootDirectorySector(struct FatVolume* self)
 {
-    if (!FatVolume_ReadSector(volume, volume->RootDirSectorNumber, &volume->RootDirSectorData[0]))
+    if (!FatVolume_ReadSector(self, self->RootDirSectorNumber, &self->RootDirSectorData[0]))
     {
         printf("FatVolume: ATA Error while reading first data sector\n");
         return false;
     }
 
-    FatVolume_DebugSector(volume->RootDirSectorData); 
+    FatVolume_DebugSector(self, self->RootDirSectorData); 
 
-    volume->RootDirectory = (FatDirectory*)&volume->RootDirSectorData[0];
+    self->RootDirectory = (struct FatDirectory*)&self->RootDirSectorData[0];
 
-    FatDirectory_Debug(volume->RootDirectory);
+    FatDirectory_Debug(self->RootDirectory);
 
-    I8042_WaitForKeyPress();
+    PS2_WaitForKeyPress(&kernel.PS2);
 
-    if (!FatDirectory_HasAttribute(volume->RootDirectory,FAT_DIR_ATTR_VOLUME_ID))
+    if (!FatDirectory_HasAttribute(self->RootDirectory,FAT_DIR_ATTR_VOLUME_ID))
     {
         printf("FatVolume: Error - Root Directory does not have VOLUME_ID attribute\n");
         return false;
@@ -156,25 +153,24 @@ bool FatVolume_ReadRootDirectorySector(FatVolume* volume)
 
     char vol_id[9];
     memset(vol_id,0,9);
-    memcpy(vol_id,volume->RootDirectory->Name,8);
+    memcpy(vol_id,self->RootDirectory->Name,8);
     printf("FatVolume: Found Volume ID %s\n", vol_id);
 
     return true;
 }
 
-void FatVolume_Destructor(FatVolume* part)
+void FatVolume_Destructor(struct FatVolume* part)
 {
     printf("FatVolume Destructor\n");
-    Memory_Free(part);
+    Memory_Free(&kernel.Memory, part);
 }
 
-uint32_t FatVolume_GetFirstSectorOfCluster
-(uint32_t cluster, uint32_t sectors_per_cluster, uint32_t first_data_sector)
+uint32_t FatVolume_GetFirstSectorOfCluster(struct FatVolume* self, uint32_t cluster, uint32_t sectors_per_cluster, uint32_t first_data_sector)
 {
     return first_data_sector + ((cluster - 2) * sectors_per_cluster);
 }
 
-void FatVolume_DebugSector(uint8_t* sector)
+void FatVolume_DebugSector(struct FatVolume* self, uint8_t* sector)
 {
     int i;
     printf("----------------------------------------\n");
@@ -208,19 +204,20 @@ execution:
       8
     * Increment pointers and/or counters and check the next entry. (goto number 1)
 */
-void FatVolume_ParseEntriesInCluster(uint8_t* cluster)
+void FatVolume_ParseEntriesInCluster(struct FatVolume* self, uint8_t* cluster)
 {
     
 }
 
-bool FatVolume_ReadSector(FatVolume* volume,uint32_t sector,uint8_t* buffer)
+bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector,uint8_t* buffer)
 {
     // Read the BPB from first sector of partition
-    uint32_t physical_sector = volume->FirstSector+sector;
+    uint32_t physical_sector = self->FirstSector+sector;
     if (FatVolume_Debug) printf("FatVolume: Reading volume sector 0x%x (Physical sector 0x%x)\n",sector,physical_sector);
     uint8_t ata_error = ATA_IDEAccess(
+        self->ATA,
         0, // Direction (Read)
-        volume->AtaDeviceId, // Device
+        self->AtaDeviceId, // Device
         physical_sector, // LBA
         1, // NumSectors
         0, // Selector

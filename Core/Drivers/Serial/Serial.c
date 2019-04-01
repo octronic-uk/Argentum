@@ -1,39 +1,42 @@
 #include "Serial.h"
-#include <Drivers/IO/IO.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <Kernel.h>
+#include <Drivers/IO/IO.h>
 #include <Drivers/Interrupt/Interrupt.h>
 
-uint16_t Serial_PortAddresses[4];
-uint8_t Serial_Debug;
 
-void Serial_Constructor()
+extern struct Kernel kernel;
+
+void Serial_Constructor(struct Serial* self, struct Interrupt* interrupt)
 {
-    Serial_Debug = 0;
     printf("Serial: Constructing\n");
-    Serial_SetPortAddressTable();
-    Serial_SetupPort(&Serial_Port1_8N1);
-	Serial_SetInterruptEnableRegister(&Serial_Port1_8N1);
+    self->Debug = 0;
+    self->Interrupt = interrupt;
+    Serial_SetPortAddressTable(self);
+    Serial_SetupPort(self, &Serial_Port1_8N1);
+	Serial_SetInterruptEnableRegister(self, &Serial_Port1_8N1);
 }
 
-void Serial_Destructor()
+void Serial_Destructor(struct Serial* self)
 {
     printf("Serial: Destructing\n");
 }
 
 // Helper Functions ============================================================
 
-void Serial_SetPortAddressTable()
+void Serial_SetPortAddressTable(struct Serial* self)
 {
-    if (Serial_Debug) printf("Serial: Setting Port Address Table\n");
-    Serial_PortAddresses[0] = SERIAL_PORT_1_ADDRESS;
-    Serial_PortAddresses[1] = SERIAL_PORT_2_ADDRESS;
-    Serial_PortAddresses[2] = SERIAL_PORT_3_ADDRESS;
-    Serial_PortAddresses[3] = SERIAL_PORT_4_ADDRESS;
+    if (self->Debug) printf("Serial: Setting Port Address Table\n");
+    self->PortAddresses[0] = SERIAL_PORT_1_ADDRESS;
+    self->PortAddresses[1] = SERIAL_PORT_2_ADDRESS;
+    self->PortAddresses[2] = SERIAL_PORT_3_ADDRESS;
+    self->PortAddresses[3] = SERIAL_PORT_4_ADDRESS;
 }
 
-uint16_t Serial_GetDivisorFromBaudRate(volatile Serial_PortDescriptor* desc)
+uint16_t Serial_GetDivisorFromBaudRate(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
     Serial_BaudRate baudRate = desc->mBaudRate;
     switch(baudRate)
@@ -63,7 +66,7 @@ uint16_t Serial_GetDivisorFromBaudRate(volatile Serial_PortDescriptor* desc)
     return SERIAL_BAUD_DIVISOR_9600; 
 }
 
-uint8_t Serial_GetDataBitsMask(volatile Serial_PortDescriptor* desc)
+uint8_t Serial_GetDataBitsMask(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
     switch (desc->mDataBits)
     {
@@ -79,7 +82,7 @@ uint8_t Serial_GetDataBitsMask(volatile Serial_PortDescriptor* desc)
     }
 }
 
-uint8_t Serial_GetStopBitsMask(volatile Serial_PortDescriptor* desc)
+uint8_t Serial_GetStopBitsMask(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
     switch (desc->mStopBits)
     {
@@ -92,7 +95,7 @@ uint8_t Serial_GetStopBitsMask(volatile Serial_PortDescriptor* desc)
     }
 }
 
-uint8_t Serial_GetParityMask(volatile Serial_PortDescriptor* desc)
+uint8_t Serial_GetParityMask(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
     switch (desc->mParity)
     {
@@ -111,148 +114,148 @@ uint8_t Serial_GetParityMask(volatile Serial_PortDescriptor* desc)
 
 // Register Manipulation Functions =============================================
 
-uint8_t Serial_ReadInterruptIDRegister(volatile Serial_PortDescriptor* desc)
+uint8_t Serial_ReadInterruptIDRegister(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t iirAddress = baseAddress + SERIAL_INTERRUPT_ID_REGISTER_OFFSET;
     desc->mInterruptID = IO_ReadPort8b(iirAddress);
-    if (Serial_Debug) printf("Serial: <- Port %d IIR: 0x%x\n",desc->mPortID, desc->mInterruptID);
+    if (self->Debug) printf("Serial: <- Port %d IIR: 0x%x\n",desc->mPortID, desc->mInterruptID);
 }
 
-void Serial_SetLineStatusRegister(volatile Serial_PortDescriptor* desc, uint8_t val)
+void Serial_SetLineStatusRegister(struct Serial* self, volatile Serial_PortDescriptor* desc, uint8_t val)
 {
-    if (Serial_Debug) printf("Serial: -> Setting line status register 0x%x\n",val);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Setting line status register 0x%x\n",val);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineStatusRegisterAddress = baseAddress + SERIAL_LINE_STATUS_REGISTER_OFFSET;
     IO_WritePort8b(lineStatusRegisterAddress,val);
 }
 
-void Serial_EnableDLAB(volatile Serial_PortDescriptor* desc)
+void Serial_EnableDLAB(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Enabling DLAB on port %d\n",desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Enabling DLAB on port %d\n",desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineControlAddress = baseAddress + SERIAL_LINE_CONTROL_REGISTER_OFFSET;
     uint8_t currentLineControlValue = IO_ReadPort8b(lineControlAddress);
     IO_WritePort8b(lineControlAddress, (currentLineControlValue | SERIAL_DLAB_ENABLE_MASK));
     currentLineControlValue = IO_ReadPort8b(lineControlAddress);
-    if (Serial_Debug) printf("Serial: <- LCR After enable DLAB 0x%x\n",currentLineControlValue);
+    if (self->Debug) printf("Serial: <- LCR After enable DLAB 0x%x\n",currentLineControlValue);
 }
 
-void Serial_DisableDLAB(volatile Serial_PortDescriptor* desc)
+void Serial_DisableDLAB(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Disabling DLAB on port %d\n",desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Disabling DLAB on port %d\n",desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineControlAddress = baseAddress + SERIAL_LINE_CONTROL_REGISTER_OFFSET;
     uint8_t currentLineControlValue = IO_ReadPort8b(lineControlAddress);
     // Set DLAB disabled
     IO_WritePort8b(lineControlAddress, (currentLineControlValue & SERIAL_DLAB_DISABLE_MASK));
     currentLineControlValue = IO_ReadPort8b(lineControlAddress);
-    if (Serial_Debug) printf("Serial: <- LCR After disable DLAB 0x%x\n",currentLineControlValue);
+    if (self->Debug) printf("Serial: <- LCR After disable DLAB 0x%x\n",currentLineControlValue);
 }
 
-void Serial_SetBaudRate(volatile Serial_PortDescriptor* desc)
+void Serial_SetBaudRate(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Setting baud for port %d\n",desc->mPortID);
-    Serial_EnableDLAB(desc);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Setting baud for port %d\n",desc->mPortID);
+    Serial_EnableDLAB(self, desc);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t divisorLsbAddress = baseAddress + SERIAL_DLAB_DIVISOR_LSB_REGISTER_OFFSET;
     uint16_t divisorMsbAddress = baseAddress + SERIAL_DLAB_DIVISOR_MSB_REGISTER_OFFSET;
-    uint16_t baudRateDivisor = Serial_GetDivisorFromBaudRate(desc);
-    if (Serial_Debug) printf("Serial: -> Baud Divisor 0x%x\n",baudRateDivisor);
+    uint16_t baudRateDivisor = Serial_GetDivisorFromBaudRate(self, desc);
+    if (self->Debug) printf("Serial: -> Baud Divisor 0x%x\n",baudRateDivisor);
     // Send Divisor lsb
     IO_WritePort8b(divisorLsbAddress, baudRateDivisor & 0x00FF);
     IO_WritePort8b(divisorMsbAddress, baudRateDivisor >> 8);
-    Serial_DisableDLAB(desc);
+    Serial_DisableDLAB(self, desc);
 }
 
-void Serial_SetDataBits(volatile Serial_PortDescriptor* desc)
+void Serial_SetDataBits(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Setting data bits for port %d\n",desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Setting data bits for port %d\n",desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineControlAddress = baseAddress + SERIAL_LINE_CONTROL_REGISTER_OFFSET;
-    uint8_t mask = Serial_GetDataBitsMask(desc);
+    uint8_t mask = Serial_GetDataBitsMask(self, desc);
     uint8_t currentLineControlValue = IO_ReadPort8b(lineControlAddress);
     IO_WritePort8b(lineControlAddress, ((currentLineControlValue & SERIAL_DATA_BITS_CLEAR_MASK) | mask));
     currentLineControlValue = IO_ReadPort8b(lineControlAddress);
-    if (Serial_Debug) printf("Serial: <- After data bits set 0x%x\n",currentLineControlValue);
+    if (self->Debug) printf("Serial: <- After data bits set 0x%x\n",currentLineControlValue);
 }
 
-void Serial_SetStopBits(volatile Serial_PortDescriptor* desc)
+void Serial_SetStopBits(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Setting stop bits for port %d\n",desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Setting stop bits for port %d\n",desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineControlAddress = baseAddress + SERIAL_LINE_CONTROL_REGISTER_OFFSET;
-    uint8_t mask = Serial_GetStopBitsMask(desc);
+    uint8_t mask = Serial_GetStopBitsMask(self, desc);
     uint8_t currentLineControlValue = IO_ReadPort8b(lineControlAddress);
     IO_WritePort8b(lineControlAddress, ((currentLineControlValue & SERIAL_STOP_BITS_CLEAR_MASK) | mask));
 
     currentLineControlValue = IO_ReadPort8b(lineControlAddress);
-    if (Serial_Debug) printf("Serial: <- After stop bits set 0x%x\n",currentLineControlValue);
+    if (self->Debug) printf("Serial: <- After stop bits set 0x%x\n",currentLineControlValue);
 }
 
-void Serial_SetParity(volatile Serial_PortDescriptor* desc)
+void Serial_SetParity(struct Serial* self,volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Setting parity for port %d\n",desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Setting parity for port %d\n",desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineControlAddress = baseAddress + SERIAL_LINE_CONTROL_REGISTER_OFFSET;
-    uint8_t mask = Serial_GetParityMask(desc);
+    uint8_t mask = Serial_GetParityMask(self, desc);
     uint8_t currentLineControlValue = IO_ReadPort8b(lineControlAddress);
     IO_WritePort8b(lineControlAddress, (currentLineControlValue & SERIAL_PARITY_CLEAR_MASK) | mask);
     currentLineControlValue = IO_ReadPort8b(lineControlAddress);
-    if (Serial_Debug) printf("Serial: <- After Parity set 0x%x\n", currentLineControlValue);
+    if (self->Debug) printf("Serial: <- After Parity set 0x%x\n", currentLineControlValue);
 }
 
-void Serial_SetInterruptEnableRegister(volatile Serial_PortDescriptor* desc)
+void Serial_SetInterruptEnableRegister(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Setting interrupts for port %d 0x%x\n",desc->mPortID,desc->mInterruptEnable);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Setting interrupts for port %d 0x%x\n",desc->mPortID,desc->mInterruptEnable);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t interruptRegisterAddress = baseAddress + SERIAL_INTERRUPT_REGISTER_OFFSET;
     IO_WritePort8b(interruptRegisterAddress, desc->mInterruptEnable);
     uint8_t val = IO_ReadPort8b(interruptRegisterAddress);
-    if (Serial_Debug) printf("Serial: <- Port %d interrupts set 0x%x\n",desc->mPortID, val);
+    if (self->Debug) printf("Serial: <- Port %d interrupts set 0x%x\n",desc->mPortID, val);
 }
 
-void Serial_ReadLineStatusRegister(volatile Serial_PortDescriptor* desc)
+void Serial_ReadLineStatusRegister(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineStatusRegisterAddress = baseAddress + SERIAL_LINE_STATUS_REGISTER_OFFSET;
     uint8_t lineStatus = IO_ReadPort8b(lineStatusRegisterAddress);
     desc->mLineStatus = lineStatus;
 }
 
-void Serial_SetFifoControlRegister(volatile Serial_PortDescriptor* desc)
+void Serial_SetFifoControlRegister(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Set FIFO Control Register 0x%x\n",desc->mFifoControl);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Set FIFO Control Register 0x%x\n",desc->mFifoControl);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t fifoAddress = baseAddress + SERIAL_FIFO_CTRL_REGISTER_OFFSET;
     IO_WritePort8b(fifoAddress, desc->mFifoControl);
 }
 
-void Serial_SetModemControlRegister(volatile Serial_PortDescriptor* desc)
+void Serial_SetModemControlRegister(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: -> Set Modem Control 0x%x\n",desc->mModemControl);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Set Modem Control 0x%x\n",desc->mModemControl);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t mcAddress = baseAddress + SERIAL_MODEM_CONTROL_REGISTER_OFFSET;
     IO_WritePort8b(mcAddress, desc->mModemControl);
     uint8_t val = IO_ReadPort8b(mcAddress);
-    if (Serial_Debug) printf("Serial: <- After set modem control: 0x%x\n",val);
+    if (self->Debug) printf("Serial: <- After set modem control: 0x%x\n",val);
 }
 
 // Serial IO Functions ========================================================
 
-uint8_t Serial_Read8b(volatile Serial_PortDescriptor* desc)
+uint8_t Serial_Read8b(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
     while(!desc->mCanRead) {} 
 
-    if (Serial_Debug) printf("Serial: <- Reading char from port %d\n", desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: <- Reading char from port %d\n", desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     desc->mCanRead = 0;
     uint16_t data = IO_ReadPort8b(baseAddress);
-    if (Serial_Debug) printf("Serial <- Read %c from port %d\n",data, desc->mPortID);
+    if (self->Debug) printf("Serial <- Read %c from port %d\n",data, desc->mPortID);
     return data;
 }
 
-void Serial_Write8b(volatile Serial_PortDescriptor* desc, uint8_t data)
+void Serial_Write8b(struct Serial* self, volatile Serial_PortDescriptor* desc, uint8_t data)
 {
     /* 
         TODO 
@@ -261,29 +264,29 @@ void Serial_Write8b(volatile Serial_PortDescriptor* desc, uint8_t data)
     */
     while (!desc->mCanWrite) {}
 
-    if (Serial_Debug) printf("Serial: -> Writing char on port %d\n", desc->mPortID);
-    uint16_t baseAddress = Serial_PortAddresses[desc->mPortID-1];
+    if (self->Debug) printf("Serial: -> Writing char on port %d\n", desc->mPortID);
+    uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     desc->mCanWrite = 0;
     IO_WritePort8b(baseAddress, data);
 }
 
-void Serial_WriteString(volatile Serial_PortDescriptor* desc, const char* string)
+void Serial_WriteString(struct Serial* self, volatile Serial_PortDescriptor* desc, const char* string)
 {
-    if (Serial_Debug) printf("Serial: Writing string out on port %d...\n",desc->mPortID);
+    if (self->Debug) printf("Serial: Writing string out on port %d...\n",desc->mPortID);
     while (*string)
     {
-        Serial_Write8b(desc, *string);
+        Serial_Write8b(self, desc, *string);
         string++;
     }
 }
 
 // Debug Functions =============================================================
 
-void Serial_DebugLineStatus(volatile Serial_PortDescriptor* desc)
+void Serial_DebugLineStatus(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) 
+    if (self->Debug) 
     {
-        Serial_ReadLineStatusRegister(desc);
+        Serial_ReadLineStatusRegister(self, desc);
         printf("Serial: <- Current Line status: 0x%x\n",desc->mLineStatus);
         if ((desc->mLineStatus & SERIAL_STATUS_DATA_READY)!=0)
         {
@@ -320,11 +323,11 @@ void Serial_DebugLineStatus(volatile Serial_PortDescriptor* desc)
     }
 }
 
-void Serial_DebugInterruptID(volatile Serial_PortDescriptor* desc)
+void Serial_DebugInterruptID(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug)
+    if (self->Debug)
     {
-        Serial_ReadInterruptIDRegister(desc);
+        Serial_ReadInterruptIDRegister(self, desc);
         printf("Serial: Current Interrupt ID Register 0x%x\n",desc->mInterruptID);
         if ((desc->mInterruptID & SERIAL_IIR_NO_INTERRUPT_PENDING) != 0)
         {
@@ -364,21 +367,22 @@ void Serial_DebugInterruptID(volatile Serial_PortDescriptor* desc)
 
 // Interrupt Handling ==========================================================
 
-void Serial_SetupInterruptForPort1()
+void Serial_SetupInterruptForPort1(struct Serial* self)
 {
-    if(Serial_Debug) printf("Serial: Setting up interrupt handler function for port 1\n");
-	Interrupt_SetHandlerFunction(4,Serial_Port1InterruptHandler);
+    if(self->Debug) printf("Serial: Setting up interrupt handler function for port 1\n");
+	Interrupt_SetHandlerFunction(self->Interrupt, 4,Serial_Port1InterruptHandler);
 }
 
 void Serial_Port1InterruptHandler()
 {
+    struct Serial* self = &kernel.Serial;
     volatile Serial_PortDescriptor* desc = &Serial_Port1_8N1;
-    if (Serial_Debug) 
+    if (self->Debug) 
     {
         printf("Serial: Interrupt on Port 1\n");
     }
-    Serial_ReadLineStatusRegister(desc);
-    Serial_ReadInterruptIDRegister(desc);
+    Serial_ReadLineStatusRegister(self, desc);
+    Serial_ReadInterruptIDRegister(self, desc);
 
     if ((desc->mInterruptID & SERIAL_IIR_THRE) != 0) 
     {
@@ -389,7 +393,7 @@ void Serial_Port1InterruptHandler()
         desc->mCanRead = 1;
     }
 
-    if (Serial_Debug) 
+    if (self->Debug) 
     {
         printf("Serial: Interrupt on port 1 done\n");
     }
@@ -397,41 +401,41 @@ void Serial_Port1InterruptHandler()
 
 // API Level Functions ========================================================
 
-void Serial_SetupPort(volatile Serial_PortDescriptor* desc)
+void Serial_SetupPort(struct Serial* self, volatile Serial_PortDescriptor* desc)
 {
-    if (Serial_Debug) printf("Serial: Setting up Port %d\n",desc->mPortID);
+    if (self->Debug) printf("Serial: Setting up Port %d\n",desc->mPortID);
 
     // Stash and disable interrupts before setup
     uint8_t previousInterrupts = desc->mInterruptEnable;
     desc->mInterruptEnable = 0;
-    Serial_SetInterruptEnableRegister(desc);
+    Serial_SetInterruptEnableRegister(self, desc);
 
-    Serial_SetBaudRate(desc);
-    Serial_SetDataBits(desc);
-    Serial_SetStopBits(desc);
-    Serial_SetParity(desc);
+    Serial_SetBaudRate(self, desc);
+    Serial_SetDataBits(self, desc);
+    Serial_SetStopBits(self, desc);
+    Serial_SetParity(self, desc);
 
     switch (desc->mPortID)
     {
         case 1:
-            Serial_SetupInterruptForPort1();
+            Serial_SetupInterruptForPort1(self);
             break;
         default:
             break;
     }
 
-    Serial_SetFifoControlRegister(desc); 
-    Serial_SetModemControlRegister(desc);
+    Serial_SetFifoControlRegister(self, desc); 
+    Serial_SetModemControlRegister(self, desc);
 
     // restore Interrupts
     desc->mInterruptEnable = previousInterrupts;
 }
 
-void Serial_TestPort1()
+void Serial_TestPort1(struct Serial* self)
 {
     char* test_str = "\n\nHello, World! From COM1\n\n";
     printf("Serial: Writing a test string to port %d\n", Serial_Port1_8N1.mPortID);
-    Serial_WriteString(&Serial_Port1_8N1, test_str);
+    Serial_WriteString(self, &Serial_Port1_8N1, test_str);
     /*
     int bMax = 64;
     int i;

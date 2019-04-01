@@ -3,101 +3,95 @@
 #include <stdio.h>
 #include <string.h>
 
-LinkedList* LinkedList_Constructor()
+void LinkedList_Constructor(struct LinkedList* self, struct Memory* memory)
 {
-	LinkedList* list = Memory_Allocate(sizeof(LinkedList));
-	if (!list)
-	{
-		return 0;
-	}
-	list->head = 0;
-	return list;
+	self->Head = 0;
+	self->Memory = memory;
 }
 
-void LinkedList_Destructor(LinkedList * list)
+void LinkedList_Destructor(struct LinkedList* self)
 {
-	LinkedListNode* current = list->head;
-	LinkedListNode* next = current;
+	struct LinkedListNode* current = self->Head;
+	struct LinkedListNode* next = current;
 	while(current != 0)
 	{
-		next = current->next;
-		Memory_Free(current);
+		next = current->Next;
+		Memory_Free(self->Memory, current);
 		current = next;
 	}
-	Memory_Free(list);
 }
 
-void LinkedList_Display(LinkedList * list)
+void LinkedList_Display(struct LinkedList* self)
 {
-	LinkedListNode * current = list->head;
-	if(list->head == 0)
+	struct LinkedListNode* current = self->Head;
+	if(self->Head == 0)
 	{
 		return;
 	}
 
-	for(; current != 0; current = current->next)
+	for(; current != 0; current = current->Next)
 	{
-		printf("%d\n", (uint32_t)current->data);
+		printf("%d\n", (uint32_t)current->Data);
 	}
 }
 
-void LinkedList_PushBack(LinkedList* list, void* data)
+void LinkedList_PushBack(struct LinkedList* self, void* data)
 {
-	LinkedListNode * current = 0;
-	if(list->head == 0)
+	struct LinkedListNode* current = 0;
+	if(self->Head == 0)
 	{
-		list->head = LinkedList_CreateNode(data);
+		self->Head = LinkedList_CreateNode(self,data);
 	}
 	else
 	{
-		current = list->head;
-		while (current->next!=0)
+		current = self->Head;
+		while (current->Next != 0)
 		{
-			current = current->next;
+			current = current->Next;
 		}
-		current->next = LinkedList_CreateNode(data);
+		current->Next = LinkedList_CreateNode(self, data);
 	}
 }
 
-void LinkedList_Delete(LinkedList* list, void* data)
+void LinkedList_Delete(struct LinkedList* self, void* data)
 {
-	LinkedListNode * current = list->head;
-	LinkedListNode * previous = current;
+	struct LinkedListNode* current = self->Head;
+	struct LinkedListNode* previous = current;
 	while(current != 0)
 	{
-		if(current->data == data)
+		if(current->Data == data)
 		{
-			previous->next = current->next;
-			if(current == list->head)
+			previous->Next = current->Next;
+			if(current == self->Head)
 			{
-				list->head = current->next;
+				self->Head = current->Next;
 			}
-			Memory_Free(current);
+			Memory_Free(self->Memory, current);
 			return;
 		}
 		previous = current;
-		current = current->next;
+		current = current->Next;
 	}
 }
 
-void LinkedList_Reverse(LinkedList* list)
+void LinkedList_Reverse(struct LinkedList* self)
 {
-	LinkedListNode* reversed = 0;
-	LinkedListNode* current = list->head;
-	LinkedListNode* temp = 0;
+	struct LinkedListNode* reversed = 0;
+	struct LinkedListNode* current = self->Head;
+	struct LinkedListNode* temp = 0;
 	while(current != 0)
 	{
 		temp = current;
-		current = current->next;
-		temp->next = reversed;
+		current = current->Next;
+		temp->Next = reversed;
 		reversed = temp;
 	}
-	list->head = reversed;
+	self->Head = reversed;
 }
 
-void* LinkedList_At(LinkedList* list, unsigned int index)
+void* LinkedList_At(struct LinkedList* self, unsigned int index)
 {
-	LinkedListNode* current = list->head;
+	struct LinkedListNode* current = self->Head;
 
 	if (!current)
 	{
@@ -107,37 +101,36 @@ void* LinkedList_At(LinkedList* list, unsigned int index)
     unsigned int i;
 	for (i=0; i<index; i++)
     {
-        current = current->next;
+        current = current->Next;
         if (!current)
         {
             return 0;
         }
     }
-    return current->data;
+    return current->Data;
 }
 
 
-LinkedListNode* LinkedList_CreateNode(void* data)
+struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data)
 {
-	LinkedListNode* newNode = Memory_Allocate(sizeof(LinkedListNode));
+	struct LinkedListNode* newNode = Memory_Allocate(self->Memory, sizeof(struct LinkedListNode));
 	if (!newNode)
 	{
 		return 0;
 	}
-	newNode->data = data;
-	newNode->next = 0;
+	newNode->Data = data;
+	newNode->Next = 0;
 	return newNode;
 }
 
-
-unsigned int LinkedList_Size(LinkedList* list)
+unsigned int LinkedList_Size(struct LinkedList* self)
 {
     unsigned int size = 0;
-    LinkedListNode* current = list->head;
+    struct LinkedListNode* current = self->Head;
     while (current)
     {
         size++;
-        current = current->next;
+        current = current->Next;
     }
     return size;
 }

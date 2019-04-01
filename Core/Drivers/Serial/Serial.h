@@ -125,44 +125,51 @@ static volatile Serial_PortDescriptor Serial_Port1_8N1  =
     .mInterruptID = 0,
 };
 
-void Serial_Constructor();
-void Serial_Destrctor();
+struct Serial
+{
+    struct Interrupt* Interrupt;
+    uint16_t PortAddresses[4];
+    uint8_t  Debug;
+};
+
+void Serial_Constructor(struct Serial* self, struct Interrupt* interrupt);
+void Serial_Destrctor(struct Serial* self);
 
 // Helper Functions
-void Serial_SetPortAddressTable();
-uint16_t Serial_GetDivisorFromBaudRate(volatile Serial_PortDescriptor* desc);
-uint8_t Serial_GetDataBitsMask(volatile Serial_PortDescriptor* desc);
-uint8_t Serial_GetStopBitsMask(volatile Serial_PortDescriptor* desc);
-uint8_t Serial_GetParityMask(volatile Serial_PortDescriptor* desc);
+void Serial_SetPortAddressTable(struct Serial* self);
+uint16_t Serial_GetDivisorFromBaudRate(struct Serial* self, volatile Serial_PortDescriptor* desc);
+uint8_t Serial_GetDataBitsMask(struct Serial* self, volatile Serial_PortDescriptor* desc);
+uint8_t Serial_GetStopBitsMask(struct Serial* self, volatile Serial_PortDescriptor* desc);
+uint8_t Serial_GetParityMask(struct Serial* self, volatile Serial_PortDescriptor* desc);
 
 // Register Manipulation
-void Serial_EnableDLAB(volatile Serial_PortDescriptor* desc);
-void Serial_DisableDLAB(volatile Serial_PortDescriptor* desc);
-void Serial_SetBaudRate(volatile Serial_PortDescriptor* desc);
-void Serial_SetDataBits(volatile Serial_PortDescriptor* desc);
-void Serial_SetStopBits(volatile Serial_PortDescriptor* desc);
-void Serial_SetParity(volatile Serial_PortDescriptor* desc);
-void Serial_SetInterruptEnableRegister(volatile Serial_PortDescriptor* desc);
-void Serial_SetModemControlRegister(volatile Serial_PortDescriptor*);
-void Serial_SetFifoControlRegister(volatile Serial_PortDescriptor*);
-void Serial_SetLineStatusRegister(volatile Serial_PortDescriptor* desc, uint8_t val);
+void Serial_EnableDLAB(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_DisableDLAB(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_SetBaudRate(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_SetDataBits(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_SetStopBits(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_SetParity(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_SetInterruptEnableRegister(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_SetModemControlRegister(struct Serial* self, volatile Serial_PortDescriptor*);
+void Serial_SetFifoControlRegister(struct Serial* self, volatile Serial_PortDescriptor*);
+void Serial_SetLineStatusRegister(struct Serial* self, volatile Serial_PortDescriptor* desc, uint8_t val);
 
-uint8_t Serial_ReadInterruptIDRegister(volatile Serial_PortDescriptor* desc);
-void Serial_ReadLineStatusRegister(volatile Serial_PortDescriptor* desc);
+uint8_t Serial_ReadInterruptIDRegister(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_ReadLineStatusRegister(struct Serial* self, volatile Serial_PortDescriptor* desc);
 
 // Interrupts
 void Serial_Port1InterruptHandler();
-void Serial_SetupInterruptForPort1();
+void Serial_SetupInterruptForPort1(struct Serial* self );
 
 // Serial IO
-uint8_t Serial_Read8b(volatile Serial_PortDescriptor* desc);
-void Serial_Write8b(volatile Serial_PortDescriptor* desc, uint8_t data);
-void Serial_WriteString(volatile Serial_PortDescriptor* desc, const char* string);
+uint8_t Serial_Read8b(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_Write8b(struct Serial* self, volatile Serial_PortDescriptor* desc, uint8_t data);
+void Serial_WriteString(struct Serial* self, volatile Serial_PortDescriptor* desc, const char* string);
 
 // Debug
-void Serial_DebugLineStatus(volatile Serial_PortDescriptor* desc);
-void Serial_DebugInterruptID(volatile Serial_PortDescriptor* desc);
+void Serial_DebugLineStatus(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_DebugInterruptID(struct Serial* self, volatile Serial_PortDescriptor* desc);
 
 // API
-void Serial_SetupPort(volatile Serial_PortDescriptor* desc);
-void Serial_TestPort1();
+void Serial_SetupPort(struct Serial* self, volatile Serial_PortDescriptor* desc);
+void Serial_TestPort1(struct Serial* self);

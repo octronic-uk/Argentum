@@ -1,60 +1,33 @@
 #include <Kernel.h>
-
 #include <stdio.h>
 #include <unistd.h>
 
-#include <Memory/Memory.h>
-
-#include <ACPI/ACPI.h>
-#include <Drivers/ATA/ATA.h>
-#include <Drivers/Screen/Screen.h>
-#include <Drivers/Interrupt/Interrupt.h>
-#include <Drivers/PCI/PCI.h>
-#include <Drivers/Serial/Serial.h>
-#include <Drivers/PS2/Intel8042.h>
-#include <Filesystem/FAT/Volume.h>
-
-#include <Scheduler/Scheduler.h>
-
-void Kernel_Constructor
-(multiboot_info_t * mbi)
+void Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 {
-	Screen_Initialize();
+	Screen_Constructor(&self->Screen);
 	printf("Taskie Kernel 1.0\n");
-	Memory_Constructor(mbi);
-	Interrupt_Constructor();
-	Serial_Constructor();
-	Serial_TestPort1();
+	Memory_Constructor(&self->Memory, mbi);
+	Interrupt_Constructor(&self->Interrupt);
+	Serial_Constructor(&self->Serial,&self->Interrupt);
+	Serial_TestPort1(&self->Serial);
 	//printf_to_serial();
 
-	I8042_Constructor();
+	PS2_Constructor(&self->PS2,&self->Interrupt);
 	
-	ACPI_Constructor();
-	PCI_Constructor();
-	ATA_Constructor();
+	ACPI_Constructor(&self->ACPI,&self->Interrupt, &self->Memory);
+	PCI_Constructor(&self->PCI,&self->Memory);
 
-    I8042_WaitForKeyPress();
+	ATA_Constructor(&self->ATA,&self->PCI);
 
-	Kernel_InitStorageManager();
+    PS2_WaitForKeyPress(&self->PS2);
+
+	Kernel_InitStorageManager(self);
 }
 
 void
-Kernel_InitStorageManager()
+Kernel_InitStorageManager(struct Kernel* self)
 {
-	printf("Kernel: Initialising Storage Manager %s\n",ATA_IDEDevices[0].model);
-	FatVolume* part = FatVolume_Constructor(0,0);
-}
-
-void
-Kernel_ExecuteTasks
-()
-{
-   Scheduler_ExecuteTasks();
-}
-
-Task*
-Kernel_CreateTask
-(const char* name, void(*e)(void))
-{
-   return Scheduler_CreateTask(name,e);
+	printf("Kernel: Initialising Storage Manager %s\n",self->ATA.IDEDevices[0].model);
+	struct FatVolume part;
+	FatVolume_Constructor(&part, &self->ATA, 0,0);
 }

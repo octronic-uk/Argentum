@@ -72,7 +72,7 @@
 					entry at 0x16.
 */
 
-typedef struct
+struct FatBiosParameterBlock
 {
 	uint8_t  Jmp[3];
 	uint8_t  OEMIdentifier[8];
@@ -89,9 +89,7 @@ typedef struct
 	uint32_t HiddenSectorCount;
 	uint32_t TotalSectors32;
 	uint8_t  ExtendedBootRecord[54];
-} 
-__attribute__((packed)) 
-FatBiosParameterBlock;
+} __attribute__((packed));
 
 /*
 	Offset      Length(b)	Meaning
@@ -118,7 +116,7 @@ FatBiosParameterBlock;
 	
 	510/0x1FE	2	        Bootable partition signature 0xAA55.
 */
-typedef struct
+struct FatExtendedBootRecord16
 {
 	uint8_t  DriveNumber;
 	uint8_t  Flags;
@@ -128,9 +126,7 @@ typedef struct
 	uint8_t  SystemIdentifierString[8];
 	uint8_t  BootCode[448]; 
 	uint16_t BootPartitionSignature;
-} 
-__attribute__((packed)) 
-FatExtendedBootRecord16;
+} __attribute__((packed));
 
 /*
 	Offset      Length(b)   Meaning
@@ -168,7 +164,7 @@ FatExtendedBootRecord16;
 	
 	510/0x1FE	2           Bootable partition signature 0xAA55.
 */
-typedef struct
+struct FatExtendedBootRecord32
 {
 	uint32_t SectorsPerFAT;
 	uint16_t Flags;
@@ -185,20 +181,18 @@ typedef struct
 	uint8_t  SystemIdentifier[8];
 	uint8_t  BootCode[420]; 
 	uint16_t BootPartitionSignature;
-} 
-__attribute__((packed)) 
-FatExtendedBootRecord32;
+} __attribute__((packed));
 
-void FatBPB_Debug(FatBiosParameterBlock* block);
-void FatBPB_DebugEBR16(FatExtendedBootRecord16* ebr16);
-void FatBPB_DebugEBR32(FatExtendedBootRecord32* ebr32);
+void FatBPB_Debug(struct FatBiosParameterBlock* self);
+void FatBPB_DebugEBR16(struct FatExtendedBootRecord16* ebr16);
+void FatBPB_DebugEBR32(struct FatExtendedBootRecord32* ebr32);
 
-uint32_t FatBPB_GetTotalSectors(FatBiosParameterBlock* block);
-uint32_t FatBPB_GetFatSizeInSectors(FatBiosParameterBlock* bpb);
-uint32_t FatBPB_GetRootDirectorySizeInSectors(FatBiosParameterBlock* bpb);
-uint32_t FatBPB_GetFirstDataSector(FatBiosParameterBlock* bpb);
-uint32_t FatBPB_GetFirstFATSector(FatBiosParameterBlock* bpb);
-uint32_t FatBPB_GetTotalDataSectors(FatBiosParameterBlock* bpb);
-uint32_t FatBPB_GetTotalClusters(FatBiosParameterBlock* bpb);
-uint32_t FatBPB_GetFirstRootDirectorySector(FatBiosParameterBlock* bpb);
-FatType FatBPB_GetFATType(FatBiosParameterBlock* bpb);
+uint32_t FatBPB_GetTotalSectors(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetFatSizeInSectors(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetRootDirectorySizeInSectors(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetFirstDataSector(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetFirstFATSector(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetTotalDataSectors(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetTotalClusters(struct FatBiosParameterBlock* self);
+uint32_t FatBPB_GetFirstRootDirectorySector(struct FatBiosParameterBlock* self);
+enum FatType FatBPB_GetFATType(struct FatBiosParameterBlock* self);
