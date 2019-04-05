@@ -1,0 +1,42 @@
+Nomenclature
+
+Drivers: 
+    Drivers are mplemented within kernel space. They are designed to abstract hardware specific 
+    implementation details away from API Developers.
+
+    Driver interfaces will initially be non-specified. until a point where enough use-cases have
+    arisen to produce a usable list of API functions that would be required. 
+
+(o) = Object
+(f) = Function
+
+(o) Device Managers
+ |--(o) MemoryManager
+     |--(f) Allocate block
+     |--(f) Free block
+
+    (o) StorageManager
+     |--(f) List Drives
+     |--(f) Get Drive Object
+         |--(o) Drive
+             |--(f) List Volumes
+             |--(f) Get Volume Object
+             |--(o) Volume
+                 |--(f) Create Directory
+                 |--(f) Remove Directory
+                 |--(f) Get Directory Object
+                 |--(o) Directory
+                     |--(f) List Directories
+                     |--(f) Rename Directory
+                 |
+                 |--(o) File
+                 |--(f) Create File
+                 |--(f) Delete File
+                 |--(f) Get File Object
+                     |--(f) Rename File
+
+StorageManager Has A:
+    LinkedList of Drive
+
+Drive Has A:
+    LinkedList of Volume

@@ -2,32 +2,86 @@
 #include <stdio.h>
 #include <unistd.h>
 
-void Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
+bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 {
-	Screen_Constructor(&self->Screen);
-	printf("Taskie Kernel 1.0\n");
-	Memory_Constructor(&self->Memory, mbi);
-	Interrupt_Constructor(&self->Interrupt);
-	Serial_Constructor(&self->Serial,&self->Interrupt);
-	Serial_TestPort1(&self->Serial);
-	//printf_to_serial();
+	self->MultibootInfo = mbi;
+	if(!Kernel_InitDrivers(self))
+	{
+		printf("Kernel: FATAL - Failed to init drivers\n");
+		return false;
+	}
 
-	PS2_Constructor(&self->PS2,&self->Interrupt);
-	
-	ACPI_Constructor(&self->ACPI,&self->Interrupt, &self->Memory);
-	PCI_Constructor(&self->PCI,&self->Memory);
+	if (!Kernel_InitObjects(self))
+	{
+		printf("Kernel: FATAL - Failed to init objects\n");
+		return false;
+	}
 
-	ATA_Constructor(&self->ATA,&self->PCI);
-
-    PS2_WaitForKeyPress(&self->PS2);
-
-	Kernel_InitStorageManager(self);
+	printf("Kernel: BUILD - %s\n", TASKIE_BUILD_DATE);
+	return true;
 }
 
-void
-Kernel_InitStorageManager(struct Kernel* self)
+bool Kernel_InitDrivers(struct Kernel* self)
 {
-	printf("Kernel: Initialising Storage Manager %s\n",self->ATA.IDEDevices[0].model);
-	struct FatVolume part;
-	FatVolume_Constructor(&part, &self->ATA, 0,0);
+	printf_SetKernel(self);
+	if(!ScreenDriver_Constructor(&self->Screen, self))
+	{
+		return false;
+	}
+
+	if(!MemoryDriver_Constructor(&self->Memory, self))
+	{
+		return false;
+	}
+
+	if(!InterruptDriver_Constructor(&self->Interrupt, self))
+	{
+		return false;
+	}
+
+	if (!PITDriver_Constructor(&self->PIT, self))
+	{
+		return false;
+	}
+	if (!SerialDriver_Constructor(&self->Serial, self))
+	{
+		return false;
+	}
+	//SerialDriver_TestPort1(&self->Serial);
+	if(!PS2Driver_Constructor(&self->PS2, self))
+	{
+		return false;
+	}
+
+	InterruptDriver_SetMask_PIC1(&self->Interrupt, 0x00);
+	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0x00);
+	InterruptDriver_Enable_STI(&self->Interrupt);
+
+	if (!ACPIDriver_Constructor(&self->ACPI, self))
+	{
+		return false;
+	}
+
+	if (!PCIDriver_Constructor(&self->PCI, self))
+	{
+		return false;
+	}
+
+	if (!ATADriver_Constructor(&self->ATA, self))
+	{
+		return false;
+	}
+
+	printf("Kernel: Init Drivers Complete\n");
+	return true;
+}
+
+bool Kernel_InitObjects(struct Kernel* self)
+{
+	if (!StorageManager_Constructor(&self->StorageManager, self))
+	{
+		return false;
+	}
+	printf("Kernel: Init Objects Complete\n");
+	return true;
 }

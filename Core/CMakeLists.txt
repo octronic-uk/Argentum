@@ -8,7 +8,8 @@ file(GLOB_RECURSE SRC_FILES "*.c")
 include_directories(
     TaskieCore 
     ${CMAKE_SOURCE_DIR}/Core 
-    ${CMAKE_SOURCE_DIR}/Core/LibC/include
+    ${CMAKE_SOURCE_DIR}/Core/Clib/include
+    ${CMAKE_SOURCE_DIR}/Core/Drivers/ACPI/include
 )
 
 add_library(TaskieCore ${SRC_FILES})

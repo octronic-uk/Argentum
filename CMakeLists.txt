@@ -2,12 +2,22 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(Taskie C)
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -nostartfiles -nostdlib")
+execute_process(COMMAND date +%Y-%m-%d_%H%M OUTPUT_VARIABLE TASKIE_BUILD_DATE)
+set( TASKIE_BUILD_DATE ${TASKIE_BUILD_DATE})
+string(STRIP ${TASKIE_BUILD_DATE} TASKIE_BUILD_DATE)
+message("Taskie Build Date ${TASKIE_BUILD_DATE}")
+
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -nostdinc -nostartfiles -nostdlib")
+
+add_definitions(-DTASKIE_BUILD_DATE=\"${TASKIE_BUILD_DATE}\")
+
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 # For YCM Completion
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+
 
 set (TASKIE_BUILD_DOC OFF)
 

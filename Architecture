@@ -1,5 +1,0 @@
-Device Managers
-    MemoryManager
-        -> Request Memory
-    StorageManager
-        -> Volume

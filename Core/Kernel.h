@@ -2,29 +2,37 @@
 
 #include "../Boot/multiboot.h"
 
-#include <Memory/Memory.h>
 
-#include <Drivers/ACPI/ACPI.h>
-#include <Drivers/ATA/ATA.h>
-#include <Drivers/Screen/Screen.h>
-#include <Drivers/Interrupt/Interrupt.h>
-#include <Drivers/PCI/PCI.h>
-#include <Drivers/Serial/Serial.h>
-#include <Drivers/PS2/PS2.h>
-#include <Filesystem/FAT/Volume.h>
+#include <Drivers/ACPI/ACPIDriver.h>
+#include <Drivers/ATA/ATADriver.h>
+#include <Drivers/Interrupt/InterruptDriver.h>
+#include <Drivers/Memory/MemoryDriver.h>
+#include <Drivers/PCI/PCIDriver.h>
+#include <Drivers/PIT/PITDriver.h>
+#include <Drivers/PS2/PS2Driver.h>
+#include <Drivers/Screen/ScreenDriver.h>
+#include <Drivers/Serial/SerialDriver.h>
+
+#include <Objects/StorageManager/StorageManager.h>
 
 struct Kernel
 {
-    struct ACPI ACPI;
-    struct ATA ATA;
-    struct Interrupt Interrupt;
-    struct Memory Memory;
-    struct PCI PCI;
-    struct Screen Screen;
-    struct Serial Serial;
-    struct PS2 PS2;
+    multiboot_info_t* MultibootInfo;
+    // Drivers
+    struct ACPIDriver ACPI;
+    struct ATADriver ATA;
+    struct InterruptDriver Interrupt;
+    struct MemoryDriver Memory;
+    struct PCIDriver PCI;
+    struct PITDriver PIT;
+    struct PS2Driver PS2;
+    struct ScreenDriver Screen;
+    struct SerialDriver Serial;
+    // Objects
+    struct StorageManager StorageManager;
 };
 
 
-void Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi);
-void Kernel_InitStorageManager(struct Kernel* self);
+bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi);
+bool Kernel_InitDrivers(struct Kernel* self);
+bool Kernel_InitObjects(struct Kernel* self);

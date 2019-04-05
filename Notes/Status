@@ -1,0 +1,37 @@
+Drivers
+    * ACPI  
+        - Reading FACP
+        - Reading ACPI
+        - Reading MADT
+    * ATA 
+        - PIO Read/Write Implemented, Needs DMA
+    * Interrupt
+        - Reading b/w/l
+        - Writing b/w/l
+        - Reading b/w/l Strings
+        - Writing b/w/l Strings
+    * PCI
+        - Reading Config Headers
+        - Writing Config Data
+        - Brute force scanning. Needs optimisation
+    * PIT
+        - Needs Configuration functions
+    * PS2
+        - Keyboard Working
+        - Needs keymap
+        - Needs mouse / second port testing
+    * Screen
+        - Working with basic scroll support.
+        - Needs scrollback buffer support
+    * Serial
+        - Read COM1
+        - Write COM1
+        - Needs COM{2,3,4} support.
+
+Filesystem
+    * API
+        - Drafting high level api for file access
+    * FAT
+        - FAT16 Volume support
+    * MBR
+        - Read MBR into memory
