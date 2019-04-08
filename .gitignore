@@ -5,7 +5,8 @@ _build
 *.user
 .vscode
 *.img
-Boot/TaskieKernel
+Boot/Argentum
+Boot/*.o
 *.creator*
 *.includes
 *.files

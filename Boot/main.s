@@ -15,7 +15,7 @@
 .section .bss
 .align 16
 stack_bottom:
-.skip 1024*1024 # 1 Mb
+.skip 1024*1024*5 # 1 Mb
 stack_top:
 
 # The kernel entry point.

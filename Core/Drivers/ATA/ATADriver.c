@@ -14,7 +14,7 @@
 bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
 {
     printf("ATA: Constructing\n");
-    self->Debug = true;
+    self->Debug = 0;
     self->Kernel = kernel;
     memset(self->IDEBuffer,0,2048);
     memset(self->Channels,0,sizeof(struct ATA_Channel)*2);
@@ -307,18 +307,21 @@ void ATADriver_IDEInit(struct ATADriver* self,  uint32_t BAR0,  uint32_t BAR1,  
         }
     }
     // 4- Print32_t Summary:
-    for (i = 0; i < 4; i++)
+    if (self->Debug)
     {
-        if (self->IDEDevices[i].reserved == 1)
+        for (i = 0; i < 4; i++)
         {
-            printf("\t%d: Found %s Drive %d MB - %s\n", i, 
-                   (const char *[]){"ATA", "ATAPI"}[self->IDEDevices[i].type],         /* Type */
-                    self->IDEDevices[i].size/1024/2,               /* Size */
-                    self->IDEDevices[i].model);
-        }
-        else
-        {
-            if (self->Debug) printf("\t%d: No summary for device\n",i);
+            if (self->IDEDevices[i].reserved == 1)
+            {
+                printf("\t%d: Found %s Drive %d MB - %s\n", i, 
+                    (const char *[]){"ATA", "ATAPI"}[self->IDEDevices[i].type],         /* Type */
+                        self->IDEDevices[i].size/1024/2,               /* Size */
+                        self->IDEDevices[i].model);
+            }
+            else
+            {
+                printf("\t%d: No summary for device\n",i);
+            }
         }
     }
 }

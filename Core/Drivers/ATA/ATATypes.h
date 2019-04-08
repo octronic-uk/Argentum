@@ -1,5 +1,8 @@
 #pragma once
 
+#define ATA_DEVICE_TYPE_ATA 0
+#define ATA_DEVICE_TYPE_ATAPI 1
+
 struct ATA_Channel
 {
    uint16_t base;  // I/O Base.

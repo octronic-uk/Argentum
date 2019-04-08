@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(TaskieCore C)
+project(ArgentumCore C)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 file(GLOB_RECURSE SRC_FILES "*.c")
 
 include_directories(
-    TaskieCore 
+    ArgentumCore 
     ${CMAKE_SOURCE_DIR}/Core 
     ${CMAKE_SOURCE_DIR}/Core/Clib/include
     ${CMAKE_SOURCE_DIR}/Core/Drivers/ACPI/include
 )
 
-add_library(TaskieCore ${SRC_FILES})
+add_library(ArgentumCore ${SRC_FILES})

@@ -14,15 +14,12 @@
 
 bool PCIDriver_Constructor(struct PCIDriver* self, struct Kernel* kernel)
 {
+	printf("PCI: Constructing\n");
+
 	self->Kernel = kernel;
 	self->Debug = true;
 
     LinkedList_Constructor(&self->ConfigHeaderList, &self->Kernel->Memory);
-
-	if (self->Debug) 
-	{
-		printf("PCI: Initialising\n");
-	}
 
 	uint8_t bus, device, function;
 	struct PCI_ConfigHeader* tmp = 0;

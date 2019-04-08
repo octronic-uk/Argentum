@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 struct MemoryDriver;
 
 struct LinkedListNode
@@ -21,6 +24,8 @@ void LinkedList_Delete(struct LinkedList* self, void* data);
 void LinkedList_Display(struct LinkedList* self);
 void LinkedList_Reverse(struct LinkedList* self);
 struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data);
+void LinkedList_FreeAllData(struct LinkedList* self);
 
-unsigned int LinkedList_Size(struct LinkedList* self);
-void* LinkedList_At(struct LinkedList* self, unsigned int index);
+uint32_t LinkedList_Size(struct LinkedList* self);
+bool LinkedList_IsEmpty(struct LinkedList* self);
+void* LinkedList_At(struct LinkedList* self, uint32_t index);

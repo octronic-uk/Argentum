@@ -1,28 +1,25 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-project(Taskie C)
+project(Argentum C)
 
-execute_process(COMMAND date +%Y-%m-%d_%H%M OUTPUT_VARIABLE TASKIE_BUILD_DATE)
-set( TASKIE_BUILD_DATE ${TASKIE_BUILD_DATE})
-string(STRIP ${TASKIE_BUILD_DATE} TASKIE_BUILD_DATE)
-message("Taskie Build Date ${TASKIE_BUILD_DATE}")
+execute_process(COMMAND date +%Y-%m-%d_%H%M OUTPUT_VARIABLE ARGENTUM_BUILD_DATE)
+set(ARGENTUM_BUILD_DATE ${ARGENTUM_BUILD_DATE})
+string(STRIP ${ARGENTUM_BUILD_DATE} ARGENTUM_BUILD_DATE)
+message("Argentum Build Date ${ARGENTUM_BUILD_DATE}")
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -nostdinc -nostartfiles -nostdlib")
 
-add_definitions(-DTASKIE_BUILD_DATE=\"${TASKIE_BUILD_DATE}\")
-
+add_definitions(-DARGENTUM_BUILD_DATE=\"${ARGENTUM_BUILD_DATE}\")
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 # For YCM Completion
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
-
-set (TASKIE_BUILD_DOC OFF)
+set (ARGENTUM_BUILD_DOC OFF)
 
 # Doxygen Docs
-if (TASKIE_BUILD_DOC)
+if (ARGENTUM_BUILD_DOC)
     find_package(Doxygen)
     if (DOXYGEN_FOUND)
         # set input and output files

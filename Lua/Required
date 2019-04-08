@@ -1,0 +1,18 @@
+c standard headers 
+    - assert
+    - ctype
+    - errno
+    * float
+    - limits
+    * locale
+    - signal
+    - stdarg
+    - stddef
+    - stdio
+    - stdlib
+    - string
+    * math
+    - setjmp
+    - time
+
+   most changes in luaxlib 

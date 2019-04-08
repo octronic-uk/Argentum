@@ -10,16 +10,12 @@ static struct Kernel* _Kernel;
 
 bool InterruptDriver_Constructor(struct InterruptDriver* self, struct Kernel* kernel)
 {
-	if (self->Debug)
-	{
-		printf("Interrupt: Constructor\n");
-	}
+	printf("Interrupt: Constructor\n");
 
 	self->Kernel = kernel;
 	self->Debug = false;
 	_Kernel = kernel;
 	
-
 	InterruptDriver_Disable_CLI(self);
 
 	memset(self->HandlerFunctions,0,sizeof(void*)*INTERRUPT_HANDLER_FUNCTIONS_COUNT);

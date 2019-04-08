@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 struct Kernel;
-
+#define BUFSIZ 64
 #define EOF (-1)
 
 #ifdef __cplusplus

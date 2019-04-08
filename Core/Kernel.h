@@ -36,3 +36,4 @@ struct Kernel
 bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi);
 bool Kernel_InitDrivers(struct Kernel* self);
 bool Kernel_InitObjects(struct Kernel* self);
+bool Kernel_TestStorageManager(struct Kernel* self);

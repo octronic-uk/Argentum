@@ -91,7 +91,7 @@ void LinkedList_Reverse(struct LinkedList* self)
 	self->Head = reversed;
 }
 
-void* LinkedList_At(struct LinkedList* self, unsigned int index)
+void* LinkedList_At(struct LinkedList* self, uint32_t index)
 {
 	struct LinkedListNode* current = self->Head;
 
@@ -100,7 +100,7 @@ void* LinkedList_At(struct LinkedList* self, unsigned int index)
 		return 0;
 	}
 
-    unsigned int i;
+    uint32_t i;
 	for (i=0; i<index; i++)
     {
         current = current->Next;
@@ -125,9 +125,9 @@ struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data
 	return newNode;
 }
 
-unsigned int LinkedList_Size(struct LinkedList* self)
+uint32_t LinkedList_Size(struct LinkedList* self)
 {
-    unsigned int size = 0;
+    uint32_t size = 0;
     struct LinkedListNode* current = self->Head;
     while (current)
     {
@@ -135,4 +135,19 @@ unsigned int LinkedList_Size(struct LinkedList* self)
         current = current->Next;
     }
     return size;
+}
+
+bool LinkedList_IsEmpty(struct LinkedList* self)
+{
+	return LinkedList_Size(self) == 0;
+}
+
+void LinkedList_FreeAllData(struct LinkedList* self)
+{
+	struct LinkedListNode* current = self->Head;
+	while(current)
+	{
+		MemoryDriver_Free(self->Memory, current->Data);
+		current = current->Next;
+	}
 }
