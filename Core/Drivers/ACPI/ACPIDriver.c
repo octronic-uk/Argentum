@@ -28,7 +28,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel)
     if (self->Debug)
     {
         printf("ACPI: RSDP Pointer found: 0x%x\n",rsdpPointer);
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("ACPI Pause");
     }
 
 
@@ -61,7 +61,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel)
         if (self->Debug)
         {
             printf("ACPI: Version is INVALID\n");
-            PS2Driver_WaitForKeyPress();
+            PS2Driver_WaitForKeyPress("ACPI Pause");
         }
         return false;
     }
@@ -71,7 +71,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel)
         if (self->Debug)
         {
             printf("ACPI: RSDT Checksum is invalid\n");
-            PS2Driver_WaitForKeyPress();
+            PS2Driver_WaitForKeyPress("ACPI Pause");
         }
         return false;
     }
@@ -80,7 +80,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel)
     if (self->Debug) 
     {
         printf("ACPI: Using RsdtAddress 0x%x\n",rsdt);
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("ACPI Pause");
     }
 
     struct ACPI_FADT* facp = ACPIDriver_FindSDTBySignature(self, ACPI_SIG_FACP, rsdt,version);
@@ -89,7 +89,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel)
        if (self->Debug) 
        {
             printf("ACPI: Found FACP\n");
-            PS2Driver_WaitForKeyPress();
+            PS2Driver_WaitForKeyPress("ACPI Pause");
        }
        ACPIDriver_SetFacsPointer(self, facp->FirmwareCtrl);
        ACPIDriver_SetDsdtPointer(self, facp->Dsdt);
@@ -397,7 +397,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
         if (self->Debug)
         {
             printf("ACPI: Found 8259 in MADT, disabling interrupts\n");
-            PS2Driver_WaitForKeyPress();
+            PS2Driver_WaitForKeyPress("ACPI Pause");
         }
 	    //Interrupt_SetMask_PIC1(self->Interrupt, 0xFD);
 	    //Interrupt_SetMask_PIC2(self->Interrupt, 0xFF);
@@ -419,7 +419,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Processor Local Apic\n");
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("ACPI Pause");
                 }
                 struct ACPI_MADTRecordApic* apic = (struct ACPI_MADTRecordApic*)current;
                 current += apic->Base.Length;
@@ -430,7 +430,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: I/O Apic\n");
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("ACPI Pause");
                 }
                 struct ACPI_MADTRecordIoApic* ioapic = (struct ACPI_MADTRecordIoApic*)current;
                 LinkedList_PushBack(&self->IoApicRecordPointers, ioapic);
@@ -442,7 +442,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Interrupt Source Override\n");
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("ACPI Pause");
                 }
 
                 struct ACPI_MADTRecordInputSourceOverride* intSrcOvr = 0;
@@ -456,7 +456,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Non-Maskable Interrupt\n");
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("ACPI Pause");
                 }
 
                 struct ACPI_MADTRecordNonMaskableInterrupt* nmi = (struct ACPI_MADTRecordNonMaskableInterrupt*)current;
@@ -468,7 +468,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 if (self->Debug)
                 {
                     printf("ACPI: MADT Record Found: Local Apic Address Override\n");
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("ACPI Pause");
                 }
 
                 struct ACPI_MADTRecordLocalApicAddressOverride* localApicAddrOvr = (struct ACPI_MADTRecordLocalApicAddressOverride*)current;
@@ -480,7 +480,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 if (self->Debug)
                 {
                     printf("ACPI: Error unrecognised MADT Record type 0x%x\n",currentRecord->RecordType);
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("ACPI Pause");
                 }
                 error = 1;
                 break;
@@ -563,7 +563,7 @@ void ACPIDriver_DebugInterruptSourceOverride(struct ACPIDriver* self, struct ACP
         printf("\tIRQ Source: 0x%x\n",record->IrqSource);
         printf("\tGIS: 0x%x\n",record->GlobalSystemInterrupt);
         printf("\tFlags: 0x%x\n",record->Flags);
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("ACPI Pause");
     }
 }
 

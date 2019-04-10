@@ -11,14 +11,11 @@ bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 		return false;
 	}
 
-
 	if (!Kernel_InitObjects(self))
 	{
 		printf("Kernel: FATAL - Failed to init objects\n");
 		return false;
 	}
-
-	printf("\n----------={ Argentum - %s }=----------\n\n", ARGENTUM_BUILD_DATE);
 
 	Kernel_TestStorageManager(self);
 
@@ -32,6 +29,7 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	{
 		return false;
 	}
+	ScreenDriver_SetCursorPosition(&self->Screen, 0,2);
 
 	InterruptDriver_SetMask_PIC1(&self->Interrupt, 0xFF);
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0xFF);
@@ -64,10 +62,12 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0x00);
 	InterruptDriver_Enable_STI(&self->Interrupt);
 
+/*
 	if (!ACPIDriver_Constructor(&self->ACPI, self))
 	{
 		return false;
 	}
+*/
 
 	if (!PCIDriver_Constructor(&self->PCI, self))
 	{
@@ -79,7 +79,7 @@ bool Kernel_InitDrivers(struct Kernel* self)
 		return false;
 	}
 
-	printf("Kernel: Init Drivers Complete\n");
+	PS2Driver_WaitForKeyPress("Drivers init complete");
 	return true;
 }
 
@@ -89,7 +89,7 @@ bool Kernel_InitObjects(struct Kernel* self)
 	{
 		return false;
 	}
-	printf("Kernel: Init Objects Complete\n");
+	PS2Driver_WaitForKeyPress("Object init complete");
 	return true;
 }
 
@@ -115,24 +115,24 @@ bool Kernel_TestStorageManager(struct Kernel* self)
 		}
 		
 	}
-	PS2Driver_WaitForKeyPress();
+	PS2Driver_WaitForKeyPress("Kernel Pause");
 
 	//SMPath_TestParser();
 
-	//char* file_path = "/0/0/test.txt";
 	char* file_path = "/0/0/STL_FILE/SquirrelChess.rar";
 
-	struct SMDirectory txt_file;
+	struct SMDirectory file;
 
-	if(StorageManager_Open(&self->StorageManager, &txt_file, file_path))
+	if(StorageManager_Open(&self->StorageManager, &file, file_path))
 	{
 		printf("Kernel: StorageManager has opened the file at %s\n", file_path);
+		printf("\t Found %d entries\n", file.FatListing.EntryCount);
 	}
 	else
 	{
 		printf("Kernel: StorageManager has FAILED to open the file at %s\n", file_path);
 	}
-	PS2Driver_WaitForKeyPress();
+	PS2Driver_WaitForKeyPress("Kernel Pause");
 	
 	return false;
 }

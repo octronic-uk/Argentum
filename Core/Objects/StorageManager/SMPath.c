@@ -97,7 +97,7 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
                 if (self->Debug)
                 {
                     printf("SMPath: Error - Invalid char \"%c\"\n",address[addr_index]);
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("SMPath Pause");
                 }
                 
                 self->Error = SM_PATH_ERR_INVALID_PATH_CHAR;
@@ -190,7 +190,7 @@ void SMPath_TestParser()
 	else
 	{
         printf("SMPath: Failed to parse address 1: %s\n",SMPath_GetErrorString(&addr1));
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
 
@@ -201,7 +201,7 @@ void SMPath_TestParser()
 	else
 	{
 		printf("SMPath: Failed to parse address 2: %s\n",SMPath_GetErrorString(&addr2));
-	    PS2Driver_WaitForKeyPress();
+	    PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
 
@@ -212,9 +212,8 @@ void SMPath_TestParser()
 	else
 	{
 		printf("SMPath: Failed to parse address 3: %s\n",SMPath_GetErrorString(&addr3));
-	    PS2Driver_WaitForKeyPress();
+	    PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
-    printf("SMPath: Parser test passed\n");
-    PS2Driver_WaitForKeyPress();
+    PS2Driver_WaitForKeyPress("SMPath: Parser test passed");
 }

@@ -25,7 +25,7 @@ bool StorageManager_Constructor(struct StorageManager* self, struct Kernel* kern
 			if (self->Debug)
 			{
 				printf("StorageManager: Initialising ATA Drive %d %s\n", i, device->model);
-				PS2Driver_WaitForKeyPress();
+				PS2Driver_WaitForKeyPress("StorageManager Pause");
 			}
 			SMDrive_Constructor(&self->Drives[i], self->Kernel, i);
 			self->DriveExists[i] = true;
@@ -70,7 +70,7 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectory* dir, c
 	if (self->Debug) 
 	{
 		printf("StorageManager: Opening file %s\n",path_str);
-		PS2Driver_WaitForKeyPress();
+		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 	struct SMPath path;
 	if (SMPath_ConstructAndParse(&path,path_str))
@@ -80,7 +80,7 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectory* dir, c
 	if (self->Debug) 
 	{
 		printf("StorageManager: Failed to Construct/Parse Path: %s\n", SMPath_GetErrorString(&path));
-		PS2Driver_WaitForKeyPress();
+		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 	return false;
 }
@@ -91,7 +91,7 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* di
 	if (!drive) 
 	{
 		printf("SM: Error - Failed to get drive %d\n",path->DriveIndex);
-		PS2Driver_WaitForKeyPress();
+		PS2Driver_WaitForKeyPress("StorageManager Pause");
 		return false;
 	}
 
@@ -99,7 +99,7 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* di
 	if (!volume) 
 	{
 		printf("SM: Failed to get volume %d\n",path->VolumeIndex);
-		PS2Driver_WaitForKeyPress();
+		PS2Driver_WaitForKeyPress("StorageManager Pause");
 		return false;
 	}
 
@@ -110,7 +110,7 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* di
 	if (self->Debug)
 	{
 		printf("SM: Reading root sector\n");
-		PS2Driver_WaitForKeyPress();
+		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 	if(FatVolume_ReadSector(&volume->FatVolume,volume->FatVolume.RootDirSectorNumber,root_sector_buffer))
 	{
@@ -118,7 +118,7 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* di
 		{
 			FatVolume_DebugSector(root_sector_buffer);
 			printf("SM: Starting Get Directory recursion\n");
-			PS2Driver_WaitForKeyPress();
+			PS2Driver_WaitForKeyPress("StorageManager Pause");
 		}
 		return SMVolume_GetDirectory(volume, dir, root_sector_buffer, path);
 	}

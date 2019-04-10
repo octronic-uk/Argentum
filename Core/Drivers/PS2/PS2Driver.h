@@ -10,7 +10,6 @@
 
 struct Kernel;
 
-
 #define PS2_DATA_PORT_RW 0x60
 #define PS2_STATUS_REGISTER_R 0x64
 #define PS2_COMMAND_REGISTER_W 0x64
@@ -138,4 +137,4 @@ void PS2Driver_SetupInterruptHandlers(struct PS2Driver* self);
 void PS2Driver_FirstPortInterruptHandler();
 void PS2Driver_SecondPortInterruptHandler();
 
-void PS2Driver_WaitForKeyPress();
+void PS2Driver_WaitForKeyPress(const char* msg);

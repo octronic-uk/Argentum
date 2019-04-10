@@ -18,8 +18,7 @@ bool SMDrive_Constructor(struct SMDrive* self, struct Kernel* kernel, uint8_t at
 
     if (self->Debug) 
     {
-        printf("SMDisk: Reading MBR\n");
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("SMDisk: Reading MBR");
     }
     MBR_Constructor(&self->MasterBootRecord, &self->Kernel->ATA, self->AtaIndex);
 

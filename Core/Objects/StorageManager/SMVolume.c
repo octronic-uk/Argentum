@@ -56,7 +56,7 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8
         if (self->Debug)
         {
             printf("SMVolume: Comparing %s with target %s\n",entry_name,dir_name);
-            PS2Driver_WaitForKeyPress();
+            PS2Driver_WaitForKeyPress("SMVolume Pause");
         }
 
         // Chech each entry in the listing 
@@ -68,7 +68,7 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8
                 if (self->Debug)
                 {
                     printf("SMVolume: Last Directory in path is %s\n",path->Directories[path->WalkIndex]);
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
                 return SMDirectory_Constructor(dir,self,entry->FirstCluster);
             }
@@ -81,20 +81,20 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8
                 if (self->Debug)
                 {
                     printf("SMVolume: Reading first sector 0x%x, cluster 0x%x of next directory in path\n", sector, entry->FirstCluster);
-                    PS2Driver_WaitForKeyPress();
+                    PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
                 if(FatVolume_ReadSector(&self->FatVolume,sector,next_sector_buffer))
                 {
                     if (self->Debug)
                     {
                         FatVolume_DebugSector(next_sector_buffer);
-                        PS2Driver_WaitForKeyPress();
+                        PS2Driver_WaitForKeyPress("SMVolume Pause");
                     }
                     path->WalkIndex++; 
                     if (self->Debug)
                     {
                         printf("SMVolume: Walking to dir %d\n",path->WalkIndex);
-                        PS2Driver_WaitForKeyPress();
+                        PS2Driver_WaitForKeyPress("SMVolume Pause");
                     }
                     return SMVolume_GetDirectory(self, dir, next_sector_buffer, path);
                 }

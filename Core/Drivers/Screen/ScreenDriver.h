@@ -44,3 +44,6 @@ void ScreenDriver_Clear(struct ScreenDriver* self);
 void ScreenDriver_Scroll(struct ScreenDriver* self);
 uint8_t _VgaEntryColor(struct ScreenDriver* self, enum _VgaColor fg, enum _VgaColor bg);
 uint16_t _VgaEntry(struct ScreenDriver* self, unsigned char uc, uint8_t color);
+void ScreenDriver_SetHeader(struct ScreenDriver* self, const char* data);
+void ScreenDriver_SetCursorPosition(struct ScreenDriver* self, uint8_t column, uint8_t row);
+void ScreenDriver_ClearRow(struct ScreenDriver* self, uint8_t row);

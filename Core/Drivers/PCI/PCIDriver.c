@@ -40,8 +40,7 @@ bool PCIDriver_Constructor(struct PCIDriver* self, struct Kernel* kernel)
 	if (self->Debug) 
 	{
 		PCIDriver_DumpDevices(self);
-		printf("PCI: Init Complete\n");
-		PS2Driver_WaitForKeyPress();
+		PS2Driver_WaitForKeyPress("PCI: Init Complete");
 	}
 	return true;
 }
@@ -74,7 +73,7 @@ void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCI_ConfigHeader*
 	printf("\tBAR3      0x%x\n", header->mBAR3);
 	printf("\tBAR4      0x%x\n", header->mBAR4);
 	printf("\tBAR5      0x%x\n", header->mBAR5);
-	PS2Driver_WaitForKeyPress();
+	PS2Driver_WaitForKeyPress("PCI Device Pause");
 }
 
 struct PCI_ConfigHeader* PCIDriver_GetConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function)
@@ -109,26 +108,13 @@ struct PCI_ConfigHeader* PCIDriver_GetIsaBridgeConfigHeader(struct PCIDriver* se
 
 struct PCI_ConfigHeader* PCIDriver_GetATADevice(struct PCIDriver* self)
 {
-	bool isVm =  memcmp(self->Kernel->ACPI.V1Header->OEMID,VENDOR_ACPI_BOCHS,strlen(VENDOR_ACPI_BOCHS)) == 0;
-
-	if (self->Debug) printf("PCI: OEM ID is %s\n", self->Kernel->ACPI.V1Header->OEMID);
-	if (self->Debug && isVm)
-	{
-		printf("PCI: Searching for VM IDE Controller\n");
-	}
 
 	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
 		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
-		// Running on QEMU/Bochs
-		if (isVm && header->mClassCode == 0x01 && header->mSubclassCode == 0x01)
-		{
-			return header;
-		}
-		// Running on VIA Chipset
-		else if (header->mClassCode == 0x01 && header->mSubclassCode == 0x01 && header->mProgIF != 0x00)
+		if (header->mClassCode == 0x01 && header->mSubclassCode == 0x01)
 		{
 			return header;
 		}

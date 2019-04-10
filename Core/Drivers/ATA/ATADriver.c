@@ -10,7 +10,6 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include <Drivers/PCI/Vendors.h>
 
-
 bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
 {
     printf("ATA: Constructing\n");
@@ -28,109 +27,49 @@ bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
     {
         if (self->Debug)
         {
-            printf("ATA: Using PCI Device %x:%x\n",ata_device->mVendorID,ata_device->mDeviceID);
-            PS2Driver_WaitForKeyPress();
+            printf("ATA: Using PCI Device %x:%x\n", ata_device->mVendorID, ata_device->mDeviceID);
+            PS2Driver_WaitForKeyPress("ATA Pause");
         }
-        switch (ata_device->mVendorID)
+
+        uint8_t readInterruptLine = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+        if (self->Debug)
         {
-            case VENDOR_ID_VIA:
+            printf("ATA: Current Interrupt Line 0x%x\n",readInterruptLine);
+            PS2Driver_WaitForKeyPress("ATA Pause");
+        }
+        PCIDriver_DeviceWriteConfig8b(&self->Kernel->PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET, 0xFE);
+        readInterruptLine = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+
+        // This Device needs IRQ assignment.
+        if (readInterruptLine != 0xFE)
+        {
+                printf("ATA: Couldn't set interrupt line, device needs IRQ Assignment (NOT IMPLEMENTED)\n");
+                printf("\t---[ BAIL OUT ]---\n");
+                return false;
+        }
+        // The Device doesn't use IRQs, check if this is an Parallel IDE:
+        else
+        {
+            if (self->Debug)
             {
-                printf("ATA: Setting up VIA IDE Device\n");
-                if (self->Debug) printf("ATA: Enabling IDE Controller\n");
-                struct PCI_ConfigHeader* busControlDevice = PCIDriver_GetDeviceByID(&self->Kernel->PCI, 0x1106,0x3177);
-                if (!busControlDevice)
-                {
-                    printf("ATA: Error - Unable to find VIA Bus control device\n");
-                    return false;
-                }
-                else
-                {
-                    uint8_t ide_enabled = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, busControlDevice, 0x50);
-                    if ((ide_enabled & 0x04) == 0x04)
-                    {
-                        if (self->Debug) {
-                            printf("ATA: IDE Device is already enabled\n");
-                            PS2Driver_WaitForKeyPress();
-                        }
-
-                    }
-                    else
-                    {
-                        if (self->Debug) printf("ATA: IDE Device is DISABLED\n");
-                        if (self->Debug) printf("ATA: Setting IDE Enable on Bus control device\n");
-                        PCIDriver_DeviceWriteConfig8b(&self->Kernel->PCI, busControlDevice, 0x50, 0x04);
-                        ide_enabled = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, busControlDevice, 0x50);
-                        if ((ide_enabled & 0x04) == 0x04)
-                        {
-                            if (self->Debug) printf("ATA: VIA IDE Enable Success\n");
-                            PS2Driver_WaitForKeyPress();
-                            uint8_t ide_routing = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, busControlDevice, 0x4C);
-                            if (self->Debug)
-                            {
-                                printf("ATA: VIA IDE Interrupt Routing 0x%x",ide_routing);
-                                PS2Driver_WaitForKeyPress();
-                            }
-                            if ((ide_routing & 0x04) == 0x04)
-                            {
-                                printf("ATA: VIA IDE using IRQ Primary 14, Secondary 15\n");
-                                PS2Driver_WaitForKeyPress();
-                            }
-                        }
-                        else
-                        {
-
-                            if(self->Debug) printf("ATA: VIA IDE Enable Failed\n");
-                            return false;
-                        }
-                    }
-                    PS2Driver_WaitForKeyPress();
-                }
-                break;
+                printf("ATA: Device does not need IRQ Assignment\n");
+                printf("ATA: ProgIF 0x%x\n",ata_device->mProgIF);
+                PS2Driver_WaitForKeyPress("ATA Pause");
             }
-            default:
+
+            // This is a Parallel IDE Controller which use IRQ 14 and IRQ 15.
+            if (ata_device->mClassCode == 0x01 &&
+                ata_device->mSubclassCode == 0x01 &&
+                (ata_device->mProgIF == 0x8A || ata_device->mProgIF == 0x80)
+                )
             {
-                uint8_t readInterruptLine = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET);
                 if (self->Debug)
                 {
-                    printf("ATA: Current Interrupt Line 0x%x\n",readInterruptLine);
-                    PS2Driver_WaitForKeyPress();
+                    printf("ATA:\t- Bus IS Parallel IDE Controller using IRQ 14/15\n");
+                    PS2Driver_WaitForKeyPress("ATA Pause");
                 }
-                PCIDriver_DeviceWriteConfig8b(&self->Kernel->PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET, 0xFE);
-                readInterruptLine = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
-
-                // This Device needs IRQ assignment.
-                if (readInterruptLine != 0xFE)
-                {
-                        printf("ATA: Couldn't set interrupt line, device needs IRQ Assignment (NOT IMPLEMENTED)\n");
-                        printf("\t---[ BAIL OUT ]---\n");
-                        return false;
-                }
-                // The Device doesn't use IRQs, check if this is an Parallel IDE:
-                else
-                {
-                    if (self->Debug)
-                    {
-                        printf("ATA: Device does not need IRQ Assignment\n");
-                        printf("ATA: ProgIF 0x%x\n",ata_device->mProgIF);
-                        PS2Driver_WaitForKeyPress();
-                    }
-
-                    // This is a Parallel IDE Controller which use IRQ 14 and IRQ 15.
-                    if (ata_device->mClassCode == 0x01 &&
-                        ata_device->mSubclassCode == 0x01 &&
-                        (ata_device->mProgIF == 0x8A || ata_device->mProgIF == 0x80)
-                        )
-                    {
-                        if (self->Debug)
-                        {
-                            printf("ATA:\t- Bus IS Parallel IDE Controller using IRQ 14/15\n");
-                            PS2Driver_WaitForKeyPress();
-                        }
-                    }
-                }   
-                break;
             }
-        }
+        }   
 
         uint32_t b0,b1,b2,b3;
         /* IMPORTANT!
@@ -162,8 +101,7 @@ bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
     }
     else
     {
-        printf("ATA: No ATA Device Found in PCI Config Space\n");
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("No ATA Device Found in PCI Config Space");
         return false;
     }
     return true;

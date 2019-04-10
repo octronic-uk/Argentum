@@ -82,7 +82,7 @@ bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct Fa
                             lfn_first_sector,
                             self->Volume->FirstSectorNumber + lfn_first_sector
                         );
-                        PS2Driver_WaitForKeyPress();
+                        PS2Driver_WaitForKeyPress("Fat Dir Listing");
                     }
 
                     FatDirectoryEntry_Constructor(
@@ -118,7 +118,7 @@ bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct Fa
                             first_sector,
                             self->Volume->FirstSectorNumber + first_sector
                         );
-                        PS2Driver_WaitForKeyPress();
+                        PS2Driver_WaitForKeyPress("Fat Dir Listing");
                     }
 
                     FatDirectoryEntry_Constructor(
@@ -181,5 +181,5 @@ void FatDirectoryListing_Debug(struct FatDirectoryListing* self)
         char* type = FatDirectoryCluster_GetDirectoryTypeString(&e->ClusterData);
         printf("\t-> (%s) %08dB %s \n", type,  e->ClusterData.FileSize, e->Name);
     }
-    PS2Driver_WaitForKeyPress();
+    PS2Driver_WaitForKeyPress("Fat Dir Listing");
 }

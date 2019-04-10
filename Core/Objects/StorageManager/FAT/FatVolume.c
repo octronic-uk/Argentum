@@ -47,7 +47,7 @@ bool FatVolume_ReadBPB(struct FatVolume* self)
     if (!FatVolume_ReadSector(self,0,(uint8_t*)&self->BiosParameterBlock))
     {
         printf("FatVolume: ATA error reading BPB\n");
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("Fat Volume Pause");
         return false;
     }
 
@@ -61,7 +61,7 @@ bool FatVolume_ReadBPB(struct FatVolume* self)
     if (self->Debug)
     {
         printf("FatVolume: Root Directory Sector at 0x%x\n", self->RootDirSectorNumber);
-        PS2Driver_WaitForKeyPress();
+        PS2Driver_WaitForKeyPress("Fat Volume Pause");
     }
     return true;
 }

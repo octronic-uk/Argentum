@@ -642,11 +642,14 @@ void PS2Driver_SetDebug(struct PS2Driver* self, uint8_t debug)
     self->Debug = debug;
 }
 
-
-void PS2Driver_WaitForKeyPress()
+void PS2Driver_WaitForKeyPress(const char* msg)
 {
-    printf("\nPS2: Waiting for Key Press...\n\n");
+    ScreenDriver_ClearRow(&_Kernel->Screen, 24);
+    ScreenDriver_SetCursorPosition(&_Kernel->Screen, 0,24);
+    printf("%s, Press 'Space' to continue...", msg);
     PS2Driver_WaitingForKeyPress = 1;
     while  (PS2Driver_WaitingForKeyPress) 
     {}
+    ScreenDriver_Clear(&_Kernel->Screen);
+    ScreenDriver_SetCursorPosition(&_Kernel->Screen, 0,2);
 }
