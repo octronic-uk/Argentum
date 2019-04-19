@@ -2,9 +2,9 @@
 
 #include "../Boot/multiboot.h"
 
-
 #include <Drivers/ACPI/ACPIDriver.h>
 #include <Drivers/ATA/ATADriver.h>
+#include <Drivers/Floppy/FloppyDriver.h>
 #include <Drivers/Interrupt/InterruptDriver.h>
 #include <Drivers/Memory/MemoryDriver.h>
 #include <Drivers/PCI/PCIDriver.h>
@@ -21,6 +21,7 @@ struct Kernel
     // Drivers
     struct ACPIDriver ACPI;
     struct ATADriver ATA;
+    struct FloppyDriver Floppy;
     struct InterruptDriver Interrupt;
     struct MemoryDriver Memory;
     struct PCIDriver PCI;

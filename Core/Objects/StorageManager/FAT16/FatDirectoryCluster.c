@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <Drivers/PS2/PS2Driver.h>
+#include "FatConstants.h"
 
 void FatDirectoryCluster_Debug(struct FatDirectoryCluster* self)
 {
@@ -32,7 +33,7 @@ void FatDirectoryCluster_DebugAttributes(struct FatDirectoryCluster* self)
 {
     printf("\tAttributes:              0x%x\n", self->Attributes);
 
-    if ((self->Attributes & FAT_DIR_ATTR_LFN) == FAT_DIR_ATTR_LFN)
+    if ((self->Attributes & FAT_DIR_ATTR_LFN ) == FAT_DIR_ATTR_LFN)
     {
         printf("\t\tLong File Name\n");
     }

@@ -1,9 +1,10 @@
 #include <Objects/StorageManager/SMVolume.h>
 
 #include <Kernel.h>
-#include "FAT/FatVolume.h"
+#include "FAT16/FatVolume.h"
 #include "SMDrive.h"
-#include "SMDirectory.h"
+#include "SMDirectoryEntry.h"
+#include "SMFile.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +15,7 @@ bool SMVolume_Constructor(
 )
 {
     memset(self,0,sizeof(struct SMVolume));
-    self->Debug = false;
+    self->Debug = true;
     self->ParentDrive = parent;
     self->Kernel = kernel;
     self->VolumeIndex = volume_index;
@@ -30,16 +31,16 @@ bool SMVolume_Constructor(
     return false;
 }
 
-bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8_t* sector_buffer, struct SMPath* path)
+bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, uint8_t* sector_buffer, struct SMPath* path)
 {
-    struct FatDirectoryListing fatListing;
-    if (!FatDirectoryListing_Constructor(&fatListing, &self->FatVolume, sector_buffer))
+    struct FatTableListing fatListing;
+    if (!FatTableListing_Constructor(&fatListing, &self->FatVolume, sector_buffer))
     {
         printf("SMVolume: Error - Could not read directory listing\n");
         return false;
     }
 
-    FatDirectoryListing_Debug(&fatListing);
+    if (self->Debug) FatTableListing_Debug(&fatListing);
 
     const char* dir_name = path->Directories[path->WalkIndex];
     // Compare Path name to FAT entries
@@ -70,7 +71,7 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8
                     printf("SMVolume: Last Directory in path is %s\n",path->Directories[path->WalkIndex]);
                     PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
-                return SMDirectory_Constructor(dir,self,entry->FirstCluster);
+                return SMDirectoryEntry_Constructor(out,self,entry->FirstCluster, entry->ClusterData.Attributes);
             }
             // Recurse to next directory
             else
@@ -78,11 +79,13 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8
                 // Read directory
                 uint8_t next_sector_buffer[FAT_SECTOR_SIZE];
                 uint32_t sector = entry->FirstSector;
+
                 if (self->Debug)
                 {
                     printf("SMVolume: Reading first sector 0x%x, cluster 0x%x of next directory in path\n", sector, entry->FirstCluster);
                     PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
+
                 if(FatVolume_ReadSector(&self->FatVolume,sector,next_sector_buffer))
                 {
                     if (self->Debug)
@@ -96,7 +99,7 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8
                         printf("SMVolume: Walking to dir %d\n",path->WalkIndex);
                         PS2Driver_WaitForKeyPress("SMVolume Pause");
                     }
-                    return SMVolume_GetDirectory(self, dir, next_sector_buffer, path);
+                    return SMVolume_GetDirectory(self, out, next_sector_buffer, path);
                 }
                 else
                 {

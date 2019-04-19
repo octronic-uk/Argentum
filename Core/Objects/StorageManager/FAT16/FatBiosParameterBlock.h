@@ -3,21 +3,6 @@
 #include <stdint.h>
 #include "FatType.h"
 
-/* 
- *	https://wiki.osdev.org/FAT 
- */
-
-#define FAT_JMP_BYTES    {0xEB, 0x3C, 0x90 }
-#define FAT_OEM_ID_BYTES {'m','k','d','o','s','f','s',0}
-#define FAT_NUM_FATS     2
-#define FAT_READ_ONLY    0x01
-#define FAT_HIDDEN       0x02
-#define FAT_SYSTEM       0x04
-#define FAT_VOLUME_ID    0x08
-#define FAT_DIRECTORY    0x10
-#define FAT_ARCHIVE      0x20
-#define FAT_LFN          FAT_READ_ONLY | FAT_HIDDEN | FAT_SYSTEM | FAT_VOLUME_ID
-
 /*
 	Offset   Size(b)  Meaning
 
@@ -73,21 +58,21 @@
 
 struct FatBiosParameterBlock
 {
-	uint8_t  Jmp[3];
-	uint8_t  OEMIdentifier[8];
-	uint16_t BytesPerSector;
-	uint8_t  SectorsPerCluster;
-	uint16_t ReservedSectorCount;
-	uint8_t  TableCount;
-	uint16_t RootEntryCount;
-	uint16_t TotalSectors16;
-	uint8_t  MediaType;
-	uint16_t TableSize16;
-	uint16_t SectorsPerTrack;
-	uint16_t HeadSideCount;
-	uint32_t HiddenSectorCount;
-	uint32_t TotalSectors32;
-	uint8_t  ExtendedBootRecord[476];
+	/*00*/ uint8_t  Jmp[3];
+	/*03*/ uint8_t  OEMIdentifier[8];
+	/*11*/ uint16_t BytesPerSector;
+	/*13*/ uint8_t  SectorsPerCluster;
+	/*14*/ uint16_t ReservedSectorCount;
+	/*16*/ uint8_t  TableCount;
+	/*17*/ uint16_t RootEntryCount;
+	/*19*/ uint16_t TotalSectors16;
+	/*21*/ uint8_t  MediaType;
+	/*22*/ uint16_t TableSize16;
+	/*24*/ uint16_t SectorsPerTrack;
+	/*26*/ uint16_t HeadSideCount;
+	/*28*/ uint32_t HiddenSectorCount;
+	/*32*/ uint32_t TotalSectors32;
+	/*36*/ uint8_t  ExtendedBootRecord[476];
 } __attribute__((packed));
 
 /*

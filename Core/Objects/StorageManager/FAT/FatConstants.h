@@ -1,5 +1,0 @@
-#pragma once
-
-#define FAT_SECTOR_SIZE 512
-#define FAT_LFN_NAME_SIZE 128 
-#define FAT_DIR_LISTING_MAX_DIRS 64

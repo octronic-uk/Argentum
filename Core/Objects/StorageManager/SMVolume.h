@@ -2,8 +2,7 @@
 
 #include <stdbool.h>
 
-#include "SMDirectory.h"
-#include "FAT/FatVolume.h"
+#include "FAT16/FatVolume.h"
 
 #define VOLUME_NAME_SIZE 32
 
@@ -11,6 +10,8 @@ struct Kernel;
 struct FatVolume;
 struct Drive;
 struct SMPath;
+struct SMFile;
+struct SMDirectoryEntry;
 
 struct SMVolume
 {
@@ -32,4 +33,4 @@ bool SMVolume_Constructor(
     uint32_t sectors_in_partition
 );
 
-bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectory* dir, uint8_t* sector_buffer, struct SMPath* path);
+bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* dir, uint8_t* sector_buffer, struct SMPath* path);

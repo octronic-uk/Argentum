@@ -34,7 +34,7 @@ void FatBPB_DebugEBR16(struct FatExtendedBootRecord16* ebr)
 	memcpy(vol_label,ebr->VolumeLabelString,11);
 	memcpy(sys_id,ebr->SystemIdentifierString,8);
 
-	printf("\tFAT16 EBR Begins ----------\n");
+	printf("FAT16 EBR:\n");
 	printf("\tDrive Number:             0x%x\n", ebr->DriveNumber);
 	printf("\tFlags:                    0x%x\n", ebr->Flags);
 	printf("\tSignature:                0x%x\n", ebr->Signature);
@@ -47,7 +47,7 @@ void FatBPB_DebugEBR16(struct FatExtendedBootRecord16* ebr)
 
 void FatBPB_DebugEBR32(struct FatExtendedBootRecord32* ebr)
 {
-	printf("\tFAT32 EBR Begins ----------\n");
+	printf("FAT32 EBR:\n");
 	printf("\tSectors Per FAT:          0x%x\n",ebr->SectorsPerFAT);
 	printf("\tFlags:                    0x%x\n",ebr->Flags);
 	printf("\tFAT Version:              0x%x\n",ebr->FATVersionNumber);

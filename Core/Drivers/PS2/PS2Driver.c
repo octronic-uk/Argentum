@@ -646,10 +646,9 @@ void PS2Driver_WaitForKeyPress(const char* msg)
 {
     ScreenDriver_ClearRow(&_Kernel->Screen, 24);
     ScreenDriver_SetCursorPosition(&_Kernel->Screen, 0,24);
-    printf("%s, Press 'Space' to continue...", msg);
+    printf("%s, Press 'Space' to continue... (%d)", msg, _Kernel->PIT.Ticks );
     PS2Driver_WaitingForKeyPress = 1;
-    while  (PS2Driver_WaitingForKeyPress) 
-    {}
+    while  (PS2Driver_WaitingForKeyPress) {}
     ScreenDriver_Clear(&_Kernel->Screen);
     ScreenDriver_SetCursorPosition(&_Kernel->Screen, 0,2);
 }

@@ -18,7 +18,7 @@
 #include <string.h>
 
 /* Convert a string to an int.  */
-int atoi (const char *nptr)
+int ascii_to_int(const char *nptr)
 {
   return (int) strtol (nptr, (char **)0, 10);
 }

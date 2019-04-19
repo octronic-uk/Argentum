@@ -28,33 +28,45 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
     }
     uint32_t addr_index = 0;
 
-    // Drive,Volume opening Char
-    if (address[addr_index++] != SM_PATH_PATH_DELIMETER)
+    // Bus/Drive,Volume opening Char
+    if (address[addr_index++] != SM_PATH_DELIMETER)
     {
-        self->Error = SM_PATH_ERR_NO_BEGIN_CHAR;
+        self->ParseError = SM_PATH_ERR_NO_BEGIN_CHAR;
         return false;
     }
 
+    // Get Bus String
+    uint8_t bus_idx;
+    for (bus_idx = 0; bus_idx < SM_PATH_BUS_BUFFER_LENGTH; bus_idx++)
+    {
+        if (address[addr_index] == SM_PATH_DELIMETER)
+        {
+            addr_index++;
+            break;
+        }
+        self->Bus[bus_idx] = address[addr_index];
+    }
+
     // Drive Number
-    self->DriveIndex = chartoi(address[addr_index++],10);
+    self->DriveIndex = char_to_int(address[addr_index++],10);
     if (self->DriveIndex > SM_PATH_MAX_DRIVE)
     {
-        self->Error = SM_PATH_ERR_INVALID_DRIVE;
+        self->ParseError = SM_PATH_ERR_INVALID_DRIVE;
         return false;
     }
 
     // Drive,Volume Separator Char
-    if (address[addr_index++] != SM_PATH_PATH_DELIMETER)
+    if (address[addr_index++] != SM_PATH_DELIMETER)
     {
-        self->Error = SM_PATH_ERR_INVALID_VOLUME;
+        self->ParseError = SM_PATH_ERR_INVALID_VOLUME;
         return false;
     }
 
     // Volume Number
-    self->VolumeIndex = chartoi(address[addr_index++],10);
+    self->VolumeIndex = char_to_int(address[addr_index++],10);
     if (self->VolumeIndex > SM_PATH_MAX_VOLUME)
     {
-        self->Error = SM_PATH_ERR_INVALID_VOLUME;
+        self->ParseError = SM_PATH_ERR_INVALID_VOLUME;
         return false;
     }
 
@@ -62,15 +74,15 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
     int8_t name_index = 0;
 
     // Root Delimeter
-    if (address[addr_index++] != SM_PATH_PATH_DELIMETER)
+    if (address[addr_index++] != SM_PATH_DELIMETER)
     {
-        self->Error = SM_PATH_ERR_NO_ROOT_DELIMETER;
+        self->ParseError = SM_PATH_ERR_NO_ROOT_DELIMETER;
         return false;
     }
 
     while (address[addr_index])
     {
-        if (address[addr_index] == SM_PATH_PATH_DELIMETER)
+        if (address[addr_index] == SM_PATH_DELIMETER)
         {
             if (name_index) 
             {
@@ -83,7 +95,7 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
             // Reached max size?
             if (name_index >= FAT_LFN_NAME_SIZE-1)
             {
-                self->Error = SM_PATH_ERR_NAME_TOO_LONG;
+                self->ParseError = SM_PATH_ERR_NAME_TOO_LONG;
                 return false;
             }
             // Is valid path char?
@@ -100,7 +112,7 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
                     PS2Driver_WaitForKeyPress("SMPath Pause");
                 }
                 
-                self->Error = SM_PATH_ERR_INVALID_PATH_CHAR;
+                self->ParseError = SM_PATH_ERR_INVALID_PATH_CHAR;
                 return false;
             }
         }
@@ -110,7 +122,7 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
 }
 
 /* 
-    Support 
+    Paths support the following characters
     * A–Z 
     * a–z 
     * 0–9 
@@ -131,9 +143,9 @@ bool SMPath_ValidPathChar(char c)
     return false;
 }
 
-const char* SMPath_GetErrorString(struct SMPath* self)
+const char* SMPath_GetParseErrorString(struct SMPath* self)
 {
-    switch(self->Error)
+    switch(self->ParseError)
     {
         case SM_PATH_NO_ERROR:
             return "No Error";
@@ -151,6 +163,9 @@ const char* SMPath_GetErrorString(struct SMPath* self)
             return "Directory or file name too long";
         case SM_PATH_ERR_NO_ROOT_DELIMETER:
             return "Path is missing root delimeter";
+        case SM_PATH_ERR_INVALID_BUS:
+            return "Bus is invalid";
+
         default:
             "Unknown Error";
     }
@@ -175,9 +190,9 @@ void SMPath_TestParser()
 {
     struct SMPath addr1, addr2, addr3;
 
-	char* test_address_1 = "/1/2/dir_1";
-	char* test_address_2 = "/1/2/dir_1/some_file.ext";
-	char* test_address_3 = "/0/0/dir_1/dir_2/file.ext";
+	char* test_address_1 = "/ATA/1/2/dir_1";
+	char* test_address_2 = "/FD/1/2/dir_1/some_file.ext";
+	char* test_address_3 = "/FD/0/0/dir_1/dir_2/file.ext";
 
 	SMPath_Constructor(&addr1);
 	SMPath_Constructor(&addr2);
@@ -189,7 +204,7 @@ void SMPath_TestParser()
 	}
 	else
 	{
-        printf("SMPath: Failed to parse address 1: %s\n",SMPath_GetErrorString(&addr1));
+        printf("SMPath: Failed to parse address 1: %s\n",SMPath_GetParseErrorString(&addr1));
         PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
@@ -200,7 +215,7 @@ void SMPath_TestParser()
 	}
 	else
 	{
-		printf("SMPath: Failed to parse address 2: %s\n",SMPath_GetErrorString(&addr2));
+		printf("SMPath: Failed to parse address 2: %s\n",SMPath_GetParseErrorString(&addr2));
 	    PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
@@ -211,7 +226,7 @@ void SMPath_TestParser()
 	}
 	else
 	{
-		printf("SMPath: Failed to parse address 3: %s\n",SMPath_GetErrorString(&addr3));
+		printf("SMPath: Failed to parse address 3: %s\n",SMPath_GetParseErrorString(&addr3));
 	    PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}

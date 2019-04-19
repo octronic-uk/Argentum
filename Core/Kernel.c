@@ -1,6 +1,7 @@
 #include <Kernel.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <Objects/StorageManager/SMDirectoryEntry.h>
 
 bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 {
@@ -74,6 +75,11 @@ bool Kernel_InitDrivers(struct Kernel* self)
 		return false;
 	}
 
+	if (!FloppyDriver_Constructor(&self->Floppy,self))
+	{
+		return false;
+	}
+
 	if (!ATADriver_Constructor(&self->ATA, self))
 	{
 		return false;
@@ -108,30 +114,37 @@ bool Kernel_TestStorageManager(struct Kernel* self)
 		if (drv0vol0)
 		{
 			printf("Kernel: Got drive0/volume0 \n");
+			PS2Driver_WaitForKeyPress("Kernel Pause");
 		}
 		else
 		{
 			printf("Kernel: Error getting drive0/volume0");
+			PS2Driver_WaitForKeyPress("Kernel Pause");
 		}
 		
 	}
-	PS2Driver_WaitForKeyPress("Kernel Pause");
 
 	//SMPath_TestParser();
 
-	char* file_path = "/0/0/STL_FILE/SquirrelChess.rar";
+	//char* file_path = "/0/0/STL_FILE/SquirrelChess.rar";
+	char* file_path = "/0/0/test.txt";
 
-	struct SMDirectory file;
+	struct SMDirectoryEntry file;
 
-	if(StorageManager_Open(&self->StorageManager, &file, file_path))
-	{
-		printf("Kernel: StorageManager has opened the file at %s\n", file_path);
-		printf("\t Found %d entries\n", file.FatListing.EntryCount);
-	}
-	else
+	if(!StorageManager_Open(&self->StorageManager, &file, file_path))
 	{
 		printf("Kernel: StorageManager has FAILED to open the file at %s\n", file_path);
+		PS2Driver_WaitForKeyPress("Kernel Pause");
+		return false;
 	}
+
+	if (!SMDirectoryEntry_IsFile(&file))
+	{
+		printf("Kernel: Directory %s is not a file\n", file_path);
+		PS2Driver_WaitForKeyPress("Kernel Pause");
+	}
+
+	printf("Kernel: StorageManager has opened the file at %s\n", file_path);
 	PS2Driver_WaitForKeyPress("Kernel Pause");
 	
 	return false;

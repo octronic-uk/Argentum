@@ -20,7 +20,7 @@ bool in_base(char ch, int base)
     }
 }
 
-int chartoi(char ch, int base)
+int char_to_int(char ch, int base)
 {
     switch (base)
     {
@@ -45,7 +45,7 @@ int chartoi(char ch, int base)
     }
 }
 
-long int strtol (const char* nptr, char** endptr, int base)
+long int string_to_long(const char* nptr, char** endptr, int base)
 {
     size_t i;
     int32_t sum;
@@ -54,7 +54,7 @@ long int strtol (const char* nptr, char** endptr, int base)
     i = 0;
     sum = 0;
 
-    while (_isspace(nptr[i])) 
+    while (is_space(nptr[i])) 
     {
         i++;
     }
@@ -102,7 +102,7 @@ long int strtol (const char* nptr, char** endptr, int base)
     while (nptr[i] && in_base(nptr[i], base)) 
     {
         sum *= base;
-        sum += chartoi(nptr[i], base);
+        sum += char_to_int(nptr[i], base);
         i++;
     }
 

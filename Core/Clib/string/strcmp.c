@@ -2,7 +2,7 @@
 #include <string.h>
 
 /* Assumes zero terminated strings */
-int strcmp(const char *s1, const char *s2)
+int string_compare(const char *s1, const char *s2)
 {
   unsigned char u1, u2;
   int i=0;

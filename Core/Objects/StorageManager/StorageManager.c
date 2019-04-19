@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <Kernel.h>
-#include "FAT/FatConstants.h"
+#include "FAT16/FatConstants.h"
 #include "SMDrive.h"
 
 bool StorageManager_Constructor(struct StorageManager* self, struct Kernel* kernel)
@@ -65,7 +65,7 @@ struct SMDrive* StorageManager_GetDrive(struct StorageManager* self, uint8_t dri
 	
 }
 
-bool StorageManager_Open(struct StorageManager* self, struct SMDirectory* dir, const char* path_str)
+bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* dir, const char* path_str)
 {
 	if (self->Debug) 
 	{
@@ -79,13 +79,13 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectory* dir, c
 	}
 	if (self->Debug) 
 	{
-		printf("StorageManager: Failed to Construct/Parse Path: %s\n", SMPath_GetErrorString(&path));
+		printf("StorageManager: Failed to Construct/Parse Path: %s\n", SMPath_GetParseErrorString(&path));
 		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 	return false;
 }
 
-bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* dir, struct SMPath* path)
+bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntry* dir, struct SMPath* path)
 {
 	struct SMDrive* drive = StorageManager_GetDrive(self,path->DriveIndex);
 	if (!drive) 
@@ -117,7 +117,7 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* di
 		if (self->Debug)
 		{
 			FatVolume_DebugSector(root_sector_buffer);
-			printf("SM: Starting Get Directory recursion\n");
+			printf("SM: Starting GetDirectory Recursion\n");
 			PS2Driver_WaitForKeyPress("StorageManager Pause");
 		}
 		return SMVolume_GetDirectory(volume, dir, root_sector_buffer, path);

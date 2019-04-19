@@ -10,7 +10,7 @@
 struct Kernel;
 struct ATA_IDEDevice;
 struct MBRPartitionEntry;
-struct SMDirectory;
+struct SMDirectoryEntry;
 
 struct SMDrive
 {

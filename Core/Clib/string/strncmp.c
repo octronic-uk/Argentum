@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <string.h>
 
-int strncmp(const char *s1, const char *s2, size_t n)
+int string_n_compare(const char *s1, const char *s2, size_t n)
 {
   unsigned char u1, u2;
   while (n-- > 0)

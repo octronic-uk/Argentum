@@ -24,7 +24,7 @@ void reverse(char *buffer, int i, int j)
 }
 
 // Iterative function to implement itoa() function in C
-void itoa(int value, char* buffer, int base)
+void int_to_ascii(int value, char* buffer, int base)
 {
 	// invalid input
 	if (base < 2 || base > 32)
@@ -111,10 +111,9 @@ void ultoa(unsigned long value, char* buffer, int base)
 	// is preceded with a minus sign (-)
 	// With any other base, value is always considered unsigned
 	if (value < 0 && base == 10)
-  {
+    {
 		buffer[i++] = '-';
-  }
-
+    }
 
 	buffer[i] = '\0'; // null terminate string
 

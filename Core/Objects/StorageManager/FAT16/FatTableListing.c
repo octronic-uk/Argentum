@@ -1,4 +1,4 @@
-#include "FatDirectoryListing.h"
+#include "FatTableListing.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -7,39 +7,47 @@
 #include "FatLfnCluster.h"
 #include "FatDirectoryCluster.h"
 
-/*
-After the correct cluster has been loaded into memory, the next step is to read and parse all 
-of the entries in it. Each entry is 32 bytes long. For each 32 byte entry this is the flow of 
-execution:
+/**
+    @brief Parse the FAT Table.
+
+    After the cluster has been loaded into memory, the next step is to read and parse all 
+    of the entries in it. Each entry is 32 bytes long. For each 32 byte entry this is the flow of 
+    execution:
 
     1 If the first byte of the entry is equal to 0 then there are no more files/directories in this 
       directory. 
-        FirstByte==0, finish. 
-        FirstByte!=0, goto 2.
+        FirstByte == 0, finish. 
+        FirstByte != 0, goto 2.
+
     2 If the first byte of the entry is equal to 0xE5 then the entry is unused. 
-        FirstByte==0xE5, goto 8, 
-        FirstByte!=0xE5, goto 3.
+        FirstByte == 0xE5, goto 8, 
+        FirstByte != 0xE5, goto 3.
+
     3 Is this entry a long file name entry? If the 11'th byte of the entry equals 0x0F, then it is a
-      long file name entry. Otherwise, it is not. 
-        11thByte==0x0F, goto 4. 
-        11thByte!=0x0F, goto 5.
+      long file name entry.
+        11thByte==0x0F, Goto 4. 
+        11thByte!=0x0F, Goto 5.
+
     4 Read the portion of the long filename into a temporary buffer. 
         Goto 8.
-    5 Parse the data for this entry using the FatDirectory table. It would be a good
-      idea to save the data for later. Possibly in a virtual file system structure. 
-        goto 6
+
+    5 Parse the data for this entry using the FatDirectory table.
+        Goto 6
+
     6 Is there a long file name in the temporary buffer? 
-        Yes, goto 7. 
-        No, goto 8
+        Yes, Goto 7. 
+        No,  Goto 8
+
     7 Apply the long file name to the entry that you just read and clear the temporary buffer. 
-        goto 8
+        Goto 8
+
     8 Increment pointers and/or counters and check the next entry. 
-        goto number 1
+        Goto 1
 */
-bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct FatVolume* volume, uint8_t* cluster_data)
+bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume* volume, uint8_t* cluster_data)
 {
     // Init
-    memset(self,0,sizeof(struct FatDirectoryListing));
+    memset(self,0,sizeof(struct FatTableListing));
     self->Debug = 0;
     self->Volume = volume;
 
@@ -77,7 +85,7 @@ bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct Fa
                     uint32_t lfn_first_sector = FatVolume_GetFirstSectorOfCluster(self->Volume, lfn_first_cluster);
                     if (self->Debug) {
                         printf(
-                            "FatDirListing: Found LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
+                            "FatTableListing: Found LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
                             lfn_name_current,
                             lfn_first_sector,
                             self->Volume->FirstSectorNumber + lfn_first_sector
@@ -113,7 +121,7 @@ bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct Fa
                     if (self->Debug) 
                     {
                         printf(
-                            "FatDirListing: Found Non-LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
+                            "FatTableListing: Found Non-LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
                             full_name,
                             first_sector,
                             self->Volume->FirstSectorNumber + first_sector
@@ -138,41 +146,23 @@ bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct Fa
         {
             if (self->Debug) 
             {
-                printf("FatDirListing: Unused Cluster\n");
+                printf("FatTableListing: Unused Cluster\n");
             }
         }
-        cluster_data += 32;
+        cluster_data += FAT_CLUSTER_SIZE_B;
     }
+
     self->EntryCount = entry_index;
     if (self->Debug) 
     {
-        printf("FatDirListing: Reached end of cluster chain, found %d entries\n",entry_index);
+        printf("FatTableListing: Reached end of cluster chain, found %d entries\n",entry_index);
     }
     return true;
 }
 
-bool FatDirectoryEntry_Constructor(
-    struct FatDirectoryEntry* self, 
-    struct FatVolume* volume, 
-    struct FatDirectoryCluster* cluster, 
-    const char* name, 
-    uint32_t first_sector,
-    uint32_t first_cluster
-)
+void FatTableListing_Debug(struct FatTableListing* self)
 {
-    memset(self,0,sizeof(struct FatDirectoryEntry));
-
-    self->Volume = volume;
-    memcpy(self->Name, name, FAT_LFN_NAME_SIZE);
-    memcpy(&self->ClusterData, cluster, sizeof(struct FatDirectoryCluster));
-    self->FirstSector = first_sector;
-    self->FirstCluster = first_cluster;
-
-}
-
-void FatDirectoryListing_Debug(struct FatDirectoryListing* self)
-{
-    printf("FatDirListing: Debugging Listing\n");
+    printf("FatTableListing: Debugging Listing\n");
     uint32_t count = self->EntryCount;
     uint32_t i;
     for (i=0; i<count; i++)

@@ -24,5 +24,5 @@ void StorageManager_Destructor(struct StorageManager* self);
 void StorageManager_ListDrives(struct StorageManager* self);
 struct SMDrive* StorageManager_GetDrive(struct StorageManager* self, uint8_t drive_id);
 
-bool StorageManager_Open(struct StorageManager* self, struct SMDirectory* dir, const char* path);
-bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectory* dir, struct SMPath* path);
+bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* dir, const char* path);
+bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntry* dir, struct SMPath* path);

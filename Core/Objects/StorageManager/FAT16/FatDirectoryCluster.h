@@ -5,30 +5,6 @@
 
 struct FatVolume;
 
-#define FAT_DIR_ATTR_READ_ONLY 0x01 
-#define FAT_DIR_ATTR_HIDDEN 0x02 
-#define FAT_DIR_ATTR_SYSTEM 0x04 
-#define FAT_DIR_ATTR_VOLUME_ID 0x08 
-#define FAT_DIR_ATTR_DIRECTORY 0x10 
-#define FAT_DIR_ATTR_ARCHIVE 0x20 
-#define FAT_DIR_ATTR_LFN (   \
-    FAT_DIR_ATTR_READ_ONLY | \
-    FAT_DIR_ATTR_HIDDEN    | \
-    FAT_DIR_ATTR_SYSTEM    | \
-    FAT_DIR_ATTR_VOLUME_ID)
-
-/*
-    Time Encoding.
-        Hour    5 bits
-        Minutes 6 bits
-        Secods  5 bits
-
-    Date Encoding.
-        Year  7 bits
-        Month 4 bits
-        Day	  5 bits
-*/
-
 struct FatDirectoryCluster
 {
    /* Offset */
