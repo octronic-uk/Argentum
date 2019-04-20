@@ -57,3 +57,83 @@
 #define FLOPPY_MSR_ACTC 0x04
 #define FLOPPY_MSR_ACTB 0x02
 #define FLOPPY_MSR_ACTA 0x01
+
+#define FLOPPY_BUFFER_SIZE 32
+
+/*
+    Command Options
+    Bit MT
+        Value = 0x80. 
+        Multitrack mode. The controller will switch automatically from Head 0 to Head 1 at the end 
+        of the track. This allows you to read/write twice as much data with a single command.
+
+    Bit MF
+        Value = 0x40. 
+        "MFM" magnetic encoding mode. Always set it for read/write/format/verify 
+        operations.
+
+    Bit SK
+    Value = 0x20. 
+    Skip mode. Ignore this bit and leave it cleared, unless you have a really good reason not to.
+*/
+#define FLOPPY_CMD_OPT_MT 0x80
+#define FLOPPY_CMD_OPT_MF 0x40
+#define FLOPPY_CMD_OPT_SK 0x20
+
+#define FLOPPY_MAX_RETRIES 100 
+#define FLOPPY_SLEEP_TIME 10
+
+enum FloppyStatus
+{
+    FLOPPY_STATUS_NO_DRIVE,
+    FLOPPY_STATUS_525_360,
+    FLOPPY_STATUS_525_12,
+    FLOPPY_STATUS_35_720,
+    FLOPPY_STATUS_35_144,
+    FLOPPY_STATUS_35_288,
+};
+
+/*
+    The ones that you actually will use are marked with a * and a comment.
+*/
+
+enum FloppyCommand
+{
+   FLOPPY_CMD_READ_TRACK =         2,  // generates IRQ6
+   FLOPPY_CMD_SPECIFY =            3,  // * set drive parameters
+   FLOPPY_CMD_SENSE_DRIVE_STATUS = 4,
+   FLOPPY_CMD_WRITE_DATA =         5,  // * write to the disk
+   FLOPPY_CMD_READ_DATA =          6,  // * read from the disk
+   FLOPPY_CMD_RECALIBRATE =        7,  // * seek to cylinder 0
+   FLOPPY_CMD_SENSE_INTERRUPT =    8,  // * ack IRQ6, get status of last command
+   FLOPPY_CMD_WRITE_DELETED_DATA = 9,
+   FLOPPY_CMD_READ_ID =            10,	// generates IRQ6
+   FLOPPY_CMD_READ_DELETED_DATA =  12,
+   FLOPPY_CMD_FORMAT_TRACK =       13, // *
+   FLOPPY_CMD_DUMPREG =            14,
+   FLOPPY_CMD_SEEK =               15, // * seek both heads to cylinder X
+   FLOPPY_CMD_VERSION =            16, // * used during initialization, once
+   FLOPPY_CMD_SCAN_EQUAL =         17,
+   FLOPPY_CMD_PERPENDICULAR_MODE = 18,	// * used during initialization, once, maybe
+   FLOPPY_CMD_CONFIGURE =          19, // * set controller parameters
+   FLOPPY_CMD_LOCK =               20, // * protect controller params from a reset
+   FLOPPY_CMD_VERIFY =             22,
+   FLOPPY_CMD_SCAN_LOW_OR_EQUAL =  25,
+   FLOPPY_CMD_SCAN_HIGH_OR_EQUAL = 29
+};
+
+enum FloppyMotorState
+{ 
+    floppy_motor_off = 0, 
+    floppy_motor_on, 
+    floppy_motor_wait 
+};
+
+// Used by floppy_dma_init and floppy_do_track to specify direction
+#define FLOPPY_DMALEN 0x4800
+
+enum FloppyDirection 
+{
+    floppy_dir_read = 1,
+    floppy_dir_write = 2
+};

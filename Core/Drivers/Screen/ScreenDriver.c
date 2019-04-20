@@ -46,7 +46,7 @@ void ScreenDriver_PutChar(struct ScreenDriver* self, char c)
     {
         self->CurrentRow++;
         self->CurrentColumn = 0;
-		if (self->CurrentRow >= SCREEN_ROWS)
+		if (self->CurrentRow == SCREEN_ROWS)
 		{
 			ScreenDriver_Scroll(self);
 		}
@@ -65,10 +65,9 @@ void ScreenDriver_PutChar(struct ScreenDriver* self, char c)
 		self->CurrentColumn = 0;
 		if (++self->CurrentRow == SCREEN_ROWS)
         {
-			self->CurrentRow = 0;
+			ScreenDriver_Scroll(self);
         }
 	}
-    
 }
 
 void ScreenDriver_SetHeader(struct ScreenDriver* self, const char* data)
@@ -115,16 +114,12 @@ void ScreenDriver_Clear(struct ScreenDriver* self)
 void ScreenDriver_Scroll(struct ScreenDriver* self)
 {
 	int row;
-	for (row = 2; row < SCREEN_ROWS; row++)
+	for (row = 1; row < SCREEN_ROWS; row++)
 	{
-		memcpy(
-			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*(row-1)], 
-			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row],
-			SCREEN_ROW_SIZE_BYTES
-		);
-		memset(
-			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row],
-			0,
+		ScreenDriver_ClearRow(self,row);
+		memory_copy(
+			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row], 
+			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*(row+1)],
 			SCREEN_ROW_SIZE_BYTES
 		);
 	}
