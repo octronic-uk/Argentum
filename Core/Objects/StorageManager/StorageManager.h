@@ -19,7 +19,6 @@ struct StorageManager
 };
 
 bool StorageManager_Constructor(struct StorageManager* self, struct Kernel* kernel);
-void StorageManager_Destructor(struct StorageManager* self);
 
 void StorageManager_ListDrives(struct StorageManager* self);
 struct SMDrive* StorageManager_GetDrive(struct StorageManager* self, uint8_t drive_id);

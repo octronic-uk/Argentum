@@ -1,31 +1,64 @@
-#ifndef _STDIO_H
-#define _STDIO_H 1
+#pragma once
 
 #include <sys/cdefs.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <stdint.h>
 
 struct Kernel;
+
 #define BUFSIZ 64
 #define EOF (-1)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 int outputi(char **out, long i, int base, int sign, int width, int flags, int letbase);
 int prints(char **out, const char *string, int width, int flags);
 int vsprintf(char **out, const char *format, va_list ap);
 int sprintf(char *buf, const char *fmt, ...);
+int snprintf ( char * s, uint32_t n, const char * format, ... );
 int printf(const char* __restrict, ...);
 int putchar(int);
 int puts(const char*);
 void printf_to_serial();
 void printf_SetKernel(struct Kernel* kernel);
 
-#ifdef __cplusplus
-}
-#endif
+typedef struct
+{
+    uint32_t p;
+} FILE;
 
-#endif
+static FILE* stdin;
+static FILE* stdout;
+static FILE* stderr;
 
+int fclose(FILE* stream);
+int feof(FILE* stream);
+int ferror(FILE* stream);
+int fflush ( FILE * stream );
+char * fgets ( char * str, int num, FILE * stream );
+FILE* fopen(const char* filename, const char* mode );
+uint32_t fread(void* ptr, uint32_t size, uint32_t count, FILE* stream);
+FILE* freopen(const char* filename, const char* mode, FILE* stream);
+int fprintf(FILE* stream, const char* format, ...);
+int fputs ( const char * str, FILE * stream );
+int fseek ( FILE * stream, long int offset, int origin );
+long int ftell ( FILE * stream );
+uint32_t fwrite ( const void * ptr, uint32_t size, uint32_t count, FILE * stream );
 
+int getc(FILE* stream);
+FILE * tmpfile ( void );
+int ungetc ( int character, FILE * stream );
+void clearerr ( FILE * stream );
+int setvbuf ( FILE * stream, char * buffer, int mode, uint32_t size );
+int remove(const char* filename);
+int rename(const char *old_filename, const char *new_filename);
+char *tmpnam(char *str);
+
+#define L_tmpnam 11
+
+#define SEEK_SET 0
+#define SEEK_CUR 0
+#define SEEK_END 0
+
+#define _IONBF 0
+#define _IOFBF 0
+#define _IOLBF 0

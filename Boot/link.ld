@@ -20,22 +20,28 @@ SECTIONS
 	}
 
 	/* Read-only data. */
-	.rodata BLOCK(4K) : ALIGN(4K)
+	.rodata BLOCK(8K) : ALIGN(4K)
 	{
 		*(.rodata)
 	}
 
 	/* Read-write data (uninitialized) and stack */
-	.bss BLOCK(4K) : ALIGN(4K)
+	.bss /*BLOCK(1024K) : */ALIGN(4K) :
 	{
 		*(COMMON)
 		*(.bss)
 	}
 
 	/* Read-write data (initialized) */
-	.data BLOCK(4K) : ALIGN(4K)
+	.data BLOCK(8K) : ALIGN(4K)
 	{
 		*(.data)
+	}
+
+	/* Read-write data (initialized) */
+	.floppy_dma_buffer BLOCK(64K) : ALIGN(32K)
+	{
+		*(.floppy_dma_buffer)
 	}
 
 	/* The compiler may produce other sections, put them in the proper place in

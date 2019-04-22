@@ -30,8 +30,8 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	{
 		return false;
 	}
-	ScreenDriver_SetCursorPosition(&self->Screen, 0,2);
 
+	InterruptDriver_Disable_CLI(&self->Interrupt);
 	InterruptDriver_SetMask_PIC1(&self->Interrupt, 0xFF);
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0xFF);
 
@@ -63,12 +63,10 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0x00);
 	InterruptDriver_Enable_STI(&self->Interrupt);
 
-/*
 	if (!ACPIDriver_Constructor(&self->ACPI, self))
 	{
 		return false;
 	}
-*/
 
 	if (!PCIDriver_Constructor(&self->PCI, self))
 	{
@@ -85,7 +83,7 @@ bool Kernel_InitDrivers(struct Kernel* self)
 		return false;
 	}
 
-	PS2Driver_WaitForKeyPress("Drivers init complete");
+	PS2Driver_WaitForKeyPress("Kernel: Drivers init complete");
 	return true;
 }
 
@@ -95,7 +93,7 @@ bool Kernel_InitObjects(struct Kernel* self)
 	{
 		return false;
 	}
-	PS2Driver_WaitForKeyPress("Object init complete");
+	PS2Driver_WaitForKeyPress("Kernel: Object init complete");
 	return true;
 }
 

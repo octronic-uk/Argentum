@@ -1,5 +1,7 @@
 #pragma once
 
+typedef int sig_atomic_t;
+
 #define _NSIG		64
 #define _NSIG_BPW	__BITS_PER_LONG
 #define _NSIG_WORDS	(_NSIG / _NSIG_BPW)
@@ -35,9 +37,6 @@
 #define SIGWINCH	28
 #define SIGIO		29
 #define SIGPOLL		SIGIO
-/*
-#define SIGLOST		29
-*/
 #define SIGPWR		30
 #define SIGSYS		31
 #define	SIGUNUSED	31
@@ -82,30 +81,7 @@
 #define SIGSTKSZ	8192
 #endif
 
-/* #ifndef __ASSEMBLY__
-typedef struct {
-	unsigned long sig[_NSIG_WORDS];
-} sigset_t;
+#define SIG_DFL 8193
+#define SIG_IGN 8194
 
-#ifdef SA_RESTORER
-#define __ARCH_HAS_SA_RESTORER
-#endif
-
-#ifndef __KERNEL__
-struct sigaction {
-	__sighandler_t sa_handler;
-	unsigned long sa_flags;
-#ifdef SA_RESTORER
-	__sigrestore_t sa_restorer;
-#endif
-	sigset_t sa_mask;		/* mask last for extensibility * /
-};
-#endif
-
-typedef struct sigaltstack {
-	void __user *ss_sp;
-	int ss_flags;
-	size_t ss_size;
-} stack_t;
-
-#endif /* __ASSEMBLY__ * /
+void (*signal(int sig, void (*func)(int)))(int);

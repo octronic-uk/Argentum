@@ -5,6 +5,7 @@
 extern long setjmp(long *);
 extern void longjmp(long *, long);
 
+typedef long* jmp_buf;
 
 /* SPDX-License-Identifier: GPL-2.0 * /
 #

@@ -30,14 +30,14 @@ struct ScreenDriver
 {
 	struct Kernel* Kernel;
 	uint8_t* VideoBasePointer;
-	size_t CurrentRow;
-	size_t CurrentColumn;
+	uint32_t CurrentRow;
+	uint32_t CurrentColumn;
 	uint8_t Color;
 } ;
 
 bool ScreenDriver_Constructor(struct ScreenDriver* self, struct Kernel* kernel);
 void ScreenDriver_PutChar(struct ScreenDriver* self, char c);
-void ScreenDriver_Write(struct ScreenDriver* self, const char* data, size_t size);
+void ScreenDriver_Write(struct ScreenDriver* self, const char* data, uint32_t size);
 void ScreenDriver_WriteString(struct ScreenDriver* self, const char* data);
 void ScreenDriver_Update(struct ScreenDriver* self);
 void ScreenDriver_Clear(struct ScreenDriver* self);

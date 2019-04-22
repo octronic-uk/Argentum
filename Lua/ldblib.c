@@ -160,12 +160,9 @@ static int db_getinfo (lua_State *L) {
     }
   }
   if (!lua_getinfo(L1, options, &ar))
-  {
     return luaL_argerror(L, arg+2, "invalid option");
-  }
   lua_newtable(L);  /* table to collect results */
-  if (/*strchr(options, 'S')*/0) 
-  {
+  if (strchr(options, 'S')) {
     settabss(L, "source", ar.source);
     settabss(L, "short_src", ar.short_src);
     settabsi(L, "linedefined", ar.linedefined);
@@ -402,20 +399,16 @@ static int db_gethook (lua_State *L) {
 }
 
 
-static int db_debug (lua_State *L) 
-{
-  for (;;) 
-  {
+static int db_debug (lua_State *L) {
+  for (;;) {
     char buffer[250];
-    //lua_writestringerror("%s", "lua_debug> ");
-    if (/*fgets(buffer, sizeof(buffer), stdin)*/ 0 == 0 || strcmp(buffer, "cont\n") == 0)
-    {
+    lua_writestringerror("%s", "lua_debug> ");
+    if (fgets(buffer, sizeof(buffer), stdin) == 0 ||
+        strcmp(buffer, "cont\n") == 0)
       return 0;
-    }
-    if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") || lua_pcall(L, 0, 0, 0))
-    {
-      //lua_writestringerror("%s\n", lua_tostring(L, -1));
-    }
+    if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
+        lua_pcall(L, 0, 0, 0))
+      lua_writestringerror("%s\n", lua_tostring(L, -1));
     lua_settop(L, 0);  /* remove eventual returns */
   }
 }

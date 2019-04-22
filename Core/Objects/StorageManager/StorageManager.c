@@ -13,7 +13,7 @@ bool StorageManager_Constructor(struct StorageManager* self, struct Kernel* kern
 	printf("StorageManager: Constructing\n");
 
     memset(self,0,sizeof(struct StorageManager));
-	self->Debug = false; 
+	self->Debug = true; 
     self->Kernel = kernel;
 
 	uint8_t i;
@@ -33,10 +33,6 @@ bool StorageManager_Constructor(struct StorageManager* self, struct Kernel* kern
 	}
 
 	return true;
-}
-
-void StorageManager_Destructor(struct StorageManager* self)
-{
 }
 
 void StorageManager_ListDrives(struct StorageManager* self)

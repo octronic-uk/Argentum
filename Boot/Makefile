@@ -1,14 +1,15 @@
 LD = i386-elf-ld
 AS = i386-elf-as
 CC = i386-elf-gcc
-LDFLAGS=-nostdlib -nostartfiles
+LDFLAGS=--no-omagic -nostdlib -nostartfiles
 ASFLAGS=
 CFLAGS=-nostdinc -I../Core -I../Core/Clib/include -m32  -nostdlib -nostartfiles 
 ARGENTUM_LIB=../_build/Core/libArgentumCore.a
+LUA_LIB=../_build/Lua/libLua.a
 KBIN=Argentum
 
 all : main_c.o main_asm.o
-	$(LD) -T link.ld -melf_i386 main_asm.o main_c.o ${ARGENTUM_LIB} -o  ${KBIN}
+	$(LD) $(LDFLAGS) -T link.ld -melf_i386 main_asm.o main_c.o ${ARGENTUM_LIB} ${LUA_LIB} -o  ${KBIN}
 
 main_asm.o :
 	$(AS) $(ASFLAGS) main.s -o main_asm.o

@@ -1,62 +1,38 @@
 Copyright Ash Thompson 2019
 
 ### Project Goals
-Argentum aims to be a simple object-driven Operating System Kernel that uses scheduled Tasks and Resources objects to manage the computers time and hardware. The Kernel will be exposed through an object-oriented API that allow programmers to write user-space applications.
+Argentum aims to be a simple Operating System Kernel that uses scheduled Tasks and Resources objects 
+to manage the computers time and hardware. The Kernel will be exposed through a Lua API that allow 
+programmers to write additional drivers and user-space applications.
+
+Argentum is not Unix/Linux/POSIX/Windows compatible and does not aim to be.
 
 ### Architecture
 
 #### Devices Objects
-Hardware devices (aside from the CPU itself) in Argentum will be represented by an object. Some examples include.
+Hardware devices in Argentum will be represented by an object. 
+Some examples include.
 
 * Communication Devices (Serial, Network)
 * Storage Devices (Drive, Volume, Directory, File)
 * Input Device (Mouse, Keyboard, Joystick, etc.)
-* Output Devices (VGA, GPU, Printer, Audio)
+* Output Devices (Console, VGA, Printer, Audio)
 
 #### Tasks
-Tasks objects are the executable units that the Scheduler will run depending on their priority, dependencies, and other parameters. Two main types of Task will be available.
+Tasks objects are the executable units that the Scheduler will run depending on their priority, 
+dependencies, and other parameters. Two main types of Task will be available.
 
 * Privileged Task objects will be used to implement kernel-level functionality such as device drivers. 
 * Userspace Task objects will be used to run code that does not need privileged access to the underlying hardware.
 
-Tasks will be created by the Scheduler, in a ready to execute state. Setting up a Task will involve requesting access to Resources and performing program logic, even spawning additional Tasks.
+Tasks will be created by the Scheduler, in a ready to execute state. Setting up a Task will involve 
+requesting access to Resources and performing program logic, even spawning additional Tasks.
 
 #### Scheduler
-Argentum implements a Scheduler class that will be used to manage the lifetime and execution of Task objects. The Scheduler will implement task-switching algorithms to determine which Task should execute at what time.
+Argentum implements a Scheduler class that will be used to manage the lifetime and execution of 
+Task objects. The Scheduler will implement task-switching algorithms to determine which Task should 
+execute at what time.
 
-### API
-
-#### MemoryManager
-    MemMan_KAllocate
-    MemMan_KFree
-    MemMan_UAllocate
-    MemMan_UFree
-
-#### StorageManager
-    StorMan_ListDrives
-    StorMan_GetDrive
-
-#### Drive
-    Drive_ListVolumes
-    Drive_GetVolume
-
-#### Volume
-    Volume_CreateDirectory
-    Volume_RemoveDirector
-    Volume_GetDirectory
-
-#### Directory
-    Directory_List
-    Directory_Rename
-
-#### File
-    File_Create
-    File_Delete
-    File_Rename
-    File_Read
-    File_Write
-
-## Current Status
 ### Drivers
 
 * ACPI  
@@ -65,11 +41,20 @@ Argentum implements a Scheduler class that will be used to manage the lifetime a
     - Reading MADT
 * ATA 
     - PIO Read/Write Implemented, Needs DMA
+* CMOS
+* Floppy
 * Interrupt
+    - Set up IDT
+    - Set interrupt masks for each PIC
+* IO
     - Reading b/w/l
     - Writing b/w/l
     - Reading b/w/l strings
     - Writing b/w/l strings
+* Memory
+    - Allocate Memory
+    - Free Memory
+    - Needs Paging Support
 * PCI
     - Reading Config Headers
     - Writing Config Data
@@ -88,11 +73,20 @@ Argentum implements a Scheduler class that will be used to manage the lifetime a
     - Write COM1
     - Needs COM{2,3,4} support.
 
-### Filesystem
-* API
-    - Drafting high level api for file access
-* FAT
-    - FAT16 Volume support
-* MBR
-    - Read MBR into memory
+### Objects
+#### Storage Manager
+    * FAT
+        - FAT16 Volume support
+    * MBR
+        - Read and parse MBR
 
+##### Filesystem
+The root of the file system will consist of the following directories
+    - user : Storage for user files
+    - libs : Scripts that implement libraries/drivers (non-interactive stuff) 
+    - apps : Scripts that implement applications (interactive stuff) 
+    - temp : Temporary files
+
+### Lua User Space
+All user-space code will be written in Lua. Therefore Argentum's primary goal is to implement a core
+kernel capable of running Lua scripts. 

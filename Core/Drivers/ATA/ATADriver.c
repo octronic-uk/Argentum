@@ -13,7 +13,7 @@
 bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
 {
     printf("ATA: Constructing\n");
-    self->Debug = 0;
+    self->Debug = true;
     self->Kernel = kernel;
     memset(self->IDEBuffer,0,2048);
     memset(self->Channels,0,sizeof(struct ATA_Channel)*2);

@@ -40,4 +40,4 @@ if (ARGENTUM_BUILD_DOC)
 endif()
 
 add_subdirectory("Core")
-#add_subdirectory("Lua")
+add_subdirectory("Lua")

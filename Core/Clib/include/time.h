@@ -12,9 +12,11 @@ typedef __clockid_t clockid_t;
 typedef __timer_t timer_t;
 typedef  uint32_t __pid_t;
 typedef __pid_t pid_t;
-typedef void* clock_t;
-typedef void* time_t;
+typedef int32_t clock_t;
+typedef int32_t time_t;
 typedef  uint32_t __locale_t;
+
+#define CLOCKS_PER_SEC 1
 
 /* POSIX.1b structure for a time value.  This is like a `struct timeval' but
    has nanoseconds instead of microseconds.  */
@@ -41,6 +43,7 @@ struct tm
   const char *tm_zone;	/* Timezone abbreviation.  */
   long int __tm_gmtoff;		/* Seconds east of UTC.  */
   const char *__tm_zone;	/* Timezone abbreviation.  */
+};
 
 /* POSIX.1b structure for timer start values and intervals.  */
 struct itimerspec
@@ -51,7 +54,6 @@ struct itimerspec
 
 /* We can use a simple forward declaration.  */
 struct sigevent;
-
 
 static inline clock_t clock (void) { return 0;};
 
@@ -116,7 +118,7 @@ static inline char *ctime (const time_t *__timer)
 /* Defined in localtime.c.  */
 
 /* Same as above.  */
-static inline char *tzname[2];
+static /*inline*/ char *tzname[2];
 
 /* Set time conversion information from the TZ environment variable.
    If TZ is not defined, a locale-dependent default is used.  */
@@ -168,7 +170,7 @@ static inline int clock_settime (clockid_t __clock_id, const struct timespec *__
      8  invalid input specification Example: February 31 or a time is
         specified that can not be represented in a time_t (representing
 	the time in seconds since 00:00:00 UTC, January 1, 1970) */
-static inline int getdate_err;
+static /*inline*/ int getdate_err;
 
 /* Parse the given string as a date specification and return a value
    representing the value.  The templates from the file identified by
@@ -181,3 +183,5 @@ static inline struct tm* getdate (const char *__string)
 { 
     return 0; 
 }
+
+double difftime (time_t end, time_t beginning);

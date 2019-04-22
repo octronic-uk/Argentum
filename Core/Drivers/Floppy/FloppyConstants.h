@@ -83,14 +83,16 @@
 #define FLOPPY_MAX_RETRIES 100 
 #define FLOPPY_SLEEP_TIME 10
 
-enum FloppyStatus
+enum FloppyType
 {
-    FLOPPY_STATUS_NO_DRIVE,
-    FLOPPY_STATUS_525_360,
-    FLOPPY_STATUS_525_12,
-    FLOPPY_STATUS_35_720,
-    FLOPPY_STATUS_35_144,
-    FLOPPY_STATUS_35_288,
+    FLOPPY_TYPE_NO_DRIVE,
+
+    FLOPPY_TYPE_525_360,
+    FLOPPY_TYPE_525_1200,
+
+    FLOPPY_TYPE_35_720,
+    FLOPPY_TYPE_35_1440,
+    FLOPPY_TYPE_35_2880,
 };
 
 /*
@@ -130,7 +132,8 @@ enum FloppyMotorState
 };
 
 // Used by floppy_dma_init and floppy_do_track to specify direction
-#define FLOPPY_DMALEN 0x4800
+//#define FLOPPY_DMALEN 0x4800
+#define FLOPPY_DMALEN 512
 
 enum FloppyDirection 
 {

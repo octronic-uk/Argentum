@@ -1,17 +1,18 @@
-#ifndef _STDLIB_H
-#define _STDLIB_H 1
+#pragma once
 
 #include <sys/cdefs.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdint.h>
 
 __attribute__((__noreturn__)) void abort(void);
-int abs(int n) ;
+int abs(int n);
 
-#ifdef __cplusplus
-}
-#endif
+void* malloc(uint32_t size);
+void* realloc(void* ptr, uint32_t size);
+void free(void*);
+char* getenv (const char* name);
+double strtod (const char* str, char** endptr);
+void exit (int status);
+int system (const char* command);
 
-#endif
+#define EXIT_SUCCESS 0 
+#define EXIT_FAILURE 1

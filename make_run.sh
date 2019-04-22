@@ -1,7 +1,7 @@
 #/bin/bash
 
 TEST_DISK=Tools/MBR_FAT32_64m.img
-TEST_FLOPPY=Tools/Floppy_1_44.img
+TEST_FLOPPY=Tools/MSD_Disk2.img
 KERNEL=Boot/Argentum
 
 ./make.sh  
