@@ -15,9 +15,8 @@
 #define SCREEN_ROW_SIZE_BYTES (SCREEN_COLUMNS * SCREEN_BYTES_PER_ELEMENT)
 #define SCREEN_SIZE_BYTES (SCREEN_CHAR_SIZE * SCREEN_BYTES_PER_ELEMENT)
 
-bool ScreenDriver_Constructor(struct ScreenDriver* self, struct Kernel* kernel)
+bool ScreenDriver_Constructor(struct ScreenDriver* self)
 {
-	self->Kernel = kernel;
 	self->VideoBasePointer = (uint8_t*)SCREEN_VBP;
 	self->CurrentRow = 0;
 	self->CurrentColumn = 0;
@@ -116,7 +115,7 @@ void ScreenDriver_Scroll(struct ScreenDriver* self)
 	for (row = 0; row < SCREEN_ROWS; row++)
 	{
 		ScreenDriver_ClearRow(self,row);
-		memory_copy(
+		memcpy(
 			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*row], 
 			&self->VideoBasePointer[SCREEN_ROW_SIZE_BYTES*(row+1)],
 			SCREEN_ROW_SIZE_BYTES

@@ -10,18 +10,19 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include <Objects/Structures/LinkedList.h>
 
-bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel)
+extern struct Kernel _Kernel;
+
+bool ACPIDriver_Constructor(struct ACPIDriver* self)
 {
     printf("ACPI: Constructing\n");
-    self->Kernel = kernel;
     self->Debug = false;
     self->FacsPointer = 0;
     self->DsdtPointer = 0;
     self->SciInterrupt = 0;
     self->V1Header = 0;
 
-    LinkedList_Constructor(&self->InterruptSourceOverrideRecordPointers, &self->Kernel->Memory);
-    LinkedList_Constructor(&self->IoApicRecordPointers, &self->Kernel->Memory);
+    LinkedList_Constructor(&self->InterruptSourceOverrideRecordPointers, &_Kernel.Memory);
+    LinkedList_Constructor(&self->IoApicRecordPointers, &_Kernel.Memory);
 
     void* rsdpPointer = ACPIDriver_FindRsdpPointer(self);
 

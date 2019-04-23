@@ -6,7 +6,7 @@
 #include <Kernel.h>
 #include <Drivers/Memory/MemoryDriver.h>
 
-extern struct Kernel* _Kernel;
+extern struct Kernel _Kernel;
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
@@ -195,7 +195,7 @@ static void init_error_tables (void)
   if (error_names == NULL)
     {
       nbytes = num_error_names * sizeof (char *);
-      if ((error_names = (const char **) MemoryDriver_Allocate(&_Kernel->Memory, nbytes)) != NULL)
+      if ((error_names = (const char **) MemoryDriver_Allocate(&_Kernel.Memory, nbytes)) != NULL)
 	{
 	  memset (error_names, 0, nbytes);
 	  for (eip = error_table; eip -> name != NULL; eip++)
@@ -211,7 +211,7 @@ static void init_error_tables (void)
   if (sys_errlist == NULL)
     {
       nbytes = num_error_names * sizeof (char *);
-      if ((sys_errlist = (const char **) MemoryDriver_Allocate(&_Kernel->Memory, nbytes)) != NULL)
+      if ((sys_errlist = (const char **) MemoryDriver_Allocate(&_Kernel.Memory, nbytes)) != NULL)
 	{
 	  memset (sys_errlist, 0, nbytes);
 	  sys_nerr = num_error_names;

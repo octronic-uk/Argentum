@@ -12,14 +12,15 @@
 #include <Drivers/ACPI/ACPIDriver.h>
 #include <Drivers/ACPI/ACPITableTypes.h>
 
-bool PCIDriver_Constructor(struct PCIDriver* self, struct Kernel* kernel)
+extern struct Kernel _Kernel;
+
+bool PCIDriver_Constructor(struct PCIDriver* self)
 {
 	printf("PCI: Constructing\n");
 
-	self->Kernel = kernel;
 	self->Debug = true;
 
-    LinkedList_Constructor(&self->ConfigHeaderList, &self->Kernel->Memory);
+    LinkedList_Constructor(&self->ConfigHeaderList, &_Kernel.Memory);
 
 	uint8_t bus, device, function;
 	struct PCI_ConfigHeader* tmp = 0;
@@ -141,7 +142,7 @@ struct PCI_ConfigHeader* PCIDriver_ReadConfigHeader
 		return 0;
 	}
 
-	struct PCI_ConfigHeader* header = MemoryDriver_Allocate(&self->Kernel->Memory, sizeof(struct PCI_ConfigHeader));
+	struct PCI_ConfigHeader* header = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct PCI_ConfigHeader));
 	memset(header,0,sizeof(struct PCI_ConfigHeader));
 
 	header->mVendorID = vid;

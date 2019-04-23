@@ -7,19 +7,15 @@
 #include <Drivers/Screen/ScreenDriver.h>
 #include <Kernel.h>
 
-static struct Kernel* _Kernel;
+extern struct Kernel _Kernel;
 volatile bool PS2Driver_WaitingForKeyPress = false;
 
 #define PS2_PAUSE 2500
 
-bool PS2Driver_Constructor(struct PS2Driver* self, struct Kernel* kernel)
+bool PS2Driver_Constructor(struct PS2Driver* self)
 {
     printf("PS2: Constructing\n");
-
     self->Debug = false;
-    self->Kernel = kernel;
-    _Kernel = kernel;
-
     self->ResponseBufferIndex = 0;
     memset(self->ResponseBuffer, 0, sizeof(struct _Ps2Response)*PS2_RESPONSE_BUFFER_SIZE);
     self->SecondPortExists = false;
@@ -585,7 +581,7 @@ void PS2Driver_SetupInterruptHandlers(struct PS2Driver* self)
     {
 	   printf("PS2: Setting first port IDT entry.\n");
 	}
-	InterruptDriver_SetHandlerFunction(&self->Kernel->Interrupt, 1,PS2Driver_FirstPortInterruptHandler);
+	InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 1,PS2Driver_FirstPortInterruptHandler);
 
     // First Port
     if (self->SecondPortExists)
@@ -594,14 +590,14 @@ void PS2Driver_SetupInterruptHandlers(struct PS2Driver* self)
         {
             printf("PS2: Setting second port IDT entry.\n");
         }
-        InterruptDriver_SetHandlerFunction(&self->Kernel->Interrupt, 12,PS2Driver_SecondPortInterruptHandler);
+        InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 12,PS2Driver_SecondPortInterruptHandler);
     }
 }
 
 void PS2Driver_FirstPortInterruptHandler()
 {
     static uint8_t last = 0x00;
-    struct PS2Driver* self = &_Kernel->PS2;
+    struct PS2Driver* self = &_Kernel.PS2;
     if (self->Debug) 
     {
         printf("PS2: First Port Interrupt\n");
@@ -623,7 +619,7 @@ void PS2Driver_FirstPortInterruptHandler()
 
 void PS2Driver_SecondPortInterruptHandler()
 {
-    struct PS2Driver* self = &_Kernel->PS2;
+    struct PS2Driver* self = &_Kernel.PS2;
     if (self->Debug)  
     {
         printf("PS2: Second Port Interrupt\n");
@@ -644,7 +640,7 @@ void PS2Driver_SetDebug(struct PS2Driver* self, uint8_t debug)
 
 void PS2Driver_WaitForKeyPress(const char* msg)
 {
-    printf("%s Press 'Space' to continue... (%d)\n", msg, _Kernel->PIT.Ticks );
+    printf("%s Press 'Space' to continue... (%d)\n", msg, _Kernel.PIT.Ticks );
     PS2Driver_WaitingForKeyPress = 1;
     while  (PS2Driver_WaitingForKeyPress) {}
 }

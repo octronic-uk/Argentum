@@ -6,8 +6,6 @@
 #include <Drivers/ATA/ATAConstants.h>
 #include <Drivers/ATA/ATATypes.h>
 
-struct Kernel;
-
 /*
    Lovingly inspired by
    https://forum.osdev.org/viewtopic.php?f=1&p=167798
@@ -19,7 +17,6 @@ struct Kernel;
 struct ATADriver
 {
    uint8_t Debug;
-   struct Kernel* Kernel;
    struct ATA_IDEDevice IDEDevices[4];
    struct ATA_Channel Channels[2];
    uint8_t IDEBuffer[2048];
@@ -31,7 +28,7 @@ struct ATADriver
 /*
    @brief Constructs an ATADriver Obejct
 */
-bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel);
+bool ATADriver_Constructor(struct ATADriver* self);
 /**
  * @brief Using the given ATADriver, reads from ata channel and register specified
  */

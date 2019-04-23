@@ -9,7 +9,7 @@
 #include <Drivers/Interrupt/InterruptDriver.h>
 #include <Drivers/PS2/PS2Driver.h>
 
-static struct Kernel* _Kernel;
+extern struct Kernel _Kernel;
 
 // https://forum.osdev.org/viewtopic.php?f=1&t=13538
 
@@ -20,18 +20,16 @@ static struct Kernel* _Kernel;
 //static char FLOPPY_DMA_BUFFER[FLOPPY_DMALEN] __attribute__((aligned(32)));
 extern uint8_t fpy_dma_buf[FLOPPY_DMALEN];
 
-bool FloppyDriver_Constructor(struct FloppyDriver* self, struct Kernel* kernel)
+bool FloppyDriver_Constructor(struct FloppyDriver* self)
 {
     printf("Floppy: Constructing (DMA Buffer @ 0x%x)\n",(uint32_t)&fpy_dma_buf[0]);
     // Setup the IRQ6 Interrupt Handler
-    _Kernel = kernel;
-    InterruptDriver_SetHandlerFunction(&kernel->Interrupt, 6, FloppyDriver_InterruptHandler);
+    InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 6, FloppyDriver_InterruptHandler);
 
     // Init the driver object
     memset(self,0,sizeof(struct FloppyDriver));
     self->DebugIO = false;
-    self->Debug = true;
-    self->Kernel = kernel;
+    self->Debug = false;
     self->InterruptWaiting = false;
     // Get CMOS Config
     uint8_t cmosConfig = CMOSDriver_ReadFloppyConfiguration(true);
@@ -52,7 +50,7 @@ bool FloppyDriver_Constructor(struct FloppyDriver* self, struct Kernel* kernel)
 
 void FloppyDriver_WriteCommand(struct FloppyDriver* self, enum FloppyCommand cmd) 
 {
-    printf("Floppy: WriteCommand 0x%x\n",cmd);
+    if (self->Debug) printf("Floppy: WriteCommand 0x%x\n",cmd);
     int i; // do timeout
     for(i = 0; i < FLOPPY_MAX_RETRIES; i++) 
     {
@@ -67,7 +65,7 @@ void FloppyDriver_WriteCommand(struct FloppyDriver* self, enum FloppyCommand cmd
 
 uint8_t FloppyDriver_ReadData(struct FloppyDriver* self) 
 {
-    printf("Floppy: Read Data\n");
+    if (self->Debug) printf("Floppy: Read Data\n");
     int i; // do timeout, 60 seconds
     for(i = 0; i < FLOPPY_MAX_RETRIES; i++) 
     {
@@ -84,7 +82,7 @@ uint8_t FloppyDriver_ReadData(struct FloppyDriver* self)
 
 void FloppyDriver_CheckInterrupt(struct FloppyDriver* self, int *st0, int *cyl) 
 {
-    printf("Floppy: Check Interrupt\n");
+    if (self->Debug) printf("Floppy: Check Interrupt\n");
     FloppyDriver_WriteCommand(self, FLOPPY_CMD_SENSE_INTERRUPT);
     *st0 = FloppyDriver_ReadData(self);
     *cyl = FloppyDriver_ReadData(self);
@@ -93,14 +91,14 @@ void FloppyDriver_CheckInterrupt(struct FloppyDriver* self, int *st0, int *cyl)
 // Move to cylinder 0, which calibrates the drive..
 bool FloppyDriver_Calibrate(struct FloppyDriver* self) 
 {
-    printf("Floppy: Calibrate\n");
+    if (self->Debug) printf("Floppy: Calibrate\n");
     int i, st0, cyl = -1; // set to bogus cylinder
 
     FloppyDriver_Motor(self, floppy_motor_on);
 
     for(i = 0; i < 10; i++)
     {
-        printf("Floppy: Calibrate Attempt %d\n",i);
+        if (self->Debug) printf("Floppy: Calibrate Attempt %d\n",i);
         self->InterruptWaiting = false;
         // Attempt to positions head to cylinder 0
         FloppyDriver_WriteCommand(self, FLOPPY_CMD_RECALIBRATE);
@@ -108,32 +106,32 @@ bool FloppyDriver_Calibrate(struct FloppyDriver* self)
 
         FloppyDriver_IRQWait(self);
         FloppyDriver_CheckInterrupt(self,  &st0, &cyl);
-        printf("Floppy: Calibrate st0 == 0x%x\n",st0); 
+        if (self->Debug) printf("Floppy: Calibrate st0 == 0x%x\n",st0); 
 
         if(st0 & 0xC0) 
         {
             static const char * status[] =
             { 0, "error", "invalid", "drive" };
-            printf("FloppyDriver_Calibrate: status = %s\n", status[st0 >> 6]);
+            if (self->Debug) printf("FloppyDriver_Calibrate: status = %s\n", status[st0 >> 6]);
             continue;
         }
 
         if(!cyl) 
         { // found cylinder 0 ?
-            printf("Floppy: Calibrate: Found Cylinder 0\n");
+            if (self->Debug) printf("Floppy: Calibrate: Found Cylinder 0\n");
             FloppyDriver_Motor(self, floppy_motor_off);
             return true;
         }
     }
 
-    printf("Floppy: Calibrate: 10 retries exhausted\n");
+    if (self->Debug) printf("Floppy: Calibrate: 10 retries exhausted\n");
     FloppyDriver_Motor(self, floppy_motor_off);
     return false;
 }
 
 bool FloppyDriver_Reset(struct FloppyDriver* self) 
 {
-    printf("Floppy: Reset\n");
+    if (self->Debug) printf("Floppy: Reset\n");
     self->InterruptWaiting = false;
     FloppyDriver_WriteRegisterDigitalOutput(self, 0x00); // disable controller
     FloppyDriver_WriteRegisterDigitalOutput(self, 0x0C); // enable controller
@@ -173,7 +171,7 @@ void FloppyDriver_IRQWait(struct FloppyDriver* self)
 
 void FloppyDriver_Motor(struct FloppyDriver* self, int onoff) 
 {
-    printf("Floppy: Motor %s\n", onoff ? "On":"Off");
+    if (self->Debug) printf("Floppy: Motor %s\n", onoff ? "On":"Off");
     if(onoff) 
     {
         if(!self->MotorState[0]) 
@@ -188,7 +186,7 @@ void FloppyDriver_Motor(struct FloppyDriver* self, int onoff)
     {
         if(self->MotorState[0] == floppy_motor_wait) 
         {
-            printf("floppy_motor: strange, fd motor-state already waiting..\n");
+            if (self->Debug) printf("floppy_motor: strange, fd motor-state already waiting..\n");
         }
         self->MotorTicks[0] = 300; // 3 seconds, see FloppyDriver_Timer() below
         self->MotorState[0] = floppy_motor_wait;
@@ -197,7 +195,7 @@ void FloppyDriver_Motor(struct FloppyDriver* self, int onoff)
 
 void FloppyDriver_MotorKill(struct FloppyDriver* self) 
 {
-    printf("Floppy: Motor Kill\n");
+    if (self->Debug) printf("Floppy: Motor Kill\n");
     FloppyDriver_WriteRegisterDigitalOutput(self, 0x0c);
     self->MotorState[0] = floppy_motor_off;
 }
@@ -248,7 +246,7 @@ int FloppyDriver_Seek(struct FloppyDriver* self, unsigned cyli, int head)
         {
             static const char * status[] =
             { "normal", "error", "invalid", "drive" };
-            printf("FloppyDriver_Seek: status = %s\n", status[st0 >> 6]);
+            if (self->Debug) printf("FloppyDriver_Seek: status = %s\n", status[st0 >> 6]);
             continue;
         }
 
@@ -260,15 +258,15 @@ int FloppyDriver_Seek(struct FloppyDriver* self, unsigned cyli, int head)
 
     }
 
-    printf("FloppyDriver_Seek: 10 retries exhausted\n");
+    if (self->Debug) printf("FloppyDriver_Seek: 10 retries exhausted\n");
     FloppyDriver_Motor(self, floppy_motor_off);
     return -1;
 }
 
 void FloppyDriver_InterruptHandler()
 {
-    printf("Floppy: Interrupt\n");
-    struct FloppyDriver* self = &_Kernel->Floppy;
+    //printf("Floppy: Interrupt\n");
+    struct FloppyDriver* self = &_Kernel.Floppy;
     self->InterruptWaiting = true;
 }
 
@@ -289,7 +287,7 @@ static void FloppyDriver_DMAInit(struct FloppyDriver* self, enum FloppyDirection
     // (DMA can't deal with such a carry, this is the 64k boundary limit)
     if((a.l >> 24) || (c.l >> 16) || (((a.l&0xffff)+c.l)>>16)) 
     {
-        printf("floppy_dma_init: static buffer problem\n");
+        if (self->Debug) printf("floppy_dma_init: static buffer problem\n");
     }
 
     unsigned char mode;
@@ -304,7 +302,7 @@ static void FloppyDriver_DMAInit(struct FloppyDriver* self, enum FloppyDirection
             mode = 0x4a; 
             break;
         default: 
-            printf("floppy_dma_init: invalid direction\n");
+            if (self->Debug) printf("floppy_dma_init: invalid direction\n");
             return; // not reached, please "mode user uninitialized"
     }
 
@@ -347,7 +345,7 @@ bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector 
             break;
         default: 
 
-            printf("floppy_do_track: invalid direction\n");
+            if (self->Debug) printf("floppy_do_track: invalid direction\n");
             return false; // not reached, but pleases "cmd used uninitialized"
     }
 
@@ -412,72 +410,72 @@ bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector 
         {
             static const char * status[] =
             { 0, "error", "invalid command", "drive not ready" };
-            printf("Floppy: DoTrack Error - status = %s\n", status[st0 >> 6]);
+            if (self->Debug) printf("Floppy: DoTrack Error - status = %s\n", status[st0 >> 6]);
             error = 1;
         }
         if(st1 & 0x80) 
         {
-            printf("Floppy: DoTrack Error - end of cylinder\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - end of cylinder\n");
             error = 1;
         }
         if(st0 & 0x08) 
         {
-            printf("Floppy: DoTrack Error - drive not ready\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - drive not ready\n");
             error = 1;
         }
         if(st1 & 0x20) 
         {
-            printf("Floppy: DoTrack Error - CRC error\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - CRC error\n");
             error = 1;
         }
         if(st1 & 0x10) 
         {
-            printf("Floppy: DoTrack Error - controller timeout\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - controller timeout\n");
             error = 1;
         }
         if(st1 & 0x04) 
         {
-            printf("Floppy: DoTrack Error - no data found\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - no data found\n");
             error = 1;
         }
         if((st1|st2) & 0x01) 
         {
-            printf("Floppy: DoTrack Error - no address mark found\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - no address mark found\n");
             error = 1;
         }
         if(st2 & 0x40) 
         {
-            printf("Floppy: DoTrack Error - deleted address mark\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - deleted address mark\n");
             error = 1;
         }
         if(st2 & 0x20) 
         {
-            printf("Floppy: DoTrack Error - CRC error in data\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - CRC error in data\n");
             error = 1;
         }
         if(st2 & 0x10) 
         {
-            printf("Floppy: DoTrack Error - wrong cylinder\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - wrong cylinder\n");
             error = 1;
         }
         if(st2 & 0x04) 
         {
-            printf("Floppy: DoTrack Error - uPD765 sector not found\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - uPD765 sector not found\n");
             error = 1;
         }
         if(st2 & 0x02) 
         {
-            printf("Floppy: DoTrack Error - bad cylinder\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - bad cylinder\n");
             error = 1;
         }
         if(bps != 0x2) 
         {
-            printf("Floppy: DoTrack Error - wanted 512B/sector, got %d\n", (1<<(bps+7)));
+            if (self->Debug) printf("Floppy: DoTrack Error - wanted 512B/sector, got %d\n", (1<<(bps+7)));
             error = 1;
         }
         if(st1 & 0x02) 
         {
-            printf("Floppy: DoTrack Error - not writable\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - not writable\n");
             error = 2;
         }
 
@@ -488,13 +486,13 @@ bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector 
         }
         if(error > 1) 
         {
-            printf("Floppy: DoTrack Error - not retrying..\n");
+            if (self->Debug) printf("Floppy: DoTrack Error - not retrying..\n");
             FloppyDriver_Motor(self, floppy_motor_off);
             return false;
         }
     }
 
-    printf("Floppy: DoTrack Error - 20 retries exhausted\n");
+    if (self->Debug) printf("Floppy: DoTrack Error - 20 retries exhausted\n");
     FloppyDriver_Motor(self, floppy_motor_off);
     return false;
 

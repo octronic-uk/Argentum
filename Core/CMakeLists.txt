@@ -9,7 +9,6 @@ include_directories(
     ArgentumCore 
     ${CMAKE_SOURCE_DIR}/Core 
     ${CMAKE_SOURCE_DIR}/Core/Clib/include
-    ${CMAKE_SOURCE_DIR}/Core/Drivers/ACPI/include
 )
 
 add_library(ArgentumCore ${SRC_FILES})

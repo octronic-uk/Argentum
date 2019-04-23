@@ -7,7 +7,7 @@
 bool SMPath_Constructor(struct SMPath* self)
 {
     memset(self,0,sizeof(struct SMPath));
-    self->Debug = false;
+    self->Debug = true;
     return true;
 }
 
@@ -22,63 +22,75 @@ bool SMPath_ConstructAndParse(struct SMPath* self, const char* path)
 
 bool SMPath_Parse(struct SMPath* self, const char* address)
 {
-    if (self->Debug)
-    {
-        printf("SMPath: Parsing \"%s\"\n",address);
-    }
-    uint32_t addr_index = 0;
+    if (self->Debug) printf("SMPath: Parsing \"%s\"\n",address);
 
-    // Bus/Drive,Volume opening Char
-    if (address[addr_index++] != SM_PATH_DELIMETER)
+    uint32_t addr_index = 0;
+    bool drive_found = false;
+
+    // Get device String
+    uint8_t dev_idx;
+    for (dev_idx = 0; dev_idx < SM_PATH_DEVICE_BUFFER_LENGTH; dev_idx++)
     {
-        self->ParseError = SM_PATH_ERR_NO_BEGIN_CHAR;
+        if (strcmp(&address[addr_index], SM_PATH_DEVICE_DELIMETER) == 0)
+        {
+            drive_found = true;
+            break;
+        }
+        self->DeviceString[dev_idx] = address[addr_index++];
+    }
+
+    // Force null terminate the device str
+    self->DeviceString[SM_PATH_DEVICE_BUFFER_LENGTH-1] = 0;
+    uint8_t device_str_idx = 0;
+    if (self->Debug) printf("StorageManager: Device String: %s\n",self->DeviceString);
+
+    // is 'ATA'||'ata'
+    if (strncmp(self->DeviceString,SM_PATH_BUS_ATA_STR, 3) == 0 || 
+        strncmp(self->DeviceString,SM_PATH_BUS_ATA_LOWER_STR, 3) == 0)
+    {
+        self->DriveType = DRIVE_TYPE_ATA;
+        device_str_idx = 3;
+    }
+    // is 'FDD'||'fdd'
+    else if (strncmp(self->DeviceString, SM_PATH_BUS_FDD_STR, 3) == 0 || 
+             strncmp(self->DeviceString, SM_PATH_BUS_FDD_LOWER_STR, 3) == 0)
+    {
+        self->DriveType = DRIVE_TYPE_FLOPPY;
+        device_str_idx = 3;
+    }
+    else
+    {
+        self->DriveType = DRIVE_TYPE_ERROR;
+        self->ParseError = SM_PATH_ERR_INVALID_DRIVE;
         return false;
     }
 
-    // Get Bus String
-    uint8_t bus_idx;
-    for (bus_idx = 0; bus_idx < SM_PATH_BUS_BUFFER_LENGTH; bus_idx++)
-    {
-        if (address[addr_index] == SM_PATH_DELIMETER)
-        {
-            addr_index++;
-            break;
-        }
-        self->Bus[bus_idx] = address[addr_index];
-    }
-
-    // Drive Number
-    self->DriveIndex = char_to_int(address[addr_index++],10);
-    if (self->DriveIndex > SM_PATH_MAX_DRIVE)
+    if (!drive_found)
     {
         self->ParseError = SM_PATH_ERR_INVALID_DRIVE;
         return false;
     }
 
-    // Drive,Volume Separator Char
-    if (address[addr_index++] != SM_PATH_DELIMETER)
+    // Device Number
+    if (self->DeviceString[device_str_idx])
     {
-        self->ParseError = SM_PATH_ERR_INVALID_VOLUME;
-        return false;
+        self->DriveIndex = chrtoi(self->DeviceString[device_str_idx],10);
     }
 
-    // Volume Number
-    self->VolumeIndex = char_to_int(address[addr_index++],10);
-    if (self->VolumeIndex > SM_PATH_MAX_VOLUME)
+    device_str_idx++;
+
+    // If ATA get volume
+    if (self->DriveType == DRIVE_TYPE_ATA && 
+        self->DeviceString[device_str_idx] == SM_PATH_VOLUME_DELIMETER)
     {
-        self->ParseError = SM_PATH_ERR_INVALID_VOLUME;
-        return false;
+        self->VolumeIndex = chrtoi(self->DeviceString[++device_str_idx],10);
     }
+
+    // Consume Device Delimeter
+    addr_index+=3;
 
     int8_t path_index = 0;
     int8_t name_index = 0;
-
-    // Root Delimeter
-    if (address[addr_index++] != SM_PATH_DELIMETER)
-    {
-        self->ParseError = SM_PATH_ERR_NO_ROOT_DELIMETER;
-        return false;
-    }
 
     while (address[addr_index])
     {
@@ -149,8 +161,6 @@ const char* SMPath_GetParseErrorString(struct SMPath* self)
     {
         case SM_PATH_NO_ERROR:
             return "No Error";
-        case SM_PATH_ERR_NO_BEGIN_CHAR:
-            return "No starting '/' before drive id";
         case SM_PATH_ERR_INVALID_DRIVE:
             return "Invalid drive id";
         case SM_PATH_ERR_INVALID_VOLUME:
@@ -163,8 +173,6 @@ const char* SMPath_GetParseErrorString(struct SMPath* self)
             return "Directory or file name too long";
         case SM_PATH_ERR_NO_ROOT_DELIMETER:
             return "Path is missing root delimeter";
-        case SM_PATH_ERR_INVALID_BUS:
-            return "Bus is invalid";
 
         default:
             "Unknown Error";
@@ -173,9 +181,27 @@ const char* SMPath_GetParseErrorString(struct SMPath* self)
 
 void SMPath_Debug(struct SMPath* self)
 {
+
+    char* drive_type = "ERROR";
+
+    if (self->DriveType == DRIVE_TYPE_ATA)
+    {
+        drive_type = "ATA";
+    }
+    else if (self->DriveType == DRIVE_TYPE_FLOPPY)
+    {
+        drive_type = "Floppy";
+    }
+
     printf("SMPath:\n");
-    printf("\tDrive:  %d\n",self->DriveIndex);
-    printf("\tVolume: %d\n",self->VolumeIndex);
+    printf("\tType:   %s\n", drive_type);
+    printf("\tDevice: %s\n", self->DeviceString);
+    printf("\tDrive:  %d\n", self->DriveIndex);
+    if (self->DriveType == DRIVE_TYPE_ATA)
+    {
+       printf("\tVolume: %d\n", self->VolumeIndex);
+    }
+    
     uint8_t i;
     for (i=0; i<SM_PATH_MAX_DIRS; i++)
     {
@@ -188,11 +214,12 @@ void SMPath_Debug(struct SMPath* self)
 
 void SMPath_TestParser()
 {
+    printf("\n\nStorageManager: Testing Parser...\n");
     struct SMPath addr1, addr2, addr3;
 
-	char* test_address_1 = "/ATA/1/2/dir_1";
-	char* test_address_2 = "/FD/1/2/dir_1/some_file.ext";
-	char* test_address_3 = "/FD/0/0/dir_1/dir_2/file.ext";
+	char* test_address_1 = "ata1p0://dir_1";
+	char* test_address_2 = "FDD1://dir_1/some_file.ext";
+	char* test_address_3 = "fdd0:///dir_1/dir_2/file.ext";
 
 	SMPath_Constructor(&addr1);
 	SMPath_Constructor(&addr2);
@@ -205,9 +232,9 @@ void SMPath_TestParser()
 	else
 	{
         printf("SMPath: Failed to parse address 1: %s\n",SMPath_GetParseErrorString(&addr1));
-        PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
+    PS2Driver_WaitForKeyPress("SMPath Pause");
 
 	if (SMPath_Parse(&addr2, test_address_2))
 	{
@@ -216,9 +243,9 @@ void SMPath_TestParser()
 	else
 	{
 		printf("SMPath: Failed to parse address 2: %s\n",SMPath_GetParseErrorString(&addr2));
-	    PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
+	PS2Driver_WaitForKeyPress("SMPath Pause");
 
 	if (SMPath_Parse(&addr3, test_address_3))
 	{
@@ -227,7 +254,6 @@ void SMPath_TestParser()
 	else
 	{
 		printf("SMPath: Failed to parse address 3: %s\n",SMPath_GetParseErrorString(&addr3));
-	    PS2Driver_WaitForKeyPress("SMPath Pause");
         return;
 	}
     PS2Driver_WaitForKeyPress("SMPath: Parser test passed");

@@ -8,6 +8,8 @@
 #include <Drivers/PIT/PITDriver.h>
 #include <Drivers/PS2/PS2Driver.h>
 
+extern struct Kernel _Kernel;
+
 bool FatCachedSector_Constructor(struct FatCachedSector* self, struct FatVolume* parent, uint32_t sector_number)
 {
     printf("FatCachedSector: Constructing\n");
@@ -16,7 +18,7 @@ bool FatCachedSector_Constructor(struct FatCachedSector* self, struct FatVolume*
     self->SectorNumber = sector_number;
     self->InUse = true;
     self->Invalid = false;
-    self->LastAccess = self->ParentVolume->Kernel->PIT.Ticks;
+    self->LastAccess = _Kernel.PIT.Ticks;
 }
 
 

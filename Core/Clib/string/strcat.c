@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-char* string_concatenate(char* dest, const char* src)
+char* strcat(char* dest, const char* src)
 {
     // Find where to append
     uint32_t end_of_dest = 0;
@@ -18,7 +18,7 @@ char* string_concatenate(char* dest, const char* src)
     }
 
     // Append src to dest
-    memory_copy(&dest[end_of_dest], src, size_of_src);
+    memcpy(&dest[end_of_dest], src, size_of_src);
     
     // Null Terminate
     dest[end_of_dest + size_of_src]  = 0;

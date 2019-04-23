@@ -13,7 +13,7 @@ add_definitions(-DARGENTUM_BUILD_DATE=\"${ARGENTUM_BUILD_DATE}\")
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-# For YCM Completion
+# For code completion
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set (ARGENTUM_BUILD_DOC OFF)
@@ -40,4 +40,4 @@ if (ARGENTUM_BUILD_DOC)
 endif()
 
 add_subdirectory("Core")
-add_subdirectory("Lua")
+#add_subdirectory("Lua")

@@ -4,13 +4,10 @@
 #include <stdbool.h>
 #include "FloppyConstants.h"
 
-struct Kernel;
-
 struct FloppyDriver
 {
     bool Debug;
     bool DebugIO;
-    struct Kernel* Kernel;
     enum FloppyType Master;
     enum FloppyType Slave;
     volatile int MotorTicks[2];
@@ -25,7 +22,7 @@ struct CylinderHeadSector
     uint32_t Sector;
 };
 
-bool FloppyDriver_Constructor(struct FloppyDriver* self, struct Kernel* kernel);
+bool FloppyDriver_Constructor(struct FloppyDriver* self);
 
 void FloppyDriver_WriteCommand(struct FloppyDriver* self, enum FloppyCommand cmd);
 uint8_t FloppyDriver_ReadData(struct FloppyDriver* self);

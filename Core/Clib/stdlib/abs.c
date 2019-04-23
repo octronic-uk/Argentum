@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-int absolute(int n) 
+int abs(int n) 
 {
   if (n >= 0) return n;
   else return -n;

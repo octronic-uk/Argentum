@@ -10,18 +10,19 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include <Drivers/PCI/Vendors.h>
 
-bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
+extern struct Kernel _Kernel;
+
+bool ATADriver_Constructor(struct ATADriver* self)
 {
     printf("ATA: Constructing\n");
-    self->Debug = true;
-    self->Kernel = kernel;
+    self->Debug = false;
     memset(self->IDEBuffer,0,2048);
     memset(self->Channels,0,sizeof(struct ATA_Channel)*2);
     memset(self->IDEDevices,0,sizeof(struct ATA_IDEDevice)*4);
     memset(self->ATAPIPacket,0,12);
     self->ATAPIPacket[0] = 0xA8;
 
-    struct PCI_ConfigHeader* ata_device = PCIDriver_GetATADevice(&self->Kernel->PCI);
+    struct PCI_ConfigHeader* ata_device = PCIDriver_GetATADevice(&_Kernel.PCI);
 
     if (ata_device)
     {
@@ -31,14 +32,14 @@ bool ATADriver_Constructor(struct ATADriver* self, struct Kernel* kernel)
             PS2Driver_WaitForKeyPress("ATA Pause");
         }
 
-        uint8_t readInterruptLine = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+        uint8_t readInterruptLine = PCIDriver_DeviceReadConfig8b(&_Kernel.PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET);
         if (self->Debug)
         {
             printf("ATA: Current Interrupt Line 0x%x\n",readInterruptLine);
             PS2Driver_WaitForKeyPress("ATA Pause");
         }
-        PCIDriver_DeviceWriteConfig8b(&self->Kernel->PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET, 0xFE);
-        readInterruptLine = PCIDriver_DeviceReadConfig8b(&self->Kernel->PCI, ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
+        PCIDriver_DeviceWriteConfig8b(&_Kernel.PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET, 0xFE);
+        readInterruptLine = PCIDriver_DeviceReadConfig8b(&_Kernel.PCI, ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
 
         // This Device needs IRQ assignment.
         if (readInterruptLine != 0xFE)

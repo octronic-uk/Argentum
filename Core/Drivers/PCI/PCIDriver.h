@@ -6,8 +6,6 @@
 #include <Drivers/PCI/PCIConstants.h>
 #include <Objects/Structures/LinkedList.h>
 
-struct Kernel;
-
 struct PCI_ConfigHeader
 {
 	uint8_t mBus;
@@ -36,12 +34,11 @@ struct PCI_ConfigHeader
 
 struct PCIDriver
 {
-	struct Kernel* Kernel;
 	struct LinkedList ConfigHeaderList;
 	bool Debug;
 };
 
-bool PCIDriver_Constructor(struct PCIDriver* self, struct Kernel* kernel);
+bool PCIDriver_Constructor(struct PCIDriver* self);
 
 void PCIDriver_SetDebug(struct PCIDriver* self, uint32_t debug);
 void PCIDriver_DumpDevices(struct PCIDriver* self);

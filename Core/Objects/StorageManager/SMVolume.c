@@ -2,28 +2,25 @@
 
 #include <Kernel.h>
 #include "FAT16/FatVolume.h"
-#include "SMDrive.h"
+#include "SM_ATADrive.h"
 #include "SMDirectoryEntry.h"
 #include "SMFile.h"
 
 #include <stdio.h>
 #include <string.h>
 
-bool SMVolume_Constructor(
-    struct SMVolume* self, struct SMDrive* parent, struct Kernel* kernel, 
-    uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition
-)
+extern struct Kernel _Kernel;
+
+bool SMVolume_Constructor(struct SMVolume* self, struct SM_ATADrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
 {
     memset(self,0,sizeof(struct SMVolume));
     self->Debug = true;
     self->ParentDrive = parent;
-    self->Kernel = kernel;
     self->VolumeIndex = volume_index;
     self->FirstSectorIndex = first_sector;
     self->SectorsInPartition = sectors_in_partition;
 
-    if (FatVolume_Constructor(&self->FatVolume, self->Kernel, self->ParentDrive->AtaIndex, 
-        self->VolumeIndex, self->FirstSectorIndex, self->SectorsInPartition))
+    if (FatVolume_Constructor(&self->FatVolume, self->ParentDrive->AtaIndex, self->VolumeIndex, self->FirstSectorIndex, self->SectorsInPartition))
     {
        return true;
     }

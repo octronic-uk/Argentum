@@ -12,13 +12,12 @@
 #include "FatDirectoryCluster.h"
 #include "FatLfnCluster.h"
 
-bool FatVolume_Constructor(struct FatVolume* self, struct Kernel* kernel, uint8_t ata_device_id, 
-    uint8_t partition_id, uint32_t lba_first_sector, uint32_t sector_count) 
+extern struct Kernel _Kernel;
+
+bool FatVolume_Constructor(struct FatVolume* self,  uint8_t ata_device_id, uint8_t partition_id, uint32_t lba_first_sector, uint32_t sector_count) 
 {
     printf("FatVolume: Constructor\n");
-
-    self->Debug = true;
-    self->Kernel = kernel;
+    self->Debug = false;
     self->AtaDeviceId = ata_device_id;
     self->PartitionId = partition_id;
     self->FirstSectorNumber = lba_first_sector;
@@ -47,6 +46,7 @@ bool FatVolume_ReadBPB(struct FatVolume* self)
         printf("FatVolume: Reading BPB...\n");
         PS2Driver_WaitForKeyPress("");
     }
+
     if (!FatVolume_ReadSector(self,0,(uint8_t*)&self->BiosParameterBlock))
     {
         printf("FatVolume: ATA error reading BPB\n");
@@ -69,27 +69,13 @@ bool FatVolume_ReadBPB(struct FatVolume* self)
 void FatVolume_Destructor(struct FatVolume* self)
 {
     printf("FatVolume: Destructor\n");
-        PS2Driver_WaitForKeyPress("");
+    PS2Driver_WaitForKeyPress("");
 }
 
 uint32_t FatVolume_GetFirstSectorOfCluster(struct FatVolume* self, uint32_t cluster)
 {
-    return 
-        FatBPB_GetFirstDataSector(&self->BiosParameterBlock) + 
-        (
-            (cluster - 2) * 
-            self->BiosParameterBlock.SectorsPerCluster
-        );
+    return FatBPB_GetFirstDataSector(&self->BiosParameterBlock) + ((cluster - 2) * self->BiosParameterBlock.SectorsPerCluster);
 }
-
-/*
-uint32_t FatVolume_GetClusterValue(struct FatVolume* self, uint32_t cluster)
-{
-    return 
-        --> Read this sector 
-            FatBPB_GetFirstDataSector(&self->BiosParameterBlock) +  (cluster * self->BiosParameterBlock.SectorsPerCluster)
-}
-*/
 
 void FatVolume_DebugSector(uint8_t* sector)
 {
@@ -125,7 +111,7 @@ bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8
             printf("FatVolume: Found cached sector 0x%x\n",sector_to_read);
             PS2Driver_WaitForKeyPress("");
             memcpy(buffer,next->Data,FAT_SECTOR_SIZE);
-            next->LastAccess = self->Kernel->PIT.Ticks;
+            next->LastAccess = _Kernel.PIT.Ticks;
             FatCachedSector_Debug(next);
             return true;
         }
@@ -140,7 +126,7 @@ bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8
     }
 
     // Read from disk
-    uint8_t ata_error = ATADriver_IDEAccess(&self->Kernel->ATA, ATA_READ, self->AtaDeviceId, physical_sector, 1, (void*)buffer);
+    uint8_t ata_error = ATADriver_IDEAccess(&_Kernel.ATA, ATA_READ, self->AtaDeviceId, physical_sector, 1, (void*)buffer);
 
     if (ata_error)
     {

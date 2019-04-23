@@ -5,12 +5,12 @@
 
 #include <Kernel.h>
 
+extern struct Kernel _Kernel;
 
-bool MemoryDriver_Constructor(struct MemoryDriver* self, struct Kernel* kernel)
+bool MemoryDriver_Constructor(struct MemoryDriver* self)
 {
-	self->Kernel = kernel;
 	memset(self->PhysicalAreas,0,sizeof(struct Memory_PhysicalMemoryArea)*MEMORY_PHYSICAL_AREA_TABLE_SIZE);
-	self->MultibootInfo = kernel->MultibootInfo;
+	self->MultibootInfo = _Kernel.MultibootInfo;
 	self->Debug = 0;
 	self->UpperRamSize = 0;
 	self->BaseAddress = 0;

@@ -1,6 +1,6 @@
 #include <string.h>
 
-int memory_compare(const void* aptr, const void* bptr, size_t size)
+int memcmp(const void* aptr, const void* bptr, size_t size)
 {
 	const unsigned char* a = (const unsigned char*) aptr;
 	const unsigned char* b = (const unsigned char*) bptr;

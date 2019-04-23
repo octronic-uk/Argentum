@@ -8,8 +8,6 @@
     https://wiki.osdev.org/%228042%22_PS/2_Controller
 */
 
-struct Kernel;
-
 #define PS2_DATA_PORT_RW 0x60
 #define PS2_STATUS_REGISTER_R 0x64
 #define PS2_COMMAND_REGISTER_W 0x64
@@ -91,7 +89,6 @@ struct _Ps2Response
 
 struct PS2Driver
 {
-    struct Kernel* Kernel;
     struct Interrupt_DescriptorTableEntry FirstPort_IDT_Entry;
     struct Interrupt_DescriptorTableEntry SecondPort_IDT_Entry;
     enum _Ps2KeyboardNextByte KeyboardNextByteExpected;
@@ -101,7 +98,7 @@ struct PS2Driver
     uint8_t ResponseBufferIndex;
 };
 
-bool PS2Driver_Constructor(struct PS2Driver* self, struct Kernel* kernel);
+bool PS2Driver_Constructor(struct PS2Driver* self);
 void PS2Driver_Destructor(struct PS2Driver* self);
 
 void PS2Driver_SetDebug(struct PS2Driver* self, uint8_t debug);

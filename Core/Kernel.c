@@ -1,7 +1,6 @@
 #include <Kernel.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <Objects/StorageManager/SMDirectoryEntry.h>
 
 bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 {
@@ -18,15 +17,13 @@ bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 		return false;
 	}
 
-	Kernel_TestStorageManager(self);
 
 	return true;
 }
 
 bool Kernel_InitDrivers(struct Kernel* self)
 {
-	printf_SetKernel(self);
-	if(!ScreenDriver_Constructor(&self->Screen, self))
+	if(!ScreenDriver_Constructor(&self->Screen))
 	{
 		return false;
 	}
@@ -35,26 +32,26 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	InterruptDriver_SetMask_PIC1(&self->Interrupt, 0xFF);
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0xFF);
 
-	if(!MemoryDriver_Constructor(&self->Memory, self))
+	if(!MemoryDriver_Constructor(&self->Memory))
 	{
 		return false;
 	}
 
-	if(!InterruptDriver_Constructor(&self->Interrupt, self))
+	if(!InterruptDriver_Constructor(&self->Interrupt))
 	{
 		return false;
 	}
 
-	if (!PITDriver_Constructor(&self->PIT, self))
+	if (!PITDriver_Constructor(&self->PIT))
 	{
 		return false;
 	}
-	if (!SerialDriver_Constructor(&self->Serial, self))
+	if (!SerialDriver_Constructor(&self->Serial))
 	{
 		return false;
 	}
 	//SerialDriver_TestPort1(&self->Serial);
-	if(!PS2Driver_Constructor(&self->PS2, self))
+	if(!PS2Driver_Constructor(&self->PS2))
 	{
 		return false;
 	}
@@ -63,22 +60,22 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0x00);
 	InterruptDriver_Enable_STI(&self->Interrupt);
 
-	if (!ACPIDriver_Constructor(&self->ACPI, self))
+	if (!ACPIDriver_Constructor(&self->ACPI))
 	{
 		return false;
 	}
 
-	if (!PCIDriver_Constructor(&self->PCI, self))
+	if (!PCIDriver_Constructor(&self->PCI))
 	{
 		return false;
 	}
 
-	if (!FloppyDriver_Constructor(&self->Floppy,self))
+	if (!FloppyDriver_Constructor(&self->Floppy))
 	{
 		return false;
 	}
 
-	if (!ATADriver_Constructor(&self->ATA, self))
+	if (!ATADriver_Constructor(&self->ATA))
 	{
 		return false;
 	}
@@ -89,61 +86,13 @@ bool Kernel_InitDrivers(struct Kernel* self)
 
 bool Kernel_InitObjects(struct Kernel* self)
 {
-	if (!StorageManager_Constructor(&self->StorageManager, self))
+	if (!StorageManager_Constructor(&self->StorageManager))
 	{
 		return false;
 	}
+
+	StorageManager_Test(&self->StorageManager);
+
 	PS2Driver_WaitForKeyPress("Kernel: Object init complete");
 	return true;
-}
-
-bool Kernel_TestStorageManager(struct Kernel* self)
-{
-	printf("Kernel: Testing StorageManager\n");
-	struct StorageManager* sm = &self->StorageManager;
-	StorageManager_ListDrives(sm);
-	struct SMDrive* drive0 = StorageManager_GetDrive(sm, 0);
-
-	if (drive0)
-	{
-		printf("Kernel: Got Drive 0 from StorageManager\n");
-		SMDrive_ListVolumes(drive0);
-		struct SMVolume* drv0vol0 = SMDrive_GetVolume(drive0,0);
-		if (drv0vol0)
-		{
-			printf("Kernel: Got drive0/volume0 \n");
-			PS2Driver_WaitForKeyPress("Kernel Pause");
-		}
-		else
-		{
-			printf("Kernel: Error getting drive0/volume0");
-			PS2Driver_WaitForKeyPress("Kernel Pause");
-		}
-		
-	}
-
-	//SMPath_TestParser();
-
-	//char* file_path = "/0/0/STL_FILE/SquirrelChess.rar";
-	char* file_path = "/0/0/test.txt";
-
-	struct SMDirectoryEntry file;
-
-	if(!StorageManager_Open(&self->StorageManager, &file, file_path))
-	{
-		printf("Kernel: StorageManager has FAILED to open the file at %s\n", file_path);
-		PS2Driver_WaitForKeyPress("Kernel Pause");
-		return false;
-	}
-
-	if (!SMDirectoryEntry_IsFile(&file))
-	{
-		printf("Kernel: Directory %s is not a file\n", file_path);
-		PS2Driver_WaitForKeyPress("Kernel Pause");
-	}
-
-	printf("Kernel: StorageManager has opened the file at %s\n", file_path);
-	PS2Driver_WaitForKeyPress("Kernel Pause");
-	
-	return false;
 }

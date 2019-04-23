@@ -13,8 +13,6 @@
 #define MEMORY_PAGE_NUMBER_MASK 0xFF000000
 #define MEMORY_PAGE_OFFSET_MASK 0x00FF0000
 
-struct Kernel;
-
 struct Memory_PhysicalMemoryArea
 {
 	uint32_t Address;
@@ -54,7 +52,6 @@ struct Memory_Frame
 
 struct MemoryDriver
 {
-	struct Kernel* Kernel;
 	uint8_t Debug;
 	multiboot_info_t* MultibootInfo;
 	uint32_t UpperRamSize;
@@ -65,7 +62,7 @@ struct MemoryDriver
 	struct Memory_PhysicalMemoryArea PhysicalAreas[MEMORY_PHYSICAL_AREA_TABLE_SIZE];
 };
 
-bool MemoryDriver_Constructor(struct MemoryDriver* self, struct Kernel* kernel);
+bool MemoryDriver_Constructor(struct MemoryDriver* self);
 void MemoryDriver_Destructor(struct MemoryDriver* self);
 
 void MemoryDriver_Detect(struct MemoryDriver* self);

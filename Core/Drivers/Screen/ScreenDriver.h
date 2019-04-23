@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct Kernel;
-
 enum _VgaColor
 {
 	VGA_COLOR_BLACK = 0,
@@ -28,14 +26,13 @@ enum _VgaColor
 
 struct ScreenDriver
 {
-	struct Kernel* Kernel;
 	uint8_t* VideoBasePointer;
 	uint32_t CurrentRow;
 	uint32_t CurrentColumn;
 	uint8_t Color;
 } ;
 
-bool ScreenDriver_Constructor(struct ScreenDriver* self, struct Kernel* kernel);
+bool ScreenDriver_Constructor(struct ScreenDriver* self);
 void ScreenDriver_PutChar(struct ScreenDriver* self, char c);
 void ScreenDriver_Write(struct ScreenDriver* self, const char* data, uint32_t size);
 void ScreenDriver_WriteString(struct ScreenDriver* self, const char* data);

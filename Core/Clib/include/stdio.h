@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <stdint.h>
 
-struct Kernel;
 
 #define BUFSIZ 64
 #define EOF (-1)
@@ -18,8 +17,6 @@ int snprintf ( char * s, uint32_t n, const char * format, ... );
 int printf(const char* __restrict, ...);
 int putchar(int);
 int puts(const char*);
-void printf_to_serial();
-void printf_SetKernel(struct Kernel* kernel);
 
 typedef struct
 {

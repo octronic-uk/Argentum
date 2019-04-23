@@ -6,16 +6,12 @@
 #include <Kernel.h>
 #include <Drivers/IO/IODriver.h>
 
-static struct Kernel* _Kernel;
+extern struct Kernel _Kernel;
 
-bool InterruptDriver_Constructor(struct InterruptDriver* self, struct Kernel* kernel)
+bool InterruptDriver_Constructor(struct InterruptDriver* self)
 {
 	printf("Interrupt: Constructor\n");
-
-	self->Kernel = kernel;
 	self->Debug = false;
-	_Kernel = kernel;
-	
 	InterruptDriver_Disable_CLI(self);
 
 	memset(self->HandlerFunctions,0,sizeof(void*)*INTERRUPT_HANDLER_FUNCTIONS_COUNT);
@@ -289,7 +285,7 @@ void InterruptDriver_SetupDescriptorTable(struct InterruptDriver* self)
 
 void irq0_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	//if (self->Debug) printf("Interrupt: 0\n");
 	if (self->HandlerFunctions[0])
 	{
@@ -300,7 +296,7 @@ void irq0_handler()
  
 void irq1_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 1\n");
 	if (self->HandlerFunctions[1])
 	{
@@ -311,7 +307,7 @@ void irq1_handler()
 
 void irq2_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 2\n");
 	if (self->HandlerFunctions[2])
 	{
@@ -322,7 +318,7 @@ void irq2_handler()
 
 void irq3_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 3\n");
 	if (self->HandlerFunctions[3])
 	{
@@ -333,7 +329,7 @@ void irq3_handler()
 
 void irq4_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 4\n");
 	if (self->HandlerFunctions[4])
 	{
@@ -344,7 +340,7 @@ void irq4_handler()
 
 void irq5_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 5\n");
 	if (self->HandlerFunctions[5])
 	{
@@ -355,7 +351,7 @@ void irq5_handler()
 
 void irq6_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 6\n");
 	if (self->HandlerFunctions[6])
 	{
@@ -366,7 +362,7 @@ void irq6_handler()
 
 void irq7_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 7\n");
 	if (self->HandlerFunctions[7])
 	{
@@ -377,7 +373,7 @@ void irq7_handler()
 
 void irq8_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 8\n");
 	if (self->HandlerFunctions[8])
 	{
@@ -389,7 +385,7 @@ void irq8_handler()
  
 void irq9_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 9\n");
 	if (self->HandlerFunctions[9])
 	{
@@ -401,7 +397,7 @@ void irq9_handler()
 
 void irq10_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 10\n");
 	if (self->HandlerFunctions[10])
 	{
@@ -413,7 +409,7 @@ void irq10_handler()
  
 void irq11_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 11\n");
 	if (self->HandlerFunctions[11])
 	{
@@ -425,7 +421,7 @@ void irq11_handler()
  
 void irq12_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 12\n");
 	if (self->HandlerFunctions[12])
 	{
@@ -437,7 +433,7 @@ void irq12_handler()
  
 void irq13_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 13\n");
 	if (self->HandlerFunctions[13])
 	{
@@ -449,7 +445,7 @@ void irq13_handler()
  
 void irq14_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 14\n");
 	if (self->HandlerFunctions[14])
 	{
@@ -461,7 +457,7 @@ void irq14_handler()
  
 void irq15_handler() 
 {
-	struct InterruptDriver* self = &_Kernel->Interrupt;
+	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 15\n");
 	if (self->HandlerFunctions[15])
 	{

@@ -6,11 +6,8 @@
 #include <Drivers/ACPI/ACPIConstants.h>
 #include <Drivers/ACPI/ACPITableTypes.h>
 
-struct Kernel;
-
 struct ACPIDriver
 {
-    struct Kernel* Kernel;
     bool Debug;
     uint32_t FacsPointer;
     uint32_t DsdtPointer;
@@ -20,7 +17,7 @@ struct ACPIDriver
     struct LinkedList InterruptSourceOverrideRecordPointers;
 } ;
 
-bool ACPIDriver_Constructor(struct ACPIDriver* self, struct Kernel* kernel);
+bool ACPIDriver_Constructor(struct ACPIDriver* self);
 void ACPIDriver_Destructor(struct ACPIDriver* self);
 
 void* ACPIDriver_GetEbdaPointer(struct ACPIDriver* self);

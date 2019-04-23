@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct Kernel;
-
 #define INTERRUPT_KERNEL_CODE_SEGMENT_OFFSET 0x08
 #define INTERRUPT_IDT_SIZE 		256
 #define INTERRUPT_GATE 			0x8e
@@ -48,13 +46,12 @@ struct Interrupt_DescriptorTableEntry
 
 struct InterruptDriver
 {
-	struct Kernel* Kernel;
 	bool Debug;
 	struct Interrupt_DescriptorTableEntry DescriptorTable[INTERRUPT_IDT_SIZE];
 	void(*HandlerFunctions[INTERRUPT_HANDLER_FUNCTIONS_COUNT])(void);
 };
 
-bool InterruptDriver_Constructor(struct InterruptDriver* self, struct Kernel* kernel);
+bool InterruptDriver_Constructor(struct InterruptDriver* self);
 void InterruptDriver_SetHandlerFunction(struct InterruptDriver* self, uint8_t index, void(*fn)(void));
 void InterruptDriver_WriteDescriptorTable(struct InterruptDriver* self);
 void InterruptDriver_lidt(struct InterruptDriver* self, void* base, uint16_t size);

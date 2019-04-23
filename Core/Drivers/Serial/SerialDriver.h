@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct Kernel;
 
 #define SERIAL_PORT_1_ADDRESS 0x03F8
 #define SERIAL_PORT_2_ADDRESS 0x02F8
@@ -129,12 +128,11 @@ static struct Serial_PortDescriptor Serial_Port1_8N1  =
 
 struct SerialDriver
 {
-    struct Kernel* Kernel;
     uint16_t PortAddresses[4];
     uint8_t  Debug;
 };
 
-bool SerialDriver_Constructor(struct SerialDriver* self, struct Kernel* kernel);
+bool SerialDriver_Constructor(struct SerialDriver* self);
 void SerialDriver_Destrctor(struct SerialDriver* self);
 
 // Helper Functions

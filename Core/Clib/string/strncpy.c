@@ -5,7 +5,7 @@
  */
 #include <string.h>
 
-char* string_n_copy(char *dest, const char *src, size_t count)
+char* strncpy(char *dest, const char *src, size_t count)
 {
   char *tmp = dest;
   while (count-- && (*dest++ = *src++) != '\0')

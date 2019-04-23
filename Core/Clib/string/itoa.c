@@ -24,7 +24,7 @@ void reverse(char *buffer, int i, int j)
 }
 
 // Iterative function to implement itoa() function in C
-void int_to_ascii(int value, char* buffer, int base)
+void itoa(int value, char* buffer, int base)
 {
 	// invalid input
 	if (base < 2 || base > 32)

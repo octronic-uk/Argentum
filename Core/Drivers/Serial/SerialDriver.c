@@ -9,13 +9,11 @@
 #include <Drivers/IO/IODriver.h>
 #include <Drivers/Interrupt/InterruptDriver.h>
 
-static struct Kernel* _Kernel;
+extern struct Kernel _Kernel;
 
-bool SerialDriver_Constructor(struct SerialDriver* self, struct Kernel* kernel)
+bool SerialDriver_Constructor(struct SerialDriver* self)
 {
     printf("Serial: Constructing\n");
-    self->Kernel = kernel;
-    _Kernel = kernel;
     self->Debug = false;
     SerialDriver_SetPortAddressTable(self);
     SerialDriver_SetupPort(self, &Serial_Port1_8N1);
@@ -375,12 +373,12 @@ void SerialDriver_SetupInterruptHandlerForPort1(struct SerialDriver* self)
     {
         printf("Serial: Setting up interrupt handler function for port 1\n");
     }
-	InterruptDriver_SetHandlerFunction(&self->Kernel->Interrupt, 4, SerialDriver_Port1InterruptHandler);
+	InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 4, SerialDriver_Port1InterruptHandler);
 }
 
 void SerialDriver_Port1InterruptHandler()
 {
-    struct SerialDriver* self = &_Kernel->Serial;
+    struct SerialDriver* self = &_Kernel.Serial;
     struct  Serial_PortDescriptor* desc = &Serial_Port1_8N1;
     if (self->Debug) 
     {

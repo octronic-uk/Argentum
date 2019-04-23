@@ -7,35 +7,52 @@
 #define SM_PATH_MAX_DIRS 16
 #define SM_PATH_MAX_DRIVE 3
 #define SM_PATH_MAX_VOLUME 3
+#define SM_PATH_DEVICE_DELIMETER "://"
 #define SM_PATH_DELIMETER '/'
-#define SM_PATH_BUS_BUFFER_LENGTH 8
+#define SM_PATH_DEVICE_BUFFER_LENGTH 8
+#define SM_PATH_VOLUME_DELIMETER 'p'
+#define SM_PATH_BUS_FDD_STR "FDD"
+#define SM_PATH_BUS_FDD_LOWER_STR "fdd"
+
+#define SM_PATH_BUS_ATA_STR "ATA"
+#define SM_PATH_BUS_ATA_LOWER_STR "ata"
 
 /**
  * A path to a file should appear in the following format
  * 
- *      / <BUS> / <DEVICE> / [VOLUME] / <Directory/File> / [Directory or File] / ...
+ *      <DEVICE>://<Directory/File>/[Directory or File]/...
  *  Legend
  *      <>  - Mandatory
  *      []  - Optional
  *      ... - Recurring
  *      /   - Path Delimeter 
+ *      :// - Device Delimeter
  * 
  * 
- * Where BUS is one of
- *      * FD
- *      * IDE
- * 
- * DEVICE
+ * Where Device is one of
+ *      * FDD / fdd
+ *      * ata / ata
  * 
  * For FD (Floppy Disk)
  *      * 0 - Floppy Drive 0
  *      * 1 - Floppy Drive 1
  * 
- * For IDE (HDD/CD)
- *      * 0 - ATA/ATAPI Disk 0 
- *      * 1 - ATA/ATAPI Disk 1 
- *      * 2 - ATA/ATAPI Disk 2 
- *      * 3 - ATA/ATAPI Disk 3 
+ * For ATA (HDD/CD)
+ *      * 0 - ATA Drive 0 
+ *      * 1 - ATA Drive 1 
+ *      * 2 - ATA Drive 2 
+ *      * 3 - ATA Drive 3 
+ * 
+ * For Volume
+ *      * v0
+ *      * v1
+ *      * v2
+ *      * v3
+ * 
+ *  e.g.
+ *      * fdd0://SomeDir/SomeFile.txt
+ *      * ata2v0://SomeFile.txt
+ *      * ata0v3://SomeDir/SomeSubdir/SomeFile.txt
  */
 
 /**
@@ -44,8 +61,6 @@
 enum SMPathParseError
 {
     SM_PATH_NO_ERROR = 0,
-    SM_PATH_ERR_NO_BEGIN_CHAR,
-    SM_PATH_ERR_INVALID_BUS,
     SM_PATH_ERR_INVALID_DRIVE,
     SM_PATH_ERR_INVALID_VOLUME,
     SM_PATH_ERR_INVALID_PATH_CHAR,
@@ -54,6 +69,12 @@ enum SMPathParseError
     SM_PATH_ERR_NO_ROOT_DELIMETER
 };
 
+enum SMPathDriveType
+{
+    DRIVE_TYPE_ERROR = 0,
+    DRIVE_TYPE_FLOPPY,
+    DRIVE_TYPE_ATA
+};
 
 /**
  * @brief Single-use object that describes a file or directory's location in the filesystem. Including
@@ -63,11 +84,13 @@ struct SMPath
 {
     bool    Debug;
     enum    SMPathParseError ParseError;
-    char    Bus[SM_PATH_BUS_BUFFER_LENGTH];
+
+    char    DeviceString [SM_PATH_DEVICE_BUFFER_LENGTH];
+    enum    SMPathDriveType DriveType;
     int8_t  DriveIndex;
     int8_t  VolumeIndex;
     uint8_t WalkIndex;
-    char    Directories[SM_PATH_MAX_DIRS][FAT_LFN_NAME_SIZE];
+    char    Directories [SM_PATH_MAX_DIRS][FAT_LFN_NAME_SIZE];
 };
 
 /**
