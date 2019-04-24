@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
+
 int   memcmp(const void*, const void*, uint32_t);
 void* memcpy(void* __restrict, const void* __restrict, uint32_t);
 void* memmove(void*, const void*, uint32_t);

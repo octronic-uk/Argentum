@@ -2,12 +2,19 @@
 
 #define JMP_BUF_LEN    23
 
-extern long setjmp(long *);
-extern void longjmp(long *, long);
+extern long kernel_setjmp(long *);
+extern void kernel_longjmp(long *, long);
 
 typedef long* jmp_buf;
 
+#define setjmp  kernel_setjmp
+#define longjmp kernel_longjmp
+
 /* SPDX-License-Identifier: GPL-2.0 * /
+
+
+Added to Boot/main.s
+
 #
 # arch/i386/setjmp.S
 #
@@ -46,6 +53,9 @@ kernel_setjmp:
 	ret
 
 	.size kernel_setjmp,.-kernel_setjmp
+
+
+
 
 	.text
 	.align 4

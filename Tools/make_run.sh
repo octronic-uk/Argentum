@@ -4,7 +4,7 @@ TEST_DISK=Tools/MBR_FAT32_64m.img
 TEST_FLOPPY=Tools/MSD_Disk2.img
 KERNEL=Boot/Argentum
 
-./make.sh  
+make 
 
 if [ "$?" -ne 0 ]; then
     echo Make failed

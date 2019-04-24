@@ -285,7 +285,7 @@ next call to @code{strerror}.
 
 */
 
-char* string_error (int errnoval)
+char* strerror (int errnoval)
 {
   char *msg;
   static char buf[32];

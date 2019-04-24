@@ -4,9 +4,7 @@ LUA     = $(shell find ../Lua     -type f -name "*.o")
 CLIB    = $(shell find ../Clib    -type f -name "*.o")
 
 all : main_c.o main_asm.o
-	$(LD) $(LDFLAGS) -T link.ld -m elf_i386 \
-		main_asm.o main_c.o $(CLIB) $(DRIVERS) $(OBJECTS) $(LUA) \
-		-o ${KBIN}
+	$(LD) $(LDFLAGS) -T link.ld -m elf_i386 main_asm.o main_c.o $(CLIB) $(DRIVERS) $(OBJECTS) $(LUA) -o ${KBIN}
 
 main_asm.o :
 	$(AS) $(ASFLAGS) main.s -o main_asm.o
