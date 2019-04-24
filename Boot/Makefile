@@ -1,16 +1,12 @@
-LD = i386-elf-ld
-AS = i386-elf-as
-CC = i386-elf-gcc
-LDFLAGS=--no-omagic -nostdlib -nostartfiles
-ASFLAGS=
-CFLAGS=-nostdinc -I../Lua -I../Core -I../Core/Clib/include -m32  -nostdlib -nostartfiles
-ARGENTUM_LIB=../_build/Core/libArgentumCore.a
-LUA_LIB=../_build/Lua/libLua.a
-KBIN=Argentum
+DRIVERS = $(shell find ../Drivers -type f -name "*.o")
+OBJECTS = $(shell find ../Objects -type f -name "*.o") 
+LUA     = $(shell find ../Lua     -type f -name "*.o")
+CLIB    = $(shell find ../Clib    -type f -name "*.o")
 
 all : main_c.o main_asm.o
-	$(LD) $(LDFLAGS) -T link.ld -melf_i386 main_asm.o main_c.o  ${ARGENTUM_LIB} -o  ${KBIN}
-	#$(LD) $(LDFLAGS) -T link.ld -melf_i386 main_asm.o main_c.o  ${LUA_LIB} ${ARGENTUM_LIB} -o  ${KBIN}
+	$(LD) $(LDFLAGS) -T link.ld -m elf_i386 \
+		main_asm.o main_c.o $(CLIB) $(DRIVERS) $(OBJECTS) $(LUA) \
+		-o ${KBIN}
 
 main_asm.o :
 	$(AS) $(ASFLAGS) main.s -o main_asm.o
