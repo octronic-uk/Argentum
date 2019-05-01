@@ -81,6 +81,7 @@ UpVal *luaF_findupval (lua_State *L, StkId level) {
 
 
 void luaF_close (lua_State *L, StkId level) {
+  printf("%s:%d luaF_close\n",__FILE__,__LINE__);
   UpVal *uv;
   while (L->openupval != NULL && (uv = L->openupval)->v >= level) {
     lua_assert(upisopen(uv));

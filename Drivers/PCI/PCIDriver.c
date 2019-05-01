@@ -16,52 +16,65 @@ extern struct Kernel _Kernel;
 
 bool PCIDriver_Constructor(struct PCIDriver* self)
 {
-	printf("PCI: Constructing\n");
+	printf("PCI Driver: Constructing\n");
 
-	self->Debug = true;
+	memset(self,0,sizeof(struct PCIDriver));
 
-    LinkedList_Constructor(&self->ConfigHeaderList, &_Kernel.Memory);
+	self->Debug = false;
 
 	uint8_t bus, device, function;
-	struct PCI_ConfigHeader* tmp = 0;
-	for (bus = 0; bus < 128; bus++)
+	uint8_t current_header = 0;
+
+	for (bus = 0; bus < 16; bus++)
 	{
+		//if (self->Debug) printf("PCI: Scanning Bus %d\n",bus);
 		for (device = 0; device < 32; device++)
 		{
+			//if (self->Debug) printf("PCI: Scanning Device %d/%d\n",bus,device);
 			for (function = 0; function < 8; function++)
 			{
-				tmp = PCIDriver_ReadConfigHeader(self, bus,device,function);
-				if (tmp)
+				//if (self->Debug) printf("PCI: Scanning Function %d/%d/%d\n",bus,device,function);
+
+				if (PCIDriver_ReadConfigHeader(self, bus, device, function, &self->ConfigHeaderList[current_header]))
 				{
-					LinkedList_PushBack(&self->ConfigHeaderList,tmp);
+					if (self->Debug) 
+					{
+						printf("PCI: Put device header %d\n",current_header);
+					}
+
+					current_header++;
+
+					if (current_header > PCI_MAX_HEADERS) 
+					{
+						printf("PCI: Maximum number of device headers reached. Increase it!!\n");
+						PS2Driver_WaitForKeyPress("PCIDriver wait");
+						break;
+					}
 				}
 			}
 		}
 	}
-	if (self->Debug) 
-	{
-		PCIDriver_DumpDevices(self);
-		PS2Driver_WaitForKeyPress("PCI: Init Complete");
-	}
-	return true;
-}
 
-void PCIDriver_SetDebug(struct PCIDriver* self, uint32_t debug)
-{
-	self->Debug = debug;
+	if (self->Debug) PCIDriver_DumpDevices(self);
+	return true;
 }
 
 void PCIDriver_DumpDevices(struct PCIDriver* self)
 {
-	unsigned int size = LinkedList_Size(&self->ConfigHeaderList);
+	unsigned int size = PCIDriver_CountHeaders(self);
 	for (unsigned int i=0; i<size; i++)
 	{
-		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
+		struct PCIConfigHeader* header = &self->ConfigHeaderList[i];
 		PCIDriver_DumpDevice(self, header);
+	}
+
+	if (self->Debug)
+	{
+		PS2Driver_WaitForKeyPress("PCI: Init Complete");
 	}
 }
 
-void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCI_ConfigHeader* header)
+void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCIConfigHeader* header)
 {
 	printf("PCI: %d/%d/%d (%x:%x)\n",header->mBus, header->mDevice, header->mFunction, header->mVendorID, header->mDeviceID);
 	printf("\tProgIF:   0x%x\n", header->mProgIF);
@@ -77,13 +90,24 @@ void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCI_ConfigHeader*
 	PS2Driver_WaitForKeyPress("PCI Device Pause");
 }
 
-struct PCI_ConfigHeader* PCIDriver_GetConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function)
+uint8_t PCIDriver_CountHeaders(struct PCIDriver* self)
 {
-	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
+	uint8_t count;
+
+	for (count=0; count < PCI_MAX_HEADERS; count++)
+	{
+		if (self->ConfigHeaderList[count].mVendorID == 0) break;
+	}
+	return count;
+}
+
+struct PCIConfigHeader* PCIDriver_GetConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function)
+{
+	uint16_t nHeaders = PCIDriver_CountHeaders(self);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
+		struct PCIConfigHeader* header = &self->ConfigHeaderList[i];
 		if (header->mBus == bus && header->mDevice == device && header->mFunction == function)
 		{
 			return header;
@@ -92,13 +116,13 @@ struct PCI_ConfigHeader* PCIDriver_GetConfigHeader(struct PCIDriver* self, uint8
 	return 0;
 }
 
-struct PCI_ConfigHeader* PCIDriver_GetIsaBridgeConfigHeader(struct PCIDriver* self)
+struct PCIConfigHeader* PCIDriver_GetIsaBridgeConfigHeader(struct PCIDriver* self)
 {
-	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
+	uint16_t nHeaders = PCIDriver_CountHeaders(self); 
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
+		struct PCIConfigHeader* header = &self->ConfigHeaderList[i];
 		if (header->mSubclassCode == PCI_SUB_CLASS_PCI_TO_ISA_BRIDGE)
 		{
 			return header;
@@ -107,14 +131,13 @@ struct PCI_ConfigHeader* PCIDriver_GetIsaBridgeConfigHeader(struct PCIDriver* se
 	return 0;
 }
 
-struct PCI_ConfigHeader* PCIDriver_GetATADevice(struct PCIDriver* self)
+struct PCIConfigHeader* PCIDriver_GetATADevice(struct PCIDriver* self)
 {
-
-	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
+	uint16_t nHeaders = PCIDriver_CountHeaders(self);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
+		struct PCIConfigHeader* header = &self->ConfigHeaderList[i];
 		if (header->mClassCode == 0x01 && header->mSubclassCode == 0x01)
 		{
 			return header;
@@ -125,25 +148,19 @@ struct PCI_ConfigHeader* PCIDriver_GetATADevice(struct PCIDriver* self)
 
 // Direct IO Functions ========================================================
 
-struct PCI_ConfigHeader* PCIDriver_ReadConfigHeader
-(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function)
+bool PCIDriver_ReadConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function, struct PCIConfigHeader* header)
 {
-	self->Debug = false;
+	uint16_t vid = PCIDriver_GetVendorID(self, bus,device,function);
+
+	if (vid == PCI_INVALID_VENDOR_ID)
+	{
+		return false;
+	}
 
 	if (self->Debug) 
 	{
 		printf("PCI: Reading Header %d/%d/%d\n",bus,device,function);
 	}
-
-	uint16_t vid = PCIDriver_GetVendorID(self, bus,device,function);
-
-	if (vid == PCI_INVALID_VENDOR_ID)
-	{
-		return 0;
-	}
-
-	struct PCI_ConfigHeader* header = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct PCI_ConfigHeader));
-	memset(header,0,sizeof(struct PCI_ConfigHeader));
 
 	header->mVendorID = vid;
 	header->mBus = bus;
@@ -180,7 +197,7 @@ struct PCI_ConfigHeader* PCIDriver_ReadConfigHeader
 	{
 		printf("PCI: Got Header OK\n");
 	}
-	return header;
+	return true;
 }
 
 uint8_t PCIDriver_isMultifunctionDevice(struct PCIDriver* self, uint8_t headerType)
@@ -323,17 +340,17 @@ uint8_t PCIDriver_ReadConfig8b(struct PCIDriver* self, uint8_t bus, uint8_t devi
 	return (uint8_t)((IO_ReadPort32b(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xff);
 }
 
-uint32_t PCIDriver_DeviceReadConfig32b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset)
+uint32_t PCIDriver_DeviceReadConfig32b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset)
 {
 	return PCIDriver_ReadConfig32b(self, device->mBus, device->mDevice, device->mFunction, offset);
 }
 
-uint16_t PCIDriver_DeviceReadConfig16b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset)
+uint16_t PCIDriver_DeviceReadConfig16b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset)
 {
 	return PCIDriver_ReadConfig16b(self, device->mBus, device->mDevice, device->mFunction, offset);
 }
 
-uint8_t PCIDriver_DeviceReadConfig8b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset)
+uint8_t PCIDriver_DeviceReadConfig8b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset)
 {
 	return PCIDriver_ReadConfig8b(self, device->mBus, device->mDevice, device->mFunction, offset);
 }
@@ -358,29 +375,29 @@ void PCIDriver_WriteConfig8b(struct PCIDriver* self, uint8_t bus, uint8_t device
 	IO_WritePort8b(PCI_CONFIG_DATA,data);
 }
 
-void PCIDriver_DeviceWriteConfig32b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset, uint32_t data)
+void PCIDriver_DeviceWriteConfig32b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset, uint32_t data)
 {
 	PCIDriver_WriteConfig32b(self, device->mBus, device->mDevice, device->mFunction, offset, data);
 }
 
-void PCIDriver_DeviceWriteConfig16b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset, uint16_t data)
+void PCIDriver_DeviceWriteConfig16b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset, uint16_t data)
 {
 	PCIDriver_WriteConfig16b(self, device->mBus, device->mDevice, device->mFunction, offset, data);
 }
 
-void PCIDriver_DeviceWriteConfig8b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset, uint8_t data)
+void PCIDriver_DeviceWriteConfig8b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset, uint8_t data)
 {
 	PCIDriver_WriteConfig8b(self, device->mBus, device->mDevice, device->mFunction, offset, data);
 }
 
 
-struct PCI_ConfigHeader* PCIDriver_GetDeviceByID(struct PCIDriver* self, uint16_t vendor_id, uint16_t device_id)
+struct PCIConfigHeader* PCIDriver_GetDeviceByID(struct PCIDriver* self, uint16_t vendor_id, uint16_t device_id)
 {
-	uint16_t nHeaders = LinkedList_Size(&self->ConfigHeaderList);
+	uint16_t nHeaders = PCIDriver_CountHeaders(self);
 	uint16_t i;
 	for (i=0; i<nHeaders; i++)
 	{
-		struct PCI_ConfigHeader* header = LinkedList_At(&self->ConfigHeaderList,i);
+		struct PCIConfigHeader* header = &self->ConfigHeaderList[i];
 		if (header->mVendorID == vendor_id && header->mDeviceID == device_id)
 		{
 			return header;

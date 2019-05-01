@@ -70,3 +70,5 @@ void FloppyDriver_WriteRegisterConfigurationControl(struct FloppyDriver* self, u
 
 void FloppyDriver_DebugDMABuffer(struct FloppyDriver* self);
 struct CylinderHeadSector FloppyDriver_LbaToChs(uint32_t lba);
+
+uint8_t* FloppyDriver_GetDMABuffer(struct FloppyDriver* self);

@@ -3,25 +3,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "SM_FloppyDrive.h"
-#include "SM_ATADrive.h"
+#include "SMDrive.h"
 #include "SMPath.h"
 
-#define SM_MAX_FLOPPY_DRIVES 2 
-#define SM_MAX_ATA_DRIVES 4
+#define SM_MAX_FLOPPY_DRIVES 2
+#define SM_MAX_ATA_DRIVES    4
 
 struct StorageManager
 {
     bool Debug;
-    struct SM_FloppyDrive FloppyDrives[SM_MAX_FLOPPY_DRIVES];
-    struct SM_ATADrive ATADrives[SM_MAX_ATA_DRIVES];
+    struct SMDrive AtaDrives[SM_MAX_ATA_DRIVES];
+    struct SMDrive FloppyDrives[SM_MAX_FLOPPY_DRIVES];
 };
 
 bool StorageManager_Constructor(struct StorageManager* self);
 
 void StorageManager_ListDrives(struct StorageManager* self);
-struct SM_ATADrive* StorageManager_GetATADrive(struct StorageManager* self, uint8_t drive_id);
-struct SM_FloppyDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8_t drive_id);
+struct SMDrive* StorageManager_GetATADrive(struct StorageManager* self, uint8_t drive_id);
+struct SMDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8_t drive_id);
 
 bool StorageManager_ProbeFloppyDrives(struct StorageManager* self);
 bool StorageManager_ProbeATADrives(struct StorageManager* self);

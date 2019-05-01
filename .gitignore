@@ -1,10 +1,13 @@
 *.a
 *.d
 *.o
+*.bin
 _build
 *.user
 .vscode
 *.img
+Ag
+AgOut.txt
 Boot/Argentum
 Boot/*.o
 *.creator*

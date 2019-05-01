@@ -5,7 +5,7 @@
 
 struct FatVolume;
 
-struct FatDirectoryCluster
+struct FatDirectoryEntryData
 {
    /* Offset */
    /*00*/ uint8_t  Name[8]; 
@@ -23,8 +23,8 @@ struct FatDirectoryCluster
    /*28*/ uint32_t FileSize;
 } __attribute__((packed));
 
-void FatDirectoryCluster_Debug(struct FatDirectoryCluster* self);
-void FatDirectoryCluster_DebugAttributes(struct FatDirectoryCluster* self);
-bool FatDirectoryCluster_HasAttribute(struct FatDirectoryCluster* self, uint8_t attr);
+void FatDirectoryEntryData_Debug(struct FatDirectoryEntryData* self);
+void FatDirectoryEntryData_DebugAttributes(struct FatDirectoryEntryData* self);
+bool FatDirectoryEntryData_HasAttribute(struct FatDirectoryEntryData* self, uint8_t attr);
 
-char* FatDirectoryCluster_GetDirectoryTypeString(struct FatDirectoryCluster* self);
+char* FatDirectoryEntryData_GetDirectoryTypeString(uint8_t attributes);

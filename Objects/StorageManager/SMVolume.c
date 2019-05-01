@@ -1,30 +1,50 @@
 #include "SMVolume.h"
 
-#include <Objects/Kernel/Kernel.h>
-#include "../FAT16/FatVolume.h"
-#include "SM_ATADrive.h"
-#include "SMDirectoryEntry.h"
-#include "SMFile.h"
-
 #include <stdio.h>
 #include <string.h>
 
+#include <Objects/Kernel/Kernel.h>
+#include <Objects/FAT16/FatVolume.h>
+#include <Objects/StorageManager/SMDrive.h>
+#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include <Objects/StorageManager/SMFile.h>
+
+
 extern struct Kernel _Kernel;
 
-bool SMVolume_Constructor(struct SMVolume* self, struct SM_ATADrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
+bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
 {
     memset(self,0,sizeof(struct SMVolume));
-    self->Debug = true;
+    self->Debug = false;
+    self->Exists = true;
     self->ParentDrive = parent;
     self->VolumeIndex = volume_index;
     self->FirstSectorIndex = first_sector;
     self->SectorsInPartition = sectors_in_partition;
 
-    if (FatVolume_Constructor(&self->FatVolume, self->ParentDrive->AtaIndex, self->VolumeIndex, self->FirstSectorIndex, self->SectorsInPartition))
+    if (FatVolume_ATAConstructor(&self->FatVolume, self->ParentDrive->AtaIndex, self->VolumeIndex, self->FirstSectorIndex, self->SectorsInPartition))
     {
        return true;
     }
-    printf("SMVolume: Error - Unable to construct corresponding FatVolume\n");
+    printf("SMVolume: Error - Unable to construct corresponding ATA FatVolume\n");
+    return false;
+}
+
+
+bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition)
+{
+    memset(self,0,sizeof(struct SMVolume));
+
+    self->Debug = true;
+    self->Exists = true;
+    self->ParentDrive = parent;
+    self->SectorsInPartition = FLOPPY_144_NUM_SECTORS;
+
+    if (FatVolume_FloppyConstructor(&self->FatVolume, parent->FloppyIndex))
+    {
+       return true;
+    }
+    printf("SMVolume: Error - Unable to construct corresponding Floppy FatVolume\n");
     return false;
 }
 
@@ -48,7 +68,7 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, 
         fat_entry_index++
     )
     {
-        struct FatDirectoryEntry* entry = &fatListing.Entries[fat_entry_index];
+        struct FatDirectoryEntrySummary* entry = &fatListing.Entries[fat_entry_index];
         char* entry_name = entry->Name;
 
         if (self->Debug)
@@ -68,7 +88,7 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, 
                     printf("SMVolume: Last Directory in path is %s\n",path->Directories[path->WalkIndex]);
                     PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
-                return SMDirectoryEntry_Constructor(out,self,entry->FirstCluster, entry->ClusterData.Attributes);
+                return SMDirectoryEntry_Constructor(out,self,entry->FirstCluster, entry->Attributes);
             }
             // Recurse to next directory
             else

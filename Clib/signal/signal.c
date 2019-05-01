@@ -26,6 +26,7 @@ typedef void (*__sighandler_t)(int);
    returning the old handler, or SIG_ERR on error.  */
 __sighandler_t signal (int sig, __sighandler_t handler)
 {
+    printf("stdlib: signal\n");
   return 0;
 }
 

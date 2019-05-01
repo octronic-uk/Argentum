@@ -28,6 +28,7 @@
 /* from strlib */
 /* translate a relative string position: negative means back from end */
 static lua_Integer u_posrelat (lua_Integer pos, size_t len) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   if (pos >= 0) return pos;
   else if (0u - (size_t)pos > len) return 0;
   else return (lua_Integer)len + pos + 1;
@@ -38,6 +39,7 @@ static lua_Integer u_posrelat (lua_Integer pos, size_t len) {
 ** Decode one UTF-8 sequence, returning NULL if byte sequence is invalid.
 */
 static const char *utf8_decode (const char *o, int *val) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   static const unsigned int limits[] = {0xFF, 0x7F, 0x7FF, 0xFFFF};
   const unsigned char *s = (const unsigned char *)o;
   unsigned int c = s[0];
@@ -69,6 +71,7 @@ static const char *utf8_decode (const char *o, int *val) {
 ** that interval
 */
 static int utflen (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   int n = 0;
   size_t len;
   const char *s = luaL_checklstring(L, 1, &len);
@@ -98,6 +101,7 @@ static int utflen (lua_State *L) {
 ** that start in the range [i,j]
 */
 static int codepoint (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   size_t len;
   const char *s = luaL_checklstring(L, 1, &len);
   lua_Integer posi = u_posrelat(luaL_optinteger(L, 2, 1), len);
@@ -126,6 +130,7 @@ static int codepoint (lua_State *L) {
 
 
 static void pushutfchar (lua_State *L, int arg) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   lua_Integer code = luaL_checkinteger(L, arg);
   luaL_argcheck(L, 0 <= code && code <= MAXUNICODE, arg, "value out of range");
   lua_pushfstring(L, "%U", (long)code);
@@ -136,6 +141,7 @@ static void pushutfchar (lua_State *L, int arg) {
 ** utfchar(n1, n2, ...)  -> char(n1)..char(n2)...
 */
 static int utfchar (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   int n = lua_gettop(L);  /* number of arguments */
   if (n == 1)  /* optimize common case of single char */
     pushutfchar(L, 1);
@@ -158,6 +164,7 @@ static int utfchar (lua_State *L) {
 **   position 'i' starts; 0 means character at 'i'.
 */
 static int byteoffset (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   size_t len;
   const char *s = luaL_checklstring(L, 1, &len);
   lua_Integer n  = luaL_checkinteger(L, 2);
@@ -199,6 +206,7 @@ static int byteoffset (lua_State *L) {
 
 
 static int iter_aux (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   size_t len;
   const char *s = luaL_checklstring(L, 1, &len);
   lua_Integer n = lua_tointeger(L, 2) - 1;
@@ -223,6 +231,7 @@ static int iter_aux (lua_State *L) {
 
 
 static int iter_codes (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   luaL_checkstring(L, 1);
   lua_pushcfunction(L, iter_aux);
   lua_pushvalue(L, 1);
@@ -248,6 +257,7 @@ static const luaL_Reg funcs[] = {
 
 
 LUAMOD_API int luaopen_utf8 (lua_State *L) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   luaL_newlib(L, funcs);
   lua_pushlstring(L, UTF8PATT, sizeof(UTF8PATT)/sizeof(char) - 1);
   lua_setfield(L, -2, "charpattern");

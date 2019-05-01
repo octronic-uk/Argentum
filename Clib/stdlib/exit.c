@@ -1,3 +1,7 @@
 #include <stdlib.h>
 
-void exit(int status) {}
+__attribute__((__noreturn__)) void exit(int status)
+{
+
+    printf("stdlib: exit\n");
+}

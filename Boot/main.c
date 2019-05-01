@@ -8,18 +8,33 @@
 struct multiboot_info_t;
 struct Kernel _Kernel;
 
+static int argc = 1;
+static char* argv[1];
+static char* arg0 = "Argentum";
+
+int on_panic(lua_State* state)
+{
+    printf("FATAL: LUA PANIC!!\n");
+    asm("cli");
+    asm("hlt");
+}
+
 void kmain(multiboot_info_t* mbi)
 {
-    Kernel_Constructor(&_Kernel, mbi);
+    argv[0] = arg0;
 
-    // printf("Invoking Lua\n");
-    // lua_State *L; = lua_open();   /* opens Lua */
-    // luaopen_base(L);             /* opens the basic library */
-    // luaopen_table(L);            /* opens the table library */
-    // luaopen_io(L);               /* opens the I/O library */
-    // luaopen_string(L);           /* opens the string lib. */
-    // luaopen_math(L);             /* opens the math lib. */
+    if( Kernel_Constructor(&_Kernel, mbi))
+    {
+        printf("Ag: Invoking Lua\n");
+        lua_main(argc,argv);
+    }
+    else
+    {
+        printf("Ag: Fatal Error - Kernel Construction Failed\n");
+    }
+    
+    printf("Ag: System Halted\n");
 
-    printf("System Halted\n");
+    asm("cli");
     asm("hlt");
 }

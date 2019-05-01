@@ -10,6 +10,7 @@
 #include "lprefix.h"
 
 
+#include <stdio.h>
 #include <stddef.h>
 
 #include "lua.h"
@@ -75,6 +76,8 @@ l_noret luaM_toobig (lua_State *L) {
 ** generic allocation routine.
 */
 void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
+
+  //printf("%s:%d luaM_realloc_ block 0x%x osize %d nsize %d\n",__FILE__,__LINE__, block, osize, nsize);
   void *newblock;
   global_State *g = G(L);
   size_t realosize = (block) ? osize : 0;

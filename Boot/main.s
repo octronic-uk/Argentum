@@ -18,8 +18,6 @@ stack_bottom:
 .skip 1024*1024*4 # Stack size
 stack_top:
 
-
-
 .global fpy_dma_buf 
 
 # The kernel entry point.
@@ -172,6 +170,51 @@ irq15:
   popa
   iret
 
+/*****************************************************************************/
+/* setjump, longjump                                                         */
+/*****************************************************************************/
+
+/*
+.text
+.align 4
+*/
+.globl setjmp
+.type setjmp,@function
+setjmp:
+  mov    4(%esp), %eax     /* get pointer to jmp_buf, passed as argument on stack */ 
+  mov    %ebx,    (%eax)   /* jmp_buf[0] = ebx */
+  mov    %esi,    4(%eax)  /* jmp_buf[1] = esi */
+  mov    %edi,    8(%eax)  /* jmp_buf[2] = edi */
+  mov    %ebp,    12(%eax) /* jmp_buf[3] = ebp */
+  lea    4(%esp), %ecx     /* get previous value of esp, before call */
+  mov    %ecx,    16(%eax) /* jmp_buf[4] = esp before call */
+  mov    (%esp),  %ecx     /* get saved caller eip from top of stack */
+  mov    %ecx,    20(%eax) /* jmp_buf[5] = saved eip */
+  xor    %eax,    %eax     /* eax = 0 */
+  ret                      /* pop stack into eip */
+
+/*
+.text
+.align 4
+*/
+.globl longjmp
+
+longjmp:
+  mov  4(%esp),%edx /* get pointer to jmp_buf, passed as argument 1 on stack */
+  mov  8(%esp),%eax /* get int val in eax, passed as argument 2 on stack */
+  test    %eax,%eax /* is int val == 0? */
+  jnz lj1
+  inc     %eax      /* if so, eax++ */
+lj1:
+  mov   (%edx),%ebx /* ebx = jmp_buf[0] */
+  mov  4(%edx),%esi /* esi = jmp_buf[1] */
+  mov  8(%edx),%edi /* edi = jmp_buf[2] */
+  mov 12(%edx),%ebp /* ebp = jmp_buf[3] */
+  mov 16(%edx),%ecx /* ecx = jmp_buf[4] */
+  mov     %ecx,%esp /* esp = ecx */
+  mov 20(%edx),%ecx /* ecx = jmp_buf[5] */
+  jmp *%ecx         /* eip = ecx */
+
 # GDT with a NULL Descriptor, a 32-Bit code Descriptor
 # and a 32-bit Data Descriptor
 gdt_start:
@@ -228,13 +271,14 @@ _start:
 	# Load our own GDT as the multioot GDT record may be invalid
   call load_gdt
 	# Transfer control to the main kernel.
+  xor %ebp, %ebp       # Set %ebp to NULL
 	push %ebx
 	call kmain
 
 	# Hang if kernel_main unexpectedly returns.
 	# cli
-1:	hlt
-	jmp 1b
+hlt_loop:	hlt
+	jmp hlt_loop 
 
 .size _start, . - _start
 
@@ -242,64 +286,4 @@ _start:
 fpy_dma_buf:
 .skip 512 # 1024*64  64K Buffer
 
-
-#
-# arch/i386/setjmp.S
-#
-# setjmp/longjmp for the i386 architecture
-#
-
-#
-# The jmp_buf is assumed to contain the following, in order:
-#	%ebx
-#	%esp
-#	%ebp
-#	%esi
-#	%edi
-#	<return address>
-#
-
-.text
-.align 4
-.globl kernel_setjmp
-.type kernel_setjmp, @function
-kernel_setjmp:
-#ifdef _REGPARM
-	movl %eax,%edx
-#else
-	movl 4(%esp),%edx
-#endif
-	popl %ecx			# Return address, and adjust the stack
-	xorl %eax,%eax			# Return value
-	movl %ebx,(%edx)
-	movl %esp,4(%edx)		# Post-return %esp!
-	pushl %ecx			# Make the call/return stack happy
-	movl %ebp,8(%edx)
-	movl %esi,12(%edx)
-	movl %edi,16(%edx)
-	movl %ecx,20(%edx)		# Return address
-	ret
-
-.size kernel_setjmp,.-kernel_setjmp
-
-.text
-.align 4
-.globl kernel_longjmp
-.type kernel_longjmp, @function
-
-kernel_longjmp:
-#ifdef _REGPARM
-	xchgl %eax,%edx
-#else
-	movl 4(%esp),%edx		# jmp_ptr address
-	movl 8(%esp),%eax		# Return value
-#endif
-	movl (%edx),%ebx
-	movl 4(%edx),%esp
-	movl 8(%edx),%ebp
-	movl 12(%edx),%esi
-	movl 16(%edx),%edi
-	jmp *20(%edx)
-
-.size kernel_longjmp,.-kernel_longjmp
 

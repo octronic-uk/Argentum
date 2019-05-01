@@ -9,7 +9,7 @@ extern struct Kernel _Kernel;
 
 bool PITDriver_Constructor(struct PITDriver* self)
 {
-    printf("PIT: Constructing\n");
+    printf("PIT Driver: Constructing\n");
     self->Ticks = 0;
     PITDriver_SetInterruptHandlerFunction(self);
     return true;

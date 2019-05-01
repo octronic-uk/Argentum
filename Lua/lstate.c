@@ -149,6 +149,7 @@ void luaE_shrinkCI (lua_State *L) {
 
 
 static void stack_init (lua_State *L1, lua_State *L) {
+  printf("%s:%d stack_init\n",__FILE__,__LINE__);
   int i; CallInfo *ci;
   /* initialize stack array */
   L1->stack = luaM_newvector(L, BASIC_STACK_SIZE, TValue);
@@ -169,6 +170,7 @@ static void stack_init (lua_State *L1, lua_State *L) {
 
 
 static void freestack (lua_State *L) {
+  printf("%s:%d freestack\n",__FILE__,__LINE__);
   if (L->stack == NULL)
     return;  /* stack not completely built yet */
   L->ci = &L->base_ci;  /* free the entire 'ci' list */
@@ -182,6 +184,7 @@ static void freestack (lua_State *L) {
 ** Create registry table and its predefined values
 */
 static void init_registry (lua_State *L, global_State *g) {
+  printf("%s:%d init_registry\n",__FILE__,__LINE__);
   TValue temp;
   /* create registry */
   Table *registry = luaH_new(L);
@@ -201,6 +204,7 @@ static void init_registry (lua_State *L, global_State *g) {
 ** ('g->version' != NULL flags that the state was completely build)
 */
 static void f_luaopen (lua_State *L, void *ud) {
+  printf("%s:%d f_luaopen\n",__FILE__,__LINE__);
   global_State *g = G(L);
   UNUSED(ud);
   stack_init(L, L);  /* init stack */
@@ -240,6 +244,7 @@ static void preinit_thread (lua_State *L, global_State *g) {
 
 
 static void close_state (lua_State *L) {
+  printf("%s:%d close_state\n",__FILE__,__LINE__);
   global_State *g = G(L);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
@@ -249,6 +254,7 @@ static void close_state (lua_State *L) {
   freestack(L);
   lua_assert(gettotalbytes(g) == sizeof(LG));
   (*g->frealloc)(g->ud, fromstate(L), sizeof(LG), 0);  /* free main block */
+  printf("%s:%d close_state returning\n",__FILE__,__LINE__);
 }
 
 
@@ -293,6 +299,8 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 
 
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
+
+  printf("%s:%d reached\n",__FILE__,__LINE__);
   int i;
   lua_State *L;
   global_State *g;
@@ -330,10 +338,12 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->gcstepmul = LUAI_GCMUL;
   for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
   if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
+  printf("%s:%d reached\n",__FILE__,__LINE__);
     /* memory allocation error: free partial state */
     close_state(L);
     L = NULL;
   }
+  printf("%s:%d reached\n",__FILE__,__LINE__);
   return L;
 }
 

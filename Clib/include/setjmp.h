@@ -1,79 +1,17 @@
 #pragma once
 
-#define JMP_BUF_LEN    23
-
-extern long kernel_setjmp(long *);
-extern void kernel_longjmp(long *, long);
-
-typedef long* jmp_buf;
-
-#define setjmp  kernel_setjmp
-#define longjmp kernel_longjmp
-
-/* SPDX-License-Identifier: GPL-2.0 * /
-
-
-Added to Boot/main.s
-
-#
-# arch/i386/setjmp.S
-#
-# setjmp/longjmp for the i386 architecture
-#
-
-#
-# The jmp_buf is assumed to contain the following, in order:
-#	%ebx
-#	%esp
-#	%ebp
-#	%esi
-#	%edi
-#	<return address>
-#
-
-	.text
-	.align 4
-	.globl kernel_setjmp
-	.type kernel_setjmp, @function
-kernel_setjmp:
-#ifdef _REGPARM
-	movl %eax,%edx
-#else
-	movl 4(%esp),%edx
-#endif
-	popl %ecx			# Return address, and adjust the stack
-	xorl %eax,%eax			# Return value
-	movl %ebx,(%edx)
-	movl %esp,4(%edx)		# Post-return %esp!
-	pushl %ecx			# Make the call/return stack happy
-	movl %ebp,8(%edx)
-	movl %esi,12(%edx)
-	movl %edi,16(%edx)
-	movl %ecx,20(%edx)		# Return address
-	ret
-
-	.size kernel_setjmp,.-kernel_setjmp
-
-
-
-
-	.text
-	.align 4
-	.globl kernel_longjmp
-	.type kernel_longjmp, @function
-kernel_longjmp:
-#ifdef _REGPARM
-	xchgl %eax,%edx
-#else
-	movl 4(%esp),%edx		# jmp_ptr address
-	movl 8(%esp),%eax		# Return value
-#endif
-	movl (%edx),%ebx
-	movl 4(%edx),%esp
-	movl 8(%edx),%ebp
-	movl 12(%edx),%esi
-	movl 16(%edx),%edi
-	jmp *20(%edx)
-
-	.size kernel_longjmp,.-kernel_longjmp
+/*
+	http://vmresu.me/blog/2016/02/09/lets-understand-setjmp-slash-longjmp/
 */
+
+typedef unsigned long __jmp_buf[6];
+typedef struct __jmp_buf_tag 
+{
+    __jmp_buf __jb;
+    unsigned long __fl;
+    unsigned long __ss[128/sizeof(long)];
+} jmp_buf[1];
+
+extern int setjmp(jmp_buf env);
+extern void longjmp(jmp_buf env, int val);
+

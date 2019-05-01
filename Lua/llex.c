@@ -68,6 +68,7 @@ static void save (LexState *ls, int c) {
 
 
 void luaX_init (lua_State *L) {
+  printf("%s:%d luaX_init\n",__FILE__,__LINE__);
   int i;
   TString *e = luaS_newliteral(L, LUA_ENV);  /* create env name */
   luaC_fix(L, obj2gco(e));  /* never collect this name */

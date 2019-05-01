@@ -10,7 +10,7 @@ extern struct Kernel _Kernel;
 
 bool InterruptDriver_Constructor(struct InterruptDriver* self)
 {
-	printf("Interrupt: Constructor\n");
+	printf("Interrupt Driver: Constructing\n");
 	self->Debug = false;
 	InterruptDriver_Disable_CLI(self);
 

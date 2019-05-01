@@ -8,20 +8,49 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include <Drivers/PIT/PITDriver.h>
 
-#include "../MBR/MBR.h"
-#include "FatDirectoryCluster.h"
-#include "FatLfnCluster.h"
+#include <Objects/MBR/MBR.h>
+#include <Objects/FAT16/FatDirectoryEntryData.h>
+#include <Objects/FAT16/FatLfnCluster.h>
 
 extern struct Kernel _Kernel;
 
-bool FatVolume_Constructor(struct FatVolume* self,  uint8_t ata_device_id, uint8_t partition_id, uint32_t lba_first_sector, uint32_t sector_count) 
+bool FatVolume_ATAConstructor(struct FatVolume* self,  uint8_t ata_device_id, uint8_t partition_id, uint32_t lba_first_sector, uint32_t sector_count) 
 {
-    printf("FatVolume: Constructor\n");
+    printf("FatVolume: ATA Constructor\n");
     self->Debug = false;
+
     self->AtaDeviceId = ata_device_id;
     self->PartitionId = partition_id;
+    self->FloppyDeviceId = -1;
+
     self->FirstSectorNumber = lba_first_sector;
     self->SectorCount = sector_count;
+
+    if (self->Debug)
+    {
+        printf("FatVolume: FirstSector: 0x%x, SectorCount: 0x%x\n", self->FirstSectorNumber, self->SectorCount);
+        PS2Driver_WaitForKeyPress("");
+    }
+
+    if (!FatVolume_ReadBPB(self))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool FatVolume_FloppyConstructor(struct FatVolume* self,  uint8_t device_id) 
+{
+    printf("FatVolume: Floppy Constructor\n");
+    self->Debug = false;
+
+    self->AtaDeviceId = -1;
+    self->PartitionId = -1;
+    self->FloppyDeviceId = device_id;
+
+    self->FirstSectorNumber = 0;
+    self->SectorCount = FLOPPY_144_TOTAL_SECTORS;
 
     if (self->Debug)
     {
@@ -54,22 +83,20 @@ bool FatVolume_ReadBPB(struct FatVolume* self)
         return false;
     }
 
-    FatBPB_Debug(&self->BiosParameterBlock);
-    FatBPB_DebugEBR16((struct FatExtendedBootRecord16*)&self->BiosParameterBlock.ExtendedBootRecord[0]);
+    if (self->Debug)
+    {
+        FatBPB_Debug(&self->BiosParameterBlock);
+        FatBPB_DebugEBR16((struct FatExtendedBootRecord16*)&self->BiosParameterBlock.ExtendedBootRecord[0]);
+    }
 
     self->RootDirSectorNumber = FatBPB_GetFirstRootDirectorySector(&self->BiosParameterBlock);
+
     if (self->Debug)
     {
         printf("FatVolume: Root Directory Sector at 0x%x\n", self->RootDirSectorNumber);
         PS2Driver_WaitForKeyPress("Fat Volume Pause");
     }
     return true;
-}
-
-void FatVolume_Destructor(struct FatVolume* self)
-{
-    printf("FatVolume: Destructor\n");
-    PS2Driver_WaitForKeyPress("");
 }
 
 uint32_t FatVolume_GetFirstSectorOfCluster(struct FatVolume* self, uint32_t cluster)
@@ -108,11 +135,18 @@ bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8
         struct FatCachedSector* next = &self->SectorCache[index];
         if (next->SectorNumber == sector_to_read && next->InUse && !next->Invalid)
         {
-            printf("FatVolume: Found cached sector 0x%x\n",sector_to_read);
-            PS2Driver_WaitForKeyPress("");
+            if (self->Debug)
+            {
+                printf("FatVolume: Found cached sector 0x%x\n",sector_to_read);
+                PS2Driver_WaitForKeyPress("");
+            }
             memcpy(buffer,next->Data,FAT_SECTOR_SIZE);
             next->LastAccess = _Kernel.PIT.Ticks;
-            FatCachedSector_Debug(next);
+
+            if (self->Debug) 
+            {
+                FatCachedSector_Debug(next);
+            }
             return true;
         }
     }
@@ -125,25 +159,46 @@ bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8
         PS2Driver_WaitForKeyPress("");
     }
 
-    // Read from disk
-    uint8_t ata_error = ATADriver_IDEAccess(&_Kernel.ATA, ATA_READ, self->AtaDeviceId, physical_sector, 1, (void*)buffer);
-
-    if (ata_error)
+    // Read from ATA disk
+    if (self->AtaDeviceId >= 0 && self->PartitionId >= 0)
     {
-        printf("FatVolume: Error - ATA Error reading sector.\n");
-        PS2Driver_WaitForKeyPress("");
-        return false;
+        uint8_t ata_error = ATADriver_IDEAccess(&_Kernel.ATA, ATA_READ, self->AtaDeviceId, physical_sector, 1, (void*)buffer);
+
+        if (ata_error)
+        {
+            printf("FatVolume: Error - ATA Error reading sector %d.\n",physical_sector);
+            PS2Driver_WaitForKeyPress("");
+            return false;
+        }
+    } 
+    // Read from Floppy disk
+    else if (self->FloppyDeviceId >= 0)
+    {
+        if (!FloppyDriver_ReadSectorLBA(&_Kernel.Floppy, physical_sector))
+        {
+            printf("FatVolume: Error - Floppy Error reading sector %d.\n",physical_sector);
+            PS2Driver_WaitForKeyPress("");
+            return false;
+        }
+        memcpy(buffer, FloppyDriver_GetDMABuffer(&_Kernel.Floppy), FAT_SECTOR_SIZE);
     }
 
     // Insert sector into cache
-    printf("FatVolume: Caching sector 0x%x\n",sector_to_read);
-    PS2Driver_WaitForKeyPress("");
+    if (self->Debug) 
+    {
+        printf("FatVolume: Caching sector 0x%x\n",sector_to_read);
+        PS2Driver_WaitForKeyPress("");
+    }
     struct FatCachedSector* cached = FatVolume_GetNextAvailableCachedSector(self);
     if (cached)
     {
         FatCachedSector_Constructor(cached, self, sector_to_read);
         memcpy(cached->Data,buffer,FAT_SECTOR_SIZE);
-        FatCachedSector_Debug(cached);
+
+        if(self->Debug) 
+        {
+            FatCachedSector_Debug(cached);
+        }
     } 
     else
     {
@@ -168,15 +223,21 @@ struct FatCachedSector* FatVolume_GetNextAvailableCachedSector(struct FatVolume*
         // This block is not being used
         if (!next->InUse) 
         {
-            printf("FatVolume: Using not-in-use sector cache block %d\n",index);
-            PS2Driver_WaitForKeyPress("");
+            if (volume->Debug)
+            {
+                printf("FatVolume: Using not-in-use sector cache block %d\n",index);
+                PS2Driver_WaitForKeyPress("");
+            }
             return next;
         } 
         // The block was written to and is now invalid, so reusable
         else if (next->Invalid)
         {
-            printf("FatVolume: Using invalid sector cache block %d\n",index);
-            PS2Driver_WaitForKeyPress("");
+            if (volume->Debug)
+            {
+                printf("FatVolume: Using invalid sector cache block %d\n",index);
+                PS2Driver_WaitForKeyPress("");
+            }
             return next; 
         }
 

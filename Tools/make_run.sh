@@ -1,10 +1,10 @@
 #/bin/bash
 
-TEST_DISK=Tools/MBR_FAT32_64m.img
-TEST_FLOPPY=Tools/MSD_Disk2.img
-KERNEL=Boot/Argentum
+. Tools/env.sh
 
-make 
+${RUN_MAKE} clean
+
+${RUN_MAKE}
 
 if [ "$?" -ne 0 ]; then
     echo Make failed
@@ -12,9 +12,6 @@ if [ "$?" -ne 0 ]; then
 fi
 
 # Run in QEMU
-qemu-system-i386 \
-    -m 32 \
-    -kernel ${KERNEL} \
-    -drive format=raw,if=ide,file=${TEST_DISK} \
-    -drive format=raw,if=floppy,file=${TEST_FLOPPY} \
-    -serial stdio
+
+${RUN_QEMU} > AgOut.txt
+

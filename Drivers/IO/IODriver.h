@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 
+#define IO_SLEEP 5
 
 void IO_WritePort32b(uint16_t port, uint32_t value);
 void IO_WritePort16b(uint16_t port, uint16_t value);

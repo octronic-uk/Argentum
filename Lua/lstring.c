@@ -47,6 +47,8 @@ int luaS_eqlngstr (TString *a, TString *b) {
 
 
 unsigned int luaS_hash (const char *str, size_t l, unsigned int seed) {
+
+  //printf("%s:%d luaS_hash\n",__FILE__,__LINE__);
   unsigned int h = seed ^ cast(unsigned int, l);
   size_t step = (l >> LUAI_HASHLIMIT) + 1;
   for (; l >= step; l -= step)
@@ -114,6 +116,7 @@ void luaS_clearcache (global_State *g) {
 ** Initialize the string table and the string cache
 */
 void luaS_init (lua_State *L) {
+  printf("%s:%d luaS_init\n",__FILE__,__LINE__);
   global_State *g = G(L);
   int i, j;
   luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
@@ -165,6 +168,7 @@ void luaS_remove (lua_State *L, TString *ts) {
 ** checks whether short string exists and reuses it or creates a new one
 */
 static TString *internshrstr (lua_State *L, const char *str, size_t l) {
+  //printf("%s:%d internshrstr\n",__FILE__,__LINE__);
   TString *ts;
   global_State *g = G(L);
   unsigned int h = luaS_hash(str, l, g->seed);
@@ -197,6 +201,7 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
 ** new string (with explicit length)
 */
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
+  //printf("%s:%d luaS_newlstr\n",__FILE__,__LINE__);
   if (l <= LUAI_MAXSHORTLEN)  /* short string? */
     return internshrstr(L, str, l);
   else {
@@ -217,6 +222,8 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 ** check hits.
 */
 TString *luaS_new (lua_State *L, const char *str) {
+
+  //printf("%s:%d luaS_new\n",__FILE__,__LINE__);
   unsigned int i = point2uint(str) % STRCACHE_N;  /* hash */
   int j;
   TString **p = G(L)->strcache[i];
@@ -229,6 +236,7 @@ TString *luaS_new (lua_State *L, const char *str) {
     p[j] = p[j - 1];  /* move out last element */
   /* new element is first in the list */
   p[0] = luaS_newlstr(L, str, strlen(str));
+  //printf("%s:%d luaS_new returning\n",__FILE__,__LINE__);
   return p[0];
 }
 

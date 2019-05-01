@@ -14,7 +14,7 @@ extern struct Kernel _Kernel;
 
 bool ATADriver_Constructor(struct ATADriver* self)
 {
-    printf("ATA: Constructing\n");
+    printf("ATA Driver: Constructing\n");
     self->Debug = false;
     memset(self->IDEBuffer,0,2048);
     memset(self->Channels,0,sizeof(struct ATA_Channel)*2);
@@ -22,7 +22,7 @@ bool ATADriver_Constructor(struct ATADriver* self)
     memset(self->ATAPIPacket,0,12);
     self->ATAPIPacket[0] = 0xA8;
 
-    struct PCI_ConfigHeader* ata_device = PCIDriver_GetATADevice(&_Kernel.PCI);
+    struct PCIConfigHeader* ata_device = PCIDriver_GetATADevice(&_Kernel.PCI);
 
     if (ata_device)
     {
@@ -42,11 +42,9 @@ bool ATADriver_Constructor(struct ATADriver* self)
         readInterruptLine = PCIDriver_DeviceReadConfig8b(&_Kernel.PCI, ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
 
         // This Device needs IRQ assignment.
-        if (readInterruptLine != 0xFE)
+        if ((readInterruptLine & 0xFF) != 0xFE)
         {
-                printf("ATA: Couldn't set interrupt line, device needs IRQ Assignment (NOT IMPLEMENTED)\n");
-                printf("\t---[ BAIL OUT ]---\n");
-                return false;
+                printf("ATA: Couldn't set interrupt line, device needs IRQ Assignment\n");
         }
         // The Device doesn't use IRQs, check if this is an Parallel IDE:
         else

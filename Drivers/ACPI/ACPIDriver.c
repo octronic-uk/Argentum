@@ -14,7 +14,7 @@ extern struct Kernel _Kernel;
 
 bool ACPIDriver_Constructor(struct ACPIDriver* self)
 {
-    printf("ACPI: Constructing\n");
+    printf("ACPI Driver Constructing\n");
     self->Debug = false;
     self->FacsPointer = 0;
     self->DsdtPointer = 0;

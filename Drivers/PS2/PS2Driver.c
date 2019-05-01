@@ -10,19 +10,15 @@
 extern struct Kernel _Kernel;
 volatile bool PS2Driver_WaitingForKeyPress = false;
 
-#define PS2_PAUSE 2500
-
 bool PS2Driver_Constructor(struct PS2Driver* self)
 {
-    printf("PS2: Constructing\n");
+    printf("PS2 Driver: Constructing\n");
+//    self->Debug = false;
     self->Debug = false;
     self->ResponseBufferIndex = 0;
     memset(self->ResponseBuffer, 0, sizeof(struct _Ps2Response)*PS2_RESPONSE_BUFFER_SIZE);
     self->SecondPortExists = false;
     self->KeyboardNextByteExpected = Status;
-
-    memset(&self->FirstPort_IDT_Entry, 0, sizeof(struct Interrupt_DescriptorTableEntry));
-    memset(&self->SecondPort_IDT_Entry, 0, sizeof(struct Interrupt_DescriptorTableEntry));
 
     PS2Driver_CMD_DisableFirstPort(self);
     PS2Driver_CMD_DisableSecondPort(self);
@@ -197,7 +193,6 @@ uint8_t PS2Driver_CMD_TestController(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing PS/2 Controller PASSED\n");
-            usleep(PS2_PAUSE);
         }
         return 1;
     }
@@ -205,7 +200,6 @@ uint8_t PS2Driver_CMD_TestController(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing PS/2 Controller FAILED\n");
-            usleep(PS2_PAUSE);
         }
         return 0;
     }
@@ -213,7 +207,6 @@ uint8_t PS2Driver_CMD_TestController(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing PS/2 Controller FLOPPED :/\n");
-            usleep(PS2_PAUSE);
         }
         return 0;
     }
@@ -245,7 +238,6 @@ uint8_t PS2Driver_CMD_TestFirstPort(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing First Port PASSED\n");
-            usleep(PS2_PAUSE);
         }
         return 1;
     }
@@ -253,7 +245,6 @@ uint8_t PS2Driver_CMD_TestFirstPort(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing First Port FAILED with 0x%x\n",result);
-            usleep(PS2_PAUSE);
         }
         return 0;
     }
@@ -284,7 +275,6 @@ uint8_t PS2Driver_CMD_TestSecondPort(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing Second Port PASSED\n");
-            usleep(PS2_PAUSE);
         }
         return 1;
     }
@@ -292,7 +282,6 @@ uint8_t PS2Driver_CMD_TestSecondPort(struct PS2Driver* self)
     {
         if (self->Debug) {
             printf("PS2: Testing Second Port FAILED with 0x%x\n",result);
-            usleep(PS2_PAUSE);
         }
         return 0;
     }
@@ -336,7 +325,6 @@ void PS2Driver_DeviceCMD_ResetFirstPort(struct PS2Driver* self)
         if (self->Debug) 
         {
             printf("PS2: Reset first port successfully\n");
-            usleep(PS2_PAUSE);
         }
     }
     else if (result == 0xAA)
@@ -362,7 +350,6 @@ void PS2Driver_DeviceCMD_ResetFirstPort(struct PS2Driver* self)
             if (self->Debug) 
             {
                 printf("PS2: Reset finally succeeded on first port\n");
-                usleep(PS2_PAUSE);
             }
         }
 
@@ -372,7 +359,6 @@ void PS2Driver_DeviceCMD_ResetFirstPort(struct PS2Driver* self)
         if (self->Debug) 
         {
             printf("PS2: Reset first port FAILED\n");
-            usleep(PS2_PAUSE);
         }
     }
     else
@@ -380,7 +366,6 @@ void PS2Driver_DeviceCMD_ResetFirstPort(struct PS2Driver* self)
         if (self->Debug) 
         {
             printf("PS2: Reset first port FAILED with weird result 0x%x\n",result);
-            usleep(PS2_PAUSE);
         }
     }
 }
@@ -409,7 +394,6 @@ void PS2Driver_DeviceCMD_ResetSecondPort(struct PS2Driver* self)
         if (self->Debug) 
         {
             printf("PS2: Reset second port successfully\n");
-            usleep(PS2_PAUSE);
         }
     }
     else if (result == 0xAA)
@@ -435,7 +419,6 @@ void PS2Driver_DeviceCMD_ResetSecondPort(struct PS2Driver* self)
             if (self->Debug) 
             {
                 printf("PS2: Reset finally succeeded on second port\n");
-                usleep(PS2_PAUSE);
             }
         }
 
@@ -445,7 +428,6 @@ void PS2Driver_DeviceCMD_ResetSecondPort(struct PS2Driver* self)
         if (self->Debug) 
         {
             printf("PS2: Reset second port FAILED\n");
-            usleep(PS2_PAUSE);
         }
     }
     else
@@ -453,7 +435,6 @@ void PS2Driver_DeviceCMD_ResetSecondPort(struct PS2Driver* self)
         if (self->Debug)
         {
             printf("PS2: Reset second port FAILED with weird result 0x%x\n",result);
-            usleep(PS2_PAUSE);
         }
     }
 }
@@ -488,12 +469,10 @@ void PS2Driver_WriteConfigurationByte(struct PS2Driver* self)
         if (self->SecondPortExists) 
         {
             printf("PS2: Second Port found\n");
-            usleep(PS2_PAUSE);
         }
         else 
         {
             printf("PS2: Second Port NOT found\n");
-            usleep(PS2_PAUSE);
         }
     }
     // disable all IRQs and disable translation (clear bits 0, 1 and 6).
@@ -583,7 +562,7 @@ void PS2Driver_SetupInterruptHandlers(struct PS2Driver* self)
 	}
 	InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 1,PS2Driver_FirstPortInterruptHandler);
 
-    // First Port
+    // Second Port
     if (self->SecondPortExists)
     {
         if (self->Debug)

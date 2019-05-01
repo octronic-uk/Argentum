@@ -482,5 +482,7 @@ struct lua_Debug {
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
+int lua_main (int argc, char **argv);
+static int LUA_DEBUG = 1;
 
 #endif

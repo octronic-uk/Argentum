@@ -3,6 +3,8 @@ OBJECTS = $(shell find ../Objects -type f -name "*.o")
 LUA     = $(shell find ../Lua     -type f -name "*.o")
 CLIB    = $(shell find ../Clib    -type f -name "*.o")
 
+KBIN=../Ag
+
 all : main_c.o main_asm.o
 	$(LD) $(LDFLAGS) -T link.ld -m elf_i386 main_asm.o main_c.o $(CLIB) $(DRIVERS) $(OBJECTS) $(LUA) -o ${KBIN}
 

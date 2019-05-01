@@ -1,11 +1,10 @@
 #/bin/bash
 
-TEST_DISK=Tools/MBR_FAT32_64m.img
-KERNEL=Boot/Argentum
+. Tools/env.sh
 
-./make.sh  
+${RUN_MAKE} clean
 
-GDB=/usr/local/Cellar/i386-elf-gdb/8.2/bin/i386-elf-gdb
+${RUN_MAKE}
 
 if [ "$?" -ne 0 ]; then
     echo Make failed
@@ -13,14 +12,9 @@ if [ "$?" -ne 0 ]; then
 fi
 
 echo
-echo Now run $GDB $PWD/Boot/Kernel -tui
+echo Now run ${RUN_GDB} 
 echo "(gdb) target remote :1234"
 echo
 
 # Run in QEMU
-qemu-system-i386 \
-    -m 32 \
-    -kernel ${KERNEL} \
-    -drive format=raw,if=ide,file=$TEST_DISK \
-    -serial stdio \
-    -s -S -d int
+${RUN_QEMU_DEBUG} 

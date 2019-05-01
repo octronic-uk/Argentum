@@ -2,5 +2,6 @@
 
 int rand (void)
 {
+    printf("stdlib: rand\n");
     return 0;
 }

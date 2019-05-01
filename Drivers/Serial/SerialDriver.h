@@ -106,8 +106,8 @@ struct Serial_PortDescriptor
     uint8_t mFifoControl;
     uint8_t mModemControl;
     uint8_t mUsingInterrupts;
-    uint8_t mCanRead;
-    uint8_t mCanWrite;
+    volatile uint8_t mCanRead;
+    volatile uint8_t mCanWrite;
 } ;
 
 static struct Serial_PortDescriptor Serial_Port1_8N1  = 
@@ -128,6 +128,7 @@ static struct Serial_PortDescriptor Serial_Port1_8N1  =
 
 struct SerialDriver
 {
+    bool Initialised;
     uint16_t PortAddresses[4];
     uint8_t  Debug;
 };

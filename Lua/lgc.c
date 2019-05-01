@@ -10,6 +10,7 @@
 #include "lprefix.h"
 
 
+#include <stdio.h>
 #include <string.h>
 
 #include "lua.h"
@@ -206,6 +207,7 @@ void luaC_fix (lua_State *L, GCObject *o) {
 ** it to 'allgc' list.
 */
 GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
+ // printf("%s:%d luaC_newobj\n",__FILE__,__LINE__);
   global_State *g = G(L);
   GCObject *o = cast(GCObject *, luaM_newobject(L, novariant(tt), sz));
   o->marked = luaC_white(g);
@@ -695,6 +697,7 @@ static void freeLclosure (lua_State *L, LClosure *cl) {
 
 
 static void freeobj (lua_State *L, GCObject *o) {
+  //printf("%s:%d freeobj\n",__FILE__,__LINE__);
   switch (o->tt) {
     case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
     case LUA_TLCL: {
@@ -718,6 +721,7 @@ static void freeobj (lua_State *L, GCObject *o) {
     }
     default: lua_assert(0);
   }
+  //printf("%s:%d freeobj return\n",__FILE__,__LINE__);
 }
 
 
@@ -733,6 +737,8 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count);
 ** list is finished.
 */
 static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
+
+  //printf("%s:%d  sweeplist\n",__FILE__,__LINE__);
   global_State *g = G(L);
   int ow = otherwhite(g);
   int white = luaC_white(g);  /* current white */
@@ -857,6 +863,8 @@ static int runafewfinalizers (lua_State *L) {
 ** call all pending finalizers
 */
 static void callallpendingfinalizers (lua_State *L) {
+
+  printf("%s:%d  callallpendingfinalizers\n",__FILE__,__LINE__);
   global_State *g = G(L);
   while (g->tobefnz)
     GCTM(L, 0);
@@ -878,6 +886,7 @@ static GCObject **findlast (GCObject **p) {
 ** finalization from list 'finobj' to list 'tobefnz' (to be finalized)
 */
 static void separatetobefnz (global_State *g, int all) {
+  printf("%s:%d  separatetobefnz\n",__FILE__,__LINE__);
   GCObject *curr;
   GCObject **p = &g->finobj;
   GCObject **lastnext = findlast(&g->tobefnz);
@@ -965,6 +974,8 @@ static void entersweep (lua_State *L) {
 
 
 void luaC_freeallobjects (lua_State *L) {
+
+  printf("%s:%d luaC_freeallobjects\n",__FILE__,__LINE__);
   global_State *g = G(L);
   separatetobefnz(g, 1);  /* separate all objects with finalizers */
   lua_assert(g->finobj == NULL);
@@ -1157,6 +1168,7 @@ void luaC_step (lua_State *L) {
 ** changed, nothing will be collected).
 */
 void luaC_fullgc (lua_State *L, int isemergency) {
+  printf("%s:%d luaC_fullgc\n",__FILE__,__LINE__);
   global_State *g = G(L);
   lua_assert(g->gckind == KGC_NORMAL);
   if (isemergency) g->gckind = KGC_EMERGENCY;  /* set flag */

@@ -22,7 +22,7 @@ extern uint8_t fpy_dma_buf[FLOPPY_DMALEN];
 
 bool FloppyDriver_Constructor(struct FloppyDriver* self)
 {
-    printf("Floppy: Constructing (DMA Buffer @ 0x%x)\n",(uint32_t)&fpy_dma_buf[0]);
+    printf("Floppy Driver: Constructing (DMA Buffer @ 0x%x)\n",(uint32_t)&fpy_dma_buf[0]);
     // Setup the IRQ6 Interrupt Handler
     InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 6, FloppyDriver_InterruptHandler);
 
@@ -164,7 +164,7 @@ void FloppyDriver_IRQWait(struct FloppyDriver* self)
 {
     do
     {
-        usleep(10);
+        usleep(1);
     }
     while (!self->InterruptWaiting);
 }
@@ -556,9 +556,9 @@ bool FloppyDriver_SlavePresent(struct FloppyDriver* self)
 struct CylinderHeadSector FloppyDriver_LbaToChs(uint32_t lba)
 {
     struct CylinderHeadSector chs;
-    chs.Cylinder = lba / (2 * FLOPPY_144_SECTORS_PER_TRACK);
-    chs.Head     = ((lba % (2 * FLOPPY_144_SECTORS_PER_TRACK)) / FLOPPY_144_SECTORS_PER_TRACK);
-    chs.Sector   = ((lba % (2 * FLOPPY_144_SECTORS_PER_TRACK)) % FLOPPY_144_SECTORS_PER_TRACK + 1);
+    chs.Cylinder = lba / (2 * FLOPPY_144_NUM_SECTORS);
+    chs.Head     = ((lba % (2 * FLOPPY_144_NUM_SECTORS)) / FLOPPY_144_NUM_SECTORS);
+    chs.Sector   = ((lba % (2 * FLOPPY_144_NUM_SECTORS)) % FLOPPY_144_NUM_SECTORS + 1);
     return chs;
 }
 
@@ -657,4 +657,9 @@ void FloppyDriver_DebugDMABuffer(struct FloppyDriver* self)
     }
     printf("\n----------------------------------------\n");
     PS2Driver_WaitForKeyPress("");
+}
+
+uint8_t* FloppyDriver_GetDMABuffer(struct FloppyDriver* self)
+{
+    return &fpy_dma_buf[0];
 }

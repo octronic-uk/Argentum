@@ -4,7 +4,10 @@
     https://wiki.osdev.org/Floppy_Disk_Controller
 */
 
-#define FLOPPY_144_SECTORS_PER_TRACK    144
+#define FLOPPY_144_NUM_SIDES 2
+#define FLOPPY_144_NUM_TRACKS 80
+#define FLOPPY_144_NUM_SECTORS 18
+#define FLOPPY_144_TOTAL_SECTORS ( FLOPPY_144_NUM_SIDES * FLOPPY_144_NUM_TRACKS * FLOPPY_144_NUM_SECTORS )
 
 #define FLOPPY_REGISTER_STATUS_A        0x3F0 // read-only
 #define FLOPPY_REGISTER_STATUS_B        0x3F1 // read-only

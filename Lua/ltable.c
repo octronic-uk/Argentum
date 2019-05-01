@@ -25,7 +25,7 @@
 
 #include <math.h>
 #include <limits.h>
-
+#include <stdio.h>
 #include "lua.h"
 
 #include "ldebug.h"
@@ -308,6 +308,7 @@ static void setarrayvector (lua_State *L, Table *t, unsigned int size) {
 
 
 static void setnodevector (lua_State *L, Table *t, unsigned int size) {
+  printf("%s:%d setnodevector\n",__FILE__,__LINE__);
   if (size == 0) {  /* no elements to hash part? */
     t->node = cast(Node *, dummynode);  /* use common 'dummynode' */
     t->lsizenode = 0;
@@ -329,6 +330,7 @@ static void setnodevector (lua_State *L, Table *t, unsigned int size) {
     t->lsizenode = cast_byte(lsize);
     t->lastfree = gnode(t, size);  /* all positions are free */
   }
+  printf("%s:%d setnodevector exiting\n",__FILE__,__LINE__);
 }
 
 
@@ -419,6 +421,7 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 
 
 Table *luaH_new (lua_State *L) {
+  printf("%s:%d luaH_new\n",__FILE__,__LINE__);
   GCObject *o = luaC_newobj(L, LUA_TTABLE, sizeof(Table));
   Table *t = gco2t(o);
   t->metatable = NULL;
@@ -426,6 +429,7 @@ Table *luaH_new (lua_State *L) {
   t->array = NULL;
   t->sizearray = 0;
   setnodevector(L, t, 0);
+  printf("%s:%d luaH_new RETURNING\n",__FILE__,__LINE__);
   return t;
 }
 

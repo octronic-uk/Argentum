@@ -19,6 +19,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+extern lua_CFunction on_panic;
 
 
 #if !defined(LUA_PROMPT)
@@ -154,7 +155,7 @@ static void print_usage (const char *badoption) {
 */
 static void l_message (const char *pname, const char *msg) {
   if (pname) lua_writestringerror("%s: ", pname);
-  lua_writestringerror("%s\n", msg);
+  lua_writestringerror("%d\n", msg);
 }
 
 
@@ -210,6 +211,7 @@ static int docall (lua_State *L, int narg, int nres) {
 
 
 static void print_version (void) {
+  printf("%s:%d print version\n",__FILE__,__LINE__);
   lua_writestring(LUA_COPYRIGHT, strlen(LUA_COPYRIGHT));
   lua_writeline();
 }
@@ -403,6 +405,7 @@ static void l_print (lua_State *L) {
 ** print any results.
 */
 static void doREPL (lua_State *L) {
+  printf("%s:%d doREPL\n",__FILE__,__LINE__);
   int status;
   const char *oldprogname = progname;
   progname = NULL;  /* no 'progname' on errors in interactive mode */
@@ -463,6 +466,8 @@ static int handle_script (lua_State *L, char **argv) {
 ** (either the script name or a bad argument in case of error).
 */
 static int collectargs (char **argv, int *first) {
+
+  printf("%s:%d collectargs\n",__FILE__,__LINE__);
   int args = 0;
   int i;
   for (i = 1; argv[i] != NULL; i++) {
@@ -552,54 +557,84 @@ static int handle_luainit (lua_State *L) {
 ** Reads the options and handles them all.
 */
 static int pmain (lua_State *L) {
+  printf("%s:%d pmain\n",__FILE__,__LINE__);
   int argc = (int)lua_tointeger(L, 1);
   char **argv = (char **)lua_touserdata(L, 2);
   int script;
   int args = collectargs(argv, &script);
   luaL_checkversion(L);  /* check that interpreter has correct version */
+
+  printf("%s:%d after check version\n",__FILE__,__LINE__);
+
+/*
   if (argv[0] && argv[0][0]) progname = argv[0];
-  if (args == has_error) {  /* bad arg? */
-    print_usage(argv[script]);  /* 'script' has index of bad arg. */
+  if (args == has_error) {  /* bad arg? * /
+    printf("%s:%d bad args\n",__FILE__,__LINE__);
+    print_usage(argv[script]);  /* 'script' has index of bad arg. * /
+    * /
     return 0;
   }
-  if (args & has_v)  /* option '-v'? */
+  if (args & has_v)  /* option '-v'? * /
+  */
     print_version();
-  if (args & has_E) {  /* option '-E'? */
-    lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
+    /*
+  if (args & has_E) {  /* option '-E'? * /
+    lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. * /
     lua_setfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
   }
+  */
+
+  printf("%s:%d pmain opening libs\n\n",__FILE__,__LINE__);
   luaL_openlibs(L);  /* open standard libraries */
+  printf("%s:%d pmain after opening libs\n\n",__FILE__,__LINE__);
   createargtable(L, argv, argc, script);  /* create table 'arg' */
+  printf("%s:%d pmain after createargtable\n\n",__FILE__,__LINE__);
   if (!(args & has_E)) {  /* no option '-E'? */
     if (handle_luainit(L) != LUA_OK)  /* run LUA_INIT */
+    {
+      printf("%s:%d pmain lua init faled\n\n",__FILE__,__LINE__);
       return 0;  /* error running LUA_INIT */
+    }
   }
-  if (!runargs(L, argv, script))  /* execute arguments -e and -l */
-    return 0;  /* something failed */
-  if (script < argc &&  /* execute main script (if there is one) */
+
+  printf("%s:%d pmain after -E\n\n",__FILE__,__LINE__);
+/*
+  if (!runargs(L, argv, script))  /* execute arguments -e and -l * /
+    return 0;  /* something failed * /
+  if (script < argc &&  /* execute main script (if there is one) * /
       handle_script(L, argv + script) != LUA_OK)
     return 0;
-  if (args & has_i)  /* -i option? */
-    doREPL(L);  /* do read-eval-print loop */
-  else if (script == argc && !(args & (has_e | has_v))) {  /* no arguments? */
-    if (lua_stdin_is_tty()) {  /* running in interactive mode? */
+  if (args & has_i)  /* -i option? * /
+  */
+  printf("%s:%d pmain Bouta do REPL\n\n",__FILE__,__LINE__);
+    doREPL(L);  /* do read-eval-print loop * /
+  else if (script == argc && !(args & (has_e | has_v))) {  /* no arguments? * /
+    if (lua_stdin_is_tty()) {  /* running in interactive mode? * /
+
+      printf("%s:%d stdin is tty\n",__FILE__,__LINE__);
       print_version();
-      doREPL(L);  /* do read-eval-print loop */
+      doREPL(L);  /* do read-eval-print loop * /
     }
-    else dofile(L, NULL);  /* executes stdin as a file */
+    else dofile(L, NULL);  /* executes stdin as a file * /
   }
+  */
   lua_pushboolean(L, 1);  /* signal no errors */
   return 1;
 }
 
 
-int main (int argc, char **argv) {
+int lua_main (int argc, char **argv) 
+{
+  printf("%s:%d lua_main\n",__FILE__,__LINE__);
   int status, result;
   lua_State *L = luaL_newstate();  /* create state */
   if (L == NULL) {
+    printf("%s:%d error, could not create state.\n",__FILE__,__LINE__);
     l_message(argv[0], "cannot create state: not enough memory");
     return EXIT_FAILURE;
   }
+  lua_atpanic(L,&on_panic);
+  printf("%s:%d Got a state.\n",__FILE__,__LINE__);
   lua_pushcfunction(L, &pmain);  /* to call 'pmain' in protected mode */
   lua_pushinteger(L, argc);  /* 1st argument */
   lua_pushlightuserdata(L, argv); /* 2nd argument */

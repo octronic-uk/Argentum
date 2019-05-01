@@ -7,7 +7,7 @@
 bool SMPath_Constructor(struct SMPath* self)
 {
     memset(self,0,sizeof(struct SMPath));
-    self->Debug = true;
+    self->Debug = false;
     return true;
 }
 
@@ -129,6 +129,11 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
             }
         }
         addr_index++;
+    }
+    if (self->Debug)
+    {
+        printf("SMPath: Parsed Successfully\n");
+        PS2Driver_WaitForKeyPress("SMPath Pause");
     }
     return true;
 }

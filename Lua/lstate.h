@@ -8,6 +8,7 @@
 #define lstate_h
 
 #include "lua.h"
+#include <stdio.h>
 
 #include "lobject.h"
 #include "ltm.h"

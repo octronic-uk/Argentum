@@ -21,6 +21,7 @@
 
 
 int luaZ_fill (ZIO *z) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   size_t size;
   lua_State *L = z->L;
   const char *buff;
@@ -36,6 +37,7 @@ int luaZ_fill (ZIO *z) {
 
 
 void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   z->L = L;
   z->reader = reader;
   z->data = data;
@@ -46,6 +48,7 @@ void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
 
 /* --------------------------------------------------------------- read --- */
 size_t luaZ_read (ZIO *z, void *b, size_t n) {
+  printf("%s:%d %s\n",__FILE__,__LINE__,__func__);
   while (n) {
     size_t m;
     if (z->n == 0) {  /* no bytes in buffer? */

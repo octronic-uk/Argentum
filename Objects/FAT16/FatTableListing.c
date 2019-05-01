@@ -5,50 +5,14 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include "FatVolume.h"
 #include "FatLfnCluster.h"
-#include "FatDirectoryCluster.h"
+#include "FatDirectoryEntryData.h"
 
-/**
-    @brief Parse the FAT Table.
 
-    After the cluster has been loaded into memory, the next step is to read and parse all 
-    of the entries in it. Each entry is 32 bytes long. For each 32 byte entry this is the flow of 
-    execution:
-
-    1 If the first byte of the entry is equal to 0 then there are no more files/directories in this 
-      directory. 
-        FirstByte == 0, finish. 
-        FirstByte != 0, goto 2.
-
-    2 If the first byte of the entry is equal to 0xE5 then the entry is unused. 
-        FirstByte == 0xE5, goto 8, 
-        FirstByte != 0xE5, goto 3.
-
-    3 Is this entry a long file name entry? If the 11'th byte of the entry equals 0x0F, then it is a
-      long file name entry.
-        11thByte==0x0F, Goto 4. 
-        11thByte!=0x0F, Goto 5.
-
-    4 Read the portion of the long filename into a temporary buffer. 
-        Goto 8.
-
-    5 Parse the data for this entry using the FatDirectory table.
-        Goto 6
-
-    6 Is there a long file name in the temporary buffer? 
-        Yes, Goto 7. 
-        No,  Goto 8
-
-    7 Apply the long file name to the entry that you just read and clear the temporary buffer. 
-        Goto 8
-
-    8 Increment pointers and/or counters and check the next entry. 
-        Goto 1
-*/
-bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume* volume, uint8_t* cluster_data)
+bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume* volume, uint8_t* cluster_data_start)
 {
     // Init
     memset(self,0,sizeof(struct FatTableListing));
-    self->Debug = 0;
+    self->Debug = false;
     self->Volume = volume;
 
     char lfn_name_current[FAT_LFN_NAME_SIZE];
@@ -59,8 +23,10 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
     memset(lfn_name_tmp, 0, FAT_LFN_NAME_SIZE);
 
     uint32_t entry_index = 0;
+    uint8_t* cluster_data = cluster_data_start;
 
-    while(*cluster_data)    
+    // Don't read past the end of the sector buffer
+    while(*cluster_data && cluster_data < (cluster_data_start + FAT_SECTOR_SIZE))    
     {
         if (*cluster_data != FAT_VOLUME_CLUSTER_UNUSED)
         {
@@ -80,10 +46,11 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                 // Previous Cluster WAS LFN
                 if (lfn_pending)
                 {
-                    struct FatDirectoryCluster* lfn_dir = (struct FatDirectoryCluster*)cluster_data;
+                    struct FatDirectoryEntryData* lfn_dir = (struct FatDirectoryEntryData*)cluster_data;
                     uint32_t lfn_first_cluster = lfn_dir->FirstClusterNumber;
                     uint32_t lfn_first_sector = FatVolume_GetFirstSectorOfCluster(self->Volume, lfn_first_cluster);
-                    if (self->Debug) {
+                    if (self->Debug) 
+                    {
                         printf(
                             "FatTableListing: Found LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
                             lfn_name_current,
@@ -93,13 +60,14 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                         PS2Driver_WaitForKeyPress("Fat Dir Listing");
                     }
 
-                    FatDirectoryEntry_Constructor(
+                    FatDirectoryEntrySummary_Constructor(
                         &self->Entries[entry_index], 
                         self->Volume, 
-                        lfn_dir,
                         lfn_name_current,
                         lfn_first_sector,
-                        lfn_first_cluster
+                        lfn_first_cluster,
+                        lfn_dir->Attributes,
+                        lfn_dir->FileSize
                     );
 
                     memset(lfn_name_tmp,     0, FAT_LFN_NAME_SIZE);
@@ -107,13 +75,15 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                     lfn_pending = false;
                     entry_index++;
                 }
+                // No Previous LFN Pending
                 else
                 {
-                    struct FatDirectoryCluster* dir = (struct FatDirectoryCluster*)cluster_data;
-                    char full_name[FAT_LFN_NAME_SIZE];
-                    full_name[8] = '.';
-                    memset(full_name,0,FAT_LFN_NAME_SIZE);
-
+                    struct FatDirectoryEntryData* dir = (struct FatDirectoryEntryData*)cluster_data;
+                    char full_name[FAT_LFN_NAME_SIZE] = {' '};
+                    if (FatDirectoryEntryData_HasAttribute(dir,FAT_DIR_ATTR_ARCHIVE))
+                    {
+                        full_name[8] = '.';
+                    }
                     memcpy(full_name,dir->Name,8);
                     memcpy(full_name+9,dir->Extension,3);
 
@@ -121,7 +91,9 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                     if (self->Debug) 
                     {
                         printf(
-                            "FatTableListing: Found Non-LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
+                            "FatTableListing: \n"
+                            "\tFound Non-LFN: %s\n"
+                            "\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
                             full_name,
                             first_sector,
                             self->Volume->FirstSectorNumber + first_sector
@@ -129,13 +101,14 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                         PS2Driver_WaitForKeyPress("Fat Dir Listing");
                     }
 
-                    FatDirectoryEntry_Constructor(
+                    FatDirectoryEntrySummary_Constructor(
                         &self->Entries[entry_index], 
                         self->Volume, 
-                        dir,
                         full_name,
                         first_sector,
-                        dir->FirstClusterNumber
+                        dir->FirstClusterNumber,
+                        dir->Attributes,
+                        dir->FileSize
                     );
 
                     entry_index++;
@@ -167,9 +140,9 @@ void FatTableListing_Debug(struct FatTableListing* self)
     uint32_t i;
     for (i=0; i<count; i++)
     {
-        struct FatDirectoryEntry *e = &self->Entries[i];
-        char* type = FatDirectoryCluster_GetDirectoryTypeString(&e->ClusterData);
-        printf("\t-> (%s) %08dB %s \n", type,  e->ClusterData.FileSize, e->Name);
+        struct FatDirectoryEntrySummary *e = &self->Entries[i];
+        char* type = FatDirectoryEntryData_GetDirectoryTypeString(e->Attributes);
+        printf("\t-> (%s) %08dB %s \n", type,  e->FileSize, e->Name);
     }
     PS2Driver_WaitForKeyPress("Fat Dir Listing");
 }

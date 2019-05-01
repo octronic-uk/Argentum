@@ -2,5 +2,6 @@
 
 char* getenv(const char* name)
 {
-    return "NOT IMPLEMENTED";
+    printf("stdlib: getenv %s\n",name);
+    return "env_value";
 }

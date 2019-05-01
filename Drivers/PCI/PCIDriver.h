@@ -4,13 +4,14 @@
 #include <stdbool.h>
 
 #include <Drivers/PCI/PCIConstants.h>
-#include <Objects/Structures/LinkedList.h>
 
-struct PCI_ConfigHeader
+#define PCI_MAX_HEADERS 32 
+
+struct PCIConfigHeader
 {
-	uint8_t mBus;
-	uint8_t mDevice;
-	uint8_t mFunction;
+	uint8_t  mBus;
+	uint8_t  mDevice;
+	uint8_t  mFunction;
 	uint8_t  mHeaderType;
 	uint16_t mVendorID;
 	uint16_t mDeviceID;
@@ -20,9 +21,9 @@ struct PCI_ConfigHeader
 	uint8_t  mSubclassCode;
 	uint8_t  mInterruptLine;
 	uint8_t  mInterruptPin;
-	uint8_t mPrimaryBus;
-	uint8_t mSecondaryBus;
-	uint8_t mProgIF;
+	uint8_t  mPrimaryBus;
+	uint8_t  mSecondaryBus;
+	uint8_t  mProgIF;
 	uint32_t mBAR0;
 	uint32_t mBAR1;
 	uint32_t mBAR2;
@@ -34,21 +35,21 @@ struct PCI_ConfigHeader
 
 struct PCIDriver
 {
-	struct LinkedList ConfigHeaderList;
+	struct PCIConfigHeader ConfigHeaderList[PCI_MAX_HEADERS];
 	bool Debug;
 };
 
 bool PCIDriver_Constructor(struct PCIDriver* self);
 
-void PCIDriver_SetDebug(struct PCIDriver* self, uint32_t debug);
 void PCIDriver_DumpDevices(struct PCIDriver* self);
-void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCI_ConfigHeader* header);
+void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCIConfigHeader* header);
 
-struct PCI_ConfigHeader* PCIDriver_ReadConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func);
-struct PCI_ConfigHeader* PCIDriver_GetConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function);
-struct PCI_ConfigHeader* PCIDriver_GetIsaBridgeConfigHeader(struct PCIDriver* self);
-struct PCI_ConfigHeader* PCIDriver_GetDeviceByID(struct PCIDriver* self, uint16_t vendor_id, uint16_t device_id);
-struct PCI_ConfigHeader* PCIDriver_GetATADevice(struct PCIDriver* self);
+uint8_t PCIDriver_CountHeaders(struct PCIDriver* self);
+bool PCIDriver_ReadConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func, struct PCIConfigHeader* header);
+struct PCIConfigHeader* PCIDriver_GetConfigHeader(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function);
+struct PCIConfigHeader* PCIDriver_GetIsaBridgeConfigHeader(struct PCIDriver* self);
+struct PCIConfigHeader* PCIDriver_GetDeviceByID(struct PCIDriver* self, uint16_t vendor_id, uint16_t device_id);
+struct PCIConfigHeader* PCIDriver_GetATADevice(struct PCIDriver* self);
 
 uint8_t PCIDriver_IsMultifunctionDevice(struct PCIDriver* self, uint8_t headerType);
 
@@ -56,9 +57,9 @@ uint32_t PCIDriver_ReadConfig32b(struct PCIDriver* self, uint8_t bus, uint8_t de
 uint16_t PCIDriver_ReadConfig16b(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
 uint8_t PCIDriver_ReadConfig8b(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
 
-uint32_t PCIDriver_DeviceReadConfig32b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset);
-uint16_t PCIDriver_DeviceReadConfig16b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset);
-uint8_t  PCIDriver_DeviceReadConfig8b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset);
+uint32_t PCIDriver_DeviceReadConfig32b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset);
+uint16_t PCIDriver_DeviceReadConfig16b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset);
+uint8_t  PCIDriver_DeviceReadConfig8b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset);
 
 void PCIDriver_ConfigSetAddress(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
 
@@ -66,9 +67,9 @@ void PCIDriver_WriteConfig32b(struct PCIDriver* self, uint8_t bus, uint8_t devic
 void PCIDriver_WriteConfig16b(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint16_t data);
 void PCIDriver_WriteConfig8b(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint8_t data);
 
-void PCIDriver_DeviceWriteConfig32b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset, uint32_t data);
-void PCIDriver_DeviceWriteConfig16b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset, uint16_t data);
-void PCIDriver_DeviceWriteConfig8b(struct PCIDriver* self, struct PCI_ConfigHeader* device, uint8_t offset, uint8_t data);
+void PCIDriver_DeviceWriteConfig32b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset, uint32_t data);
+void PCIDriver_DeviceWriteConfig16b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset, uint16_t data);
+void PCIDriver_DeviceWriteConfig8b(struct PCIDriver* self, struct PCIConfigHeader* device, uint8_t offset, uint8_t data);
 
 uint8_t PCIDriver_GetHeaderType(struct PCIDriver* self, uint8_t bus , uint8_t device , uint8_t function);
 uint16_t PCIDriver_GetVendorID(struct PCIDriver* self, uint8_t bus, uint8_t device, uint8_t function);

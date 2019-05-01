@@ -13,6 +13,12 @@
 #include <Drivers/Serial/SerialDriver.h>
 #include <Objects/StorageManager/StorageManager.h>
 
+struct StackFrame 
+{
+  struct StackFrame* ebp;
+  uint32_t eip;
+};
+
 struct Kernel
 {
     multiboot_info_t* MultibootInfo;
@@ -36,3 +42,4 @@ bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi);
 bool Kernel_InitDrivers(struct Kernel* self);
 bool Kernel_InitObjects(struct Kernel* self);
 bool Kernel_TestStorageManager(struct Kernel* self);
+void Kernel_StackTrace(unsigned int MaxFrames);

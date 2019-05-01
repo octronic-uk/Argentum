@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <Drivers/Interrupt/InterruptDriver.h>
 
 /*
     https://wiki.osdev.org/%228042%22_PS/2_Controller
@@ -89,8 +88,6 @@ struct _Ps2Response
 
 struct PS2Driver
 {
-    struct Interrupt_DescriptorTableEntry FirstPort_IDT_Entry;
-    struct Interrupt_DescriptorTableEntry SecondPort_IDT_Entry;
     enum _Ps2KeyboardNextByte KeyboardNextByteExpected;
     bool Debug;
     bool SecondPortExists;

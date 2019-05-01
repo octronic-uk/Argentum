@@ -13,10 +13,11 @@ extern struct Kernel _Kernel;
 
 bool SerialDriver_Constructor(struct SerialDriver* self)
 {
-    printf("Serial: Constructing\n");
+    printf("Serial Driver: Constructing\n");
     self->Debug = false;
     SerialDriver_SetPortAddressTable(self);
     SerialDriver_SetupPort(self, &Serial_Port1_8N1);
+    self->Initialised = true;
     return true;
 }
 
@@ -262,7 +263,7 @@ void SerialDriver_Write8b(struct SerialDriver* self, struct  Serial_PortDescript
         * This does not seem to be set
         * Possible interrupt block while waiting, not 100% sure
     */
-    while (!desc->mCanWrite) {}
+    //while (!desc->mCanWrite) {}
 
     if (self->Debug) printf("Serial: -> Writing char on port %d\n", desc->mPortID);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];

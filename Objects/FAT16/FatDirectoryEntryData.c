@@ -1,20 +1,20 @@
-#include "FatDirectoryCluster.h"
+#include "FatDirectoryEntryData.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <Drivers/PS2/PS2Driver.h>
 #include "FatConstants.h"
 
-void FatDirectoryCluster_Debug(struct FatDirectoryCluster* self)
+void FatDirectoryEntryData_Debug(struct FatDirectoryEntryData* self)
 {
-    printf("FatDirectoryCluster: Structure\n");
+    printf("FatDirectoryEntryData: Structure\n");
     char name[9] = {0};
     char ext[4] = {0};
     memcpy(name,self->Name,8);
     memcpy(ext,self->Extension,3);
 
     printf("\tName:                    <%s>.<%s>\n",  name, ext);
-    FatDirectoryCluster_DebugAttributes(self);
+    FatDirectoryEntryData_DebugAttributes(self);
     printf("\tReserved 1:              0x%x\n", self->Reserved1);
     printf("\tCreation Time Seconds:   0x%x\n", self->CreationTimeMilliSeconds);
     printf("\tCreation Time:           0x%x\n", self->CreationTime);
@@ -29,7 +29,7 @@ void FatDirectoryCluster_Debug(struct FatDirectoryCluster* self)
     PS2Driver_WaitForKeyPress("FAT Dir Cluster Pasuse");
 }
 
-void FatDirectoryCluster_DebugAttributes(struct FatDirectoryCluster* self)
+void FatDirectoryEntryData_DebugAttributes(struct FatDirectoryEntryData* self)
 {
     printf("\tAttributes:              0x%x\n", self->Attributes);
 
@@ -66,19 +66,19 @@ void FatDirectoryCluster_DebugAttributes(struct FatDirectoryCluster* self)
     }
 }
 
-bool FatDirectoryCluster_HasAttribute(struct FatDirectoryCluster* self, uint8_t attr)
+bool FatDirectoryEntryData_HasAttribute(struct FatDirectoryEntryData* self, uint8_t attr)
 {
-    return (self->Attributes & attr ) != 0;
+    return (self->Attributes == attr);
 }
 
-char* FatDirectoryCluster_GetDirectoryTypeString(struct FatDirectoryCluster* self)
+char* FatDirectoryEntryData_GetDirectoryTypeString(uint8_t attributes)
 {
-    switch (self->Attributes)
+    switch (attributes)
     {
-        case FAT_DIR_ATTR_ARCHIVE:
-            return "ARC";
         case FAT_DIR_ATTR_DIRECTORY:
             return "DIR";
+        case FAT_DIR_ATTR_ARCHIVE:
+            return "ARC";
         case FAT_DIR_ATTR_READ_ONLY:
             return "R/O";
         case FAT_DIR_ATTR_HIDDEN:

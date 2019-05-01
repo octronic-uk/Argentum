@@ -430,6 +430,8 @@ static int findsetreg (Proto *p, int lastpc, int reg) {
 
 static const char *getobjname (Proto *p, int lastpc, int reg,
                                const char **name) {
+
+  printf("%s:%d getobjname %s\n",name, __FILE__,__LINE__);
   int pc;
   *name = luaF_getlocalname(p, reg + 1, lastpc);
   if (*name)  /* is a local? */
@@ -544,6 +546,7 @@ static const char *funcnamefromcode (lua_State *L, CallInfo *ci,
 ** checks are ISO C and ensure a correct result.
 */
 static int isinstack (CallInfo *ci, const TValue *o) {
+  printf("%s:%d isinstack\n",__FILE__,__LINE__);
   ptrdiff_t i = o - ci->u.l.base;
   return (0 <= i && i < (ci->top - ci->u.l.base) && ci->u.l.base + i == o);
 }
@@ -556,6 +559,7 @@ static int isinstack (CallInfo *ci, const TValue *o) {
 */
 static const char *getupvalname (CallInfo *ci, const TValue *o,
                                  const char **name) {
+  printf("%d:%d getupvalname %s\n",__FILE__,__LINE__,name);
   LClosure *c = ci_func(ci);
   int i;
   for (i = 0; i < c->nupvalues; i++) {
@@ -578,12 +582,15 @@ static const char *varinfo (lua_State *L, const TValue *o) {
       kind = getobjname(ci_func(ci)->p, currentpc(ci),
                         cast_int(o - ci->u.l.base), &name);
   }
+  printf("%s:%d varinfo %s %s\n",__FILE__,__LINE__,kind,name);
   return (kind) ? luaO_pushfstring(L, " (%s '%s')", kind, name) : "";
 }
 
 
 l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
+  printf("%s:%d luaG_typeerror, op==%s\n",__FILE__,__LINE__,op);
   const char *t = luaT_objtypename(L, o);
+  printf("\n\nattempt to %s a %s value%s\n\n", op, t, varinfo(L, o));
   luaG_runerror(L, "attempt to %s a %s value%s", op, t, varinfo(L, o));
 }
 
@@ -638,6 +645,7 @@ const char *luaG_addinfo (lua_State *L, const char *msg, TString *src,
 
 
 l_noret luaG_errormsg (lua_State *L) {
+  printf("%s:%d luaG_errormsg\n",__FILE__,__LINE__);
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
     setobjs2s(L, L->top, L->top - 1);  /* move argument */
@@ -645,11 +653,13 @@ l_noret luaG_errormsg (lua_State *L) {
     L->top++;  /* assume EXTRA_STACK */
     luaD_callnoyield(L, L->top - 2, 1);  /* call it */
   }
+  printf("%s:%d luaG_errormsg ABOUT TO THROW UP\n\n\n\n\n\n",__FILE__,__LINE__);
   luaD_throw(L, LUA_ERRRUN);
 }
 
 
 l_noret luaG_runerror (lua_State *L, const char *fmt, ...) {
+  printf("%s:%d luaG_runerror\n",__FILE__,__LINE__);
   CallInfo *ci = L->ci;
   const char *msg;
   va_list argp;
@@ -657,8 +667,11 @@ l_noret luaG_runerror (lua_State *L, const char *fmt, ...) {
   va_start(argp, fmt);
   msg = luaO_pushvfstring(L, fmt, argp);  /* format message */
   va_end(argp);
+  printf("\n\nMSG: %s\n\n",msg);
   if (isLua(ci))  /* if Lua function, add source:line information */
     luaG_addinfo(L, msg, ci_func(ci)->p->source, currentline(ci));
+  else
+    printf("%s:%d not in a lua function\n",__FILE__,__LINE__);
   luaG_errormsg(L);
 }
 

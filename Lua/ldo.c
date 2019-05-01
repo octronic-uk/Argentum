@@ -11,6 +11,7 @@
 
 
 #include <setjmp.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -108,6 +109,8 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
 
 
 l_noret luaD_throw (lua_State *L, int errcode) {
+
+  printf("%s:%d luaD_throw %d\n",__FILE__,__LINE__,errcode);
   if (L->errorJmp) {  /* thread has an error handler? */
     L->errorJmp->status = errcode;  /* set status */
     LUAI_THROW(L, L->errorJmp);  /* jump to it */
@@ -134,16 +137,21 @@ l_noret luaD_throw (lua_State *L, int errcode) {
 
 
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
+  printf("%s:%d luaD_rawunprotected state=0x%x pfunc 0x%x, ud=0x%x\n",__FILE__,__LINE__,L,f,ud);
   unsigned short oldnCcalls = L->nCcalls;
   struct lua_longjmp lj;
   lj.status = LUA_OK;
   lj.previous = L->errorJmp;  /* chain new error handler */
   L->errorJmp = &lj;
+  printf("%s:%d reached\n",__FILE__,__LINE__);
   LUAI_TRY(L, &lj,
     (*f)(L, ud);
   );
+  printf("%s:%d reached\n",__FILE__,__LINE__);
   L->errorJmp = lj.previous;  /* restore old error handler */
   L->nCcalls = oldnCcalls;
+
+  printf("%s:%d reached\n",__FILE__,__LINE__);
   return lj.status;
 }
 
@@ -156,6 +164,7 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 ** ===================================================================
 */
 static void correctstack (lua_State *L, TValue *oldstack) {
+  printf("%s:%d correctstack\n",__FILE__,__LINE__);
   CallInfo *ci;
   UpVal *up;
   L->top = (L->top - oldstack) + L->stack;
@@ -175,6 +184,7 @@ static void correctstack (lua_State *L, TValue *oldstack) {
 
 
 void luaD_reallocstack (lua_State *L, int newsize) {
+  printf("%s:%d luaD_reallocatestack\n",__FILE__,__LINE__);
   TValue *oldstack = L->stack;
   int lim = L->stacksize;
   lua_assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
@@ -189,9 +199,13 @@ void luaD_reallocstack (lua_State *L, int newsize) {
 
 
 void luaD_growstack (lua_State *L, int n) {
+  printf("%s:%d luaD_growstack\n",__FILE__,__LINE__);
   int size = L->stacksize;
   if (size > LUAI_MAXSTACK)  /* error after extra size? */
+  {
+    printf("%s:%d luaD_growstack THROWING size > LUAI_MAXSTACK ERROR(%d > %d)\n\n\n",__FILE__,__LINE__,size,LUAI_MAXSTACK);
     luaD_throw(L, LUA_ERRERR);
+  }
   else {
     int needed = cast_int(L->top - L->stack) + n + EXTRA_STACK;
     int newsize = 2 * size;
@@ -208,6 +222,7 @@ void luaD_growstack (lua_State *L, int n) {
 
 
 static int stackinuse (lua_State *L) {
+  printf("%s:%d stackinuse\n",__FILE__,__LINE__);
   CallInfo *ci;
   StkId lim = L->top;
   for (ci = L->ci; ci != NULL; ci = ci->previous) {
@@ -219,6 +234,7 @@ static int stackinuse (lua_State *L) {
 
 
 void luaD_shrinkstack (lua_State *L) {
+  printf("%s:%d shrinkstack\n",__FILE__,__LINE__);
   int inuse = stackinuse(L);
   int goodsize = inuse + (inuse / 8) + 2*EXTRA_STACK;
   if (goodsize > LUAI_MAXSTACK)
@@ -238,6 +254,7 @@ void luaD_shrinkstack (lua_State *L) {
 
 
 void luaD_inctop (lua_State *L) {
+  printf("%s:%d luaD_inctop\n",__FILE__,__LINE__);
   luaD_checkstack(L, 1);
   L->top++;
 }
@@ -251,6 +268,7 @@ void luaD_inctop (lua_State *L) {
 ** function, can be changed asynchronously by signals.)
 */
 void luaD_hook (lua_State *L, int event, int line) {
+  printf("%s:%d luaD_hook\n",__FILE__,__LINE__);
   lua_Hook hook = L->hook;
   if (hook && L->allowhook) {  /* make sure there is a hook */
     CallInfo *ci = L->ci;
@@ -278,6 +296,7 @@ void luaD_hook (lua_State *L, int event, int line) {
 
 
 static void callhook (lua_State *L, CallInfo *ci) {
+  printf("%s:%d callhook\n",__FILE__,__LINE__);
   int hook = LUA_HOOKCALL;
   ci->u.l.savedpc++;  /* hooks assume 'pc' is already incremented */
   if (isLua(ci->previous) &&
@@ -291,6 +310,7 @@ static void callhook (lua_State *L, CallInfo *ci) {
 
 
 static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
+  printf("%s:%d adjust_varargs\n",__FILE__,__LINE__);
   int i;
   int nfixargs = p->numparams;
   StkId base, fixed;
@@ -313,6 +333,7 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
 ** it. Raise an error if __call metafield is not a function.
 */
 static void tryfuncTM (lua_State *L, StkId func) {
+  printf("%s:%d tryfuncTM\n",__FILE__,__LINE__);
   const TValue *tm = luaT_gettmbyobj(L, func, TM_CALL);
   StkId p;
   if (!ttisfunction(tm))
@@ -333,6 +354,7 @@ static void tryfuncTM (lua_State *L, StkId func) {
 */
 static int moveresults (lua_State *L, const TValue *firstResult, StkId res,
                                       int nres, int wanted) {
+  printf("%s:%d moveresults\n",__FILE__,__LINE__);
   switch (wanted) {  /* handle typical cases separately */
     case 0: break;  /* nothing to move */
     case 1: {  /* one result needed */
@@ -374,6 +396,7 @@ static int moveresults (lua_State *L, const TValue *firstResult, StkId res,
 ** wanted multiple (variable number of) results.
 */
 int luaD_poscall (lua_State *L, CallInfo *ci, StkId firstResult, int nres) {
+  printf("%s:%d poscall\n",__FILE__,__LINE__);
   StkId res;
   int wanted = ci->nresults;
   if (L->hookmask & (LUA_MASKRET | LUA_MASKLINE)) {
@@ -411,6 +434,7 @@ int luaD_poscall (lua_State *L, CallInfo *ci, StkId firstResult, int nres) {
 ** calls.) Returns true iff function has been executed (C function).
 */
 int luaD_precall (lua_State *L, StkId func, int nresults) {
+  printf("%s:%d luaD_precall\n",__FILE__,__LINE__);
   lua_CFunction f;
   CallInfo *ci;
   switch (ttype(func)) {
@@ -479,6 +503,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
 ** allow overflow handling to work)
 */
 static void stackerror (lua_State *L) {
+  printf("%s:%d stackerror\n",__FILE__,__LINE__);
   if (L->nCcalls == LUAI_MAXCCALLS)
     luaG_runerror(L, "C stack overflow");
   else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
@@ -493,6 +518,7 @@ static void stackerror (lua_State *L) {
 ** function position.
 */
 void luaD_call (lua_State *L, StkId func, int nResults) {
+  printf("%s:%d luaD_call \n",__FILE__,__LINE__);
   if (++L->nCcalls >= LUAI_MAXCCALLS)
     stackerror(L);
   if (!luaD_precall(L, func, nResults))  /* is a Lua function? */
@@ -505,6 +531,7 @@ void luaD_call (lua_State *L, StkId func, int nResults) {
 ** Similar to 'luaD_call', but does not allow yields during the call
 */
 void luaD_callnoyield (lua_State *L, StkId func, int nResults) {
+  printf("%s:%d luaD_callnoyield\n",__FILE__,__LINE__);
   L->nny++;
   luaD_call(L, func, nResults);
   L->nny--;
@@ -546,6 +573,7 @@ static void finishCcall (lua_State *L, int status) {
 ** status is LUA_YIELD).
 */
 static void unroll (lua_State *L, void *ud) {
+  printf("%s:%d unroll\n",__FILE__,__LINE__);
   if (ud != NULL)  /* error status? */
     finishCcall(L, *(int *)ud);  /* finish 'lua_pcallk' callee */
   while (L->ci != &L->base_ci) {  /* something in the stack */
@@ -564,6 +592,7 @@ static void unroll (lua_State *L, void *ud) {
 ** given thread.
 */
 static CallInfo *findpcall (lua_State *L) {
+  printf("%s:%d findpcall\n",__FILE__,__LINE__);
   CallInfo *ci;
   for (ci = L->ci; ci != NULL; ci = ci->previous) {  /* search for a pcall */
     if (ci->callstatus & CIST_YPCALL)
@@ -720,6 +749,7 @@ LUA_API int lua_yieldk (lua_State *L, int nresults, lua_KContext ctx,
 
 int luaD_pcall (lua_State *L, Pfunc func, void *u,
                 ptrdiff_t old_top, ptrdiff_t ef) {
+  printf("%s:%d luaD_pcall\n",__FILE__,__LINE__);
   int status;
   CallInfo *old_ci = L->ci;
   lu_byte old_allowhooks = L->allowhook;
@@ -728,6 +758,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
   L->errfunc = ef;
   status = luaD_rawrunprotected(L, func, u);
   if (status != LUA_OK) {  /* an error occurred? */
+    printf("%s:%d reached\n",__FILE__,__LINE__);
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close possible pending closures */
     seterrorobj(L, status, oldtop);
@@ -737,6 +768,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     luaD_shrinkstack(L);
   }
   L->errfunc = old_errfunc;
+  printf("%s:%d reached\n",__FILE__,__LINE__);
   return status;
 }
 
