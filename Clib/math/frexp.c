@@ -1,5 +1,5 @@
 #include <math.h>
-
+#include <stdio.h>
 double frexp (double x, int* exp)
 {
     printf("stdlib: frexp\n");

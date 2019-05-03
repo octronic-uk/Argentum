@@ -13,7 +13,7 @@ export AS=i386-elf-as
 export ASFLAGS=-g
 
 # Boot must be last
-SUBDIRS = Clib Drivers Objects Lua Boot External
+SUBDIRS = Clib Drivers Objects Lua Boot 
 
 .PHONY: all clean
 

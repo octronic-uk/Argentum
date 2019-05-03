@@ -1,0 +1,10 @@
+title Argentum
+    root (fd0)
+    kernel (fd0)/Argentum
+
+title Reboot
+    reboot
+
+title Halt / Power
+    halt
+

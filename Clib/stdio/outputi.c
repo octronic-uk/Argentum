@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int outputi(char **out, long i, int base, int sign, int width, int flags, int letbase)
+int outputi(char *out, long i, int base, int sign, int width, int flags, int letbase)
 {
 	char print_buf[BUFSIZ];
 	char *s;

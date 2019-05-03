@@ -1,210 +1,170 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 
-int vsprintf(char **out, const char *format, va_list ap)
+int vsprintf(char *s0, const char *fmt, va_list args)
 {
-	int width, flags;
-	int pc = 0;
-	char scr[2];
-	union
-    {
-		char c;
-		char *s;
-		int i;
-		unsigned int u;
-		long li;
-		unsigned long lu;
-		long long lli;
-		unsigned long long llu;
-		short hi;
-		unsigned short hu;
-		signed char hhi;
-		unsigned char hhu;
-		void *p;
-	} u;
+	char Num[80];
+	char *s;
 
-	for (; *format != 0; ++format)
-    {
-		if (*format == '%') {
-			++format;
-			width = flags = 0;
-			if (*format == '\0')
+	for (s=s0;*fmt;++fmt)
+	{
+		if (fmt[0]=='%' && fmt[1])
+		{
+			const char *str;
+			bool Left = 0;
+			bool Sign = 0;
+			bool Large = 0;
+			bool ZeroPad = 0;
+			int Width = -1;
+			int Type = -1;
+			int Base = 10;
+			char ch,cs;
+			int Len;
+			long n;
+
+			for (;;)
+			{
+				switch (*(++fmt)) 
+				{
+				case '-': Left = 1; continue;
+				case '0': ZeroPad = 1; continue;
+				default: break;
+				}
 				break;
-			if (*format == '%')
-				goto out;
-			if (*format == '-')
-            {
-				++format;
-				flags = PAD_RIGHT;
 			}
-			while (*format == '0')
-            {
-				++format;
-				flags |= PAD_ZERO;
+
+			if (*fmt>='0' && *fmt<='9')
+			{
+				Width = 0;
+				for (;*fmt>='0' && *fmt<='9';++fmt)
+					Width = Width*10 + (*fmt-'0');
 			}
-			if (*format == '*')
-            {
-				width = va_arg(ap, int);
-				format++;
-			}
-            else
-            {
-				for ( ; *format >= '0' && *format <= '9'; ++format)
-                {
-					width *= 10;
-					width += *format - '0';
+			else
+			if (*fmt == '*')
+			{
+				++fmt;
+				Width = va_arg(args, int);
+				if (Width < 0)
+				{
+					Left = 1;
+					Width = -Width;
 				}
 			}
-			switch (*format)
-      {
-				case('d'):
-					u.i = va_arg(ap, int);
-					pc += outputi(out, u.i, 10, 1, width, flags, 'a');
-					break;
 
-				case('u'):
-					u.u = va_arg(ap, unsigned int);
-					pc += outputi(out, u.lli, 10, 0, width, flags, 'a');
-					break;
+			if (*fmt == 'h' || 
+				*fmt == 'L' ||
+				*fmt == 'l')
+				Type = *(fmt++);
 
-				case('x'):
-					u.u = va_arg(ap, unsigned int);
-					pc += outputi(out, u.lli, 16, 0, width, flags, 'a');
-					break;
-
-				case('X'):
-					u.u = va_arg(ap, unsigned int);
-					pc += outputi(out, u.lli, 16, 0, width, flags, 'A');
-					break;
-
-				case('c'):
-					u.c = va_arg(ap, int);
-					scr[0] = u.c;
-					scr[1] = '\0';
-					pc += prints(out, scr, width, flags);
-					break;
-
-				case('s'):
-					u.s = va_arg(ap, char *);
-					pc += prints(out, u.s ? u.s : "(null)", width, flags);
-					break;
-				case('l'):
-					++format;
-					switch (*format) {
-						case('d'):
-							u.li = va_arg(ap, long);
-							pc += outputi(out, u.li, 10, 1, width, flags, 'a');
-							break;
-
-						case('u'):
-							u.lu = va_arg(ap, unsigned long);
-							pc += outputi(out, u.lli, 10, 0, width, flags, 'a');
-							break;
-
-						case('x'):
-							u.lu = va_arg(ap, unsigned long);
-							pc += outputi(out, u.lli, 16, 0, width, flags, 'a');
-							break;
-
-						case('X'):
-							u.lu = va_arg(ap, unsigned long);
-							pc += outputi(out, u.lli, 16, 0, width, flags, 'A');
-							break;
-
-						case('l'):
-							++format;
-							switch (*format) {
-								case('d'):
-									u.lli = va_arg(ap, long long);
-									pc += outputi(out, u.lli, 10, 1, width, flags, 'a');
-									break;
-
-								case('u'):
-									u.llu = va_arg(ap, unsigned long long);
-									pc += outputi(out, u.lli, 10, 0, width, flags, 'a');
-									break;
-
-								case('x'):
-									u.llu = va_arg(ap, unsigned long long);
-									pc += outputi(out, u.lli, 16, 0, width, flags, 'a');
-									break;
-
-								case('X'):
-									u.llu = va_arg(ap, unsigned long long);
-									pc += outputi(out, u.lli, 16, 0, width, flags, 'A');
-									break;
-
-								default:
-									break;
-							}
-							break;
-						default:
-							break;
-					}
-					break;
-				case('h'):
-					++format;
-					switch (*format) {
-						case('d'):
-							u.hi = va_arg(ap, int);
-							pc += outputi(out, u.hi, 10, 1, width, flags, 'a');
-							break;
-
-						case('u'):
-							u.hu = va_arg(ap, unsigned int);
-							pc += outputi(out, u.lli, 10, 0, width, flags, 'a');
-							break;
-
-						case('x'):
-							u.hu = va_arg(ap, unsigned int);
-							pc += outputi(out, u.lli, 16, 0, width, flags, 'a');
-							break;
-
-						case('X'):
-							u.hu = va_arg(ap, unsigned int);
-							pc += outputi(out, u.lli, 16, 0, width, flags, 'A');
-							break;
-
-						case('h'):
-							++format;
-							switch (*format) {
-								case('d'):
-									u.hhi = va_arg(ap, int);
-									pc += outputi(out, u.hhi, 10, 1, width, flags, 'a');
-									break;
-
-								case('u'):
-									u.hhu = va_arg(ap, unsigned int);
-									pc += outputi(out, u.lli, 10, 0, width, flags, 'a');
-									break;
-
-								case('x'):
-									u.hhu = va_arg(ap, unsigned int);
-									pc += outputi(out, u.lli, 16, 0, width, flags, 'a');
-									break;
-
-								case('X'):
-									u.hhu = va_arg(ap, unsigned int);
-									pc += outputi(out, u.lli, 16, 0, width, flags, 'A');
-									break;
-
-								default:
-									break;
-							}
-							break;
-						default:
-							break;
-					}
-					break;
-				default:
-					break;
+			switch (*fmt)
+			{
+			case 'c':
+				for (;!Left && Width>1;--Width)
+					*(s++) = ' ';
+				*(s++) = (char)va_arg(args,int);
+				for (;Width>1;--Width)
+					*(s++) = ' ';
+				continue;
+			case 's':
+				str = va_arg(args,const char*);
+				if (!s)
+					str = "<NULL>";
+				Len = strlen(str);
+				for (;!Left && Width>Len;--Width)
+					*(s++) = ' ';
+				for (;Len>0;--Len,--Width)
+					*(s++) = *(str++);
+				for (;Width>0;--Width)
+					*(s++) = ' ';
+				continue;
+			case 'o':
+				Base = 8;
+				break;
+			case 'X':
+				Large = 1;
+			case 'x':
+				Base = 16;
+				break;
+			case 'i':
+			case 'd':
+				Sign = 1;
+			case 'u':
+				break;
+			default:
+				if (*fmt != '%')
+					*(s++) = '%';
+				*(s++) = *fmt;
+				continue;
 			}
+
+			if (Type == 'l')
+				n = va_arg(args,unsigned long);
+			else
+			if (Type == 'h')
+				if (Sign)
+					n = (short)va_arg(args,int);
+				else
+					n = (unsigned short)va_arg(args,unsigned int);
+			else
+			if (Sign)
+				n = va_arg(args,int);
+			else
+				n= va_arg(args,unsigned int);
+
+			if (Left)
+				ZeroPad = 0;
+			if (Large)
+				str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+			else
+				str = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+			ch = ' ';
+			if (ZeroPad)
+				ch = '0';
+			cs = 0;
+
+			if (n<0 && Sign)
+			{
+				cs = '-';
+				n=-n;
+			}
+
+			Len = 0;
+			if (n==0)
+				Num[Len++] = '0';
+			else
+			{
+				unsigned long un = n;
+				while (un != 0)
+				{
+					Num[Len++] = str[un%Base];
+					un /= Base;
+				}
+			}
+
+			if (cs)
+				++Len;
+
+			for (;!Left && Width>Len;--Width)
+				*(s++) = ch;
+
+			if (cs)
+			{
+				*(s++) = cs;
+				--Len;
+				--Width;
+			}
+
+			for (;Len;--Width)
+				*(s++) = Num[--Len];
+
+			for (;Width>0;--Width)
+				*(s++) = ' ';
 		}
-		else {
-out:
-			outputchar (out, *format);
-			++pc;
-		}
+		else
+			*(s++) = *fmt;
 	}
-	if (out) **out = '\0';
-	return pc;
+	*(s++) = 0;
+	return s-s0;
 }

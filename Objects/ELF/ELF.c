@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 
 bool ELF_CheckFile(ELF32_Header *hdr) 
 {
@@ -71,13 +72,13 @@ void *ELF_LoadRel(ELF32_Header *hdr)
 	int result;
 	result = ELF_LoadStage1(hdr);
 	if(result == ELF_RELOC_ERR) 
-    {
+  {
 		printf("Unable to load ELF file.\n");
 		return NULL;
 	}
 	result = ELF_LoadStage2(hdr);
 	if(result == ELF_RELOC_ERR) 
-    {
+  {
 		printf("Unable to load ELF file.\n");
 		return NULL;
 	}
@@ -85,16 +86,16 @@ void *ELF_LoadRel(ELF32_Header *hdr)
 	return (void *)hdr->e_entry;
 }
  
-void *ELF_LoadFile(void *file) 
+void* ELF_LoadFile(void *file) 
 {
 	ELF32_Header *hdr = (ELF32_Header *)file;
 	if(!ELF_CheckSupported(hdr)) 
-    {
+  {
 		printf("ELF - Error File cannot be loaded.\n");
-		return;
+		return 0;
 	}
 	switch(hdr->e_type) 
-    {
+  {
 		case ET_EXEC:
 			// TODO : Implement
 			return NULL;
@@ -111,17 +112,17 @@ int ELF_LoadStage1(ELF32_Header *hdr)
 	unsigned int i;
 	// Iterate over section headers
 	for(i = 0; i < hdr->e_shnum; i++) 
-    {
+  {
 		ELF32_SectionHeader *section = &shdr[i];
  
 		// If the section isn't present in the file
 		if(section->sh_type == SHT_NOBITS) 
-        {
+    {
 			// Skip if it the section is empty
 			if(!section->sh_size) continue;
 			// If the section should appear in memory
 			if(section->sh_flags & SHF_ALLOC) 
-            {
+      {
 				// Allocate and zero some memory
 				void *mem = malloc(section->sh_size);
 				memset(mem, 0, section->sh_size);
@@ -145,7 +146,7 @@ ELF32_SectionHeader* ELF_Section(ELF32_Header *hdr, int idx)
 	return &ELF_GetSectionHeader(hdr)[idx];
 }
 
-char* ELFStringTable(ELF32_Header *hdr) 
+char* ELF_StringTable(ELF32_Header *hdr) 
 {
 	if(hdr->e_shstrndx == SHN_UNDEF) return NULL;
 	return (char *)hdr + ELF_Section(hdr, hdr->e_shstrndx)->sh_offset;
@@ -154,18 +155,26 @@ char* ELFStringTable(ELF32_Header *hdr)
 char* ELF_LookupString(ELF32_Header *hdr, int offset) 
 {
 	char *strtab = ELF_StringTable(hdr);
-	if(strtab == NULL) return NULL;
+	if(strtab == NULL) 
+	{
+		return NULL;
+	}
 	return strtab + offset;
 }
 
+
+
 int ELF_GetSymbolValue(ELF32_Header *hdr, int table, uint32_t idx) 
 {
-	if(table == SHN_UNDEF || idx == SHN_UNDEF) return 0;
+	if(table == SHN_UNDEF || idx == SHN_UNDEF) 
+	{
+		return 0;
+	}
 	ELF32_SectionHeader *symtab = ELF_Section(hdr, table);
  
 	uint32_t symtab_entries = symtab->sh_size / symtab->sh_entsize;
 	if(idx >= symtab_entries) 
-    {
+  {
 		printf("ELF - ErrorSymbol Index out of Range (%d:%u).\n", table, idx);
 		return ELF_RELOC_ERR;
 	}
@@ -174,40 +183,39 @@ int ELF_GetSymbolValue(ELF32_Header *hdr, int table, uint32_t idx)
 	Elf32_Sym *symbol = &((Elf32_Sym *)symaddr)[idx];
 
 	if(symbol->st_shndx == SHN_UNDEF) 
-    {
+  {
 		// External symbol, lookup value
 		ELF32_SectionHeader *strtab = ELF_Section(hdr, symtab->sh_link);
 		const char *name = (const char *)hdr + strtab->sh_offset + symbol->st_name;
  
-		extern void *ELF_LookupSymbol(const char *name);
 		void *target = ELF_LookupSymbol(name);
  
 		if(target == NULL) 
-        {
+    {
 			// Extern symbol not found
 			if(ELF32_ST_BIND(symbol->st_info) & STB_WEAK) 
-            {
+      {
 				// Weak symbol initialized as 0
 				return 0;
 			} 
-            else 
-            {
+      else 
+      {
 				printf("ELF - ErrorUndefined External Symbol : %s.\n", name);
 				return ELF_RELOC_ERR;
 			}
 		} 
-        else 
-        {
+    else 
+    {
 			return (int)target;
 		}
 	} 
-    else if(symbol->st_shndx == SHN_ABS) 
-    {
+  else if(symbol->st_shndx == SHN_ABS) 
+  {
 		// Absolute symbol
 		return symbol->st_value;
 	} 
-    else 
-    {
+  else 
+  {
 		// Internally defined symbol
 		ELF32_SectionHeader *target = ELF_Section(hdr, symbol->st_shndx);
 		return (int)hdr + symbol->st_value + target->sh_offset;
@@ -221,20 +229,20 @@ int ELF_LoadStage2(ELF32_Header *hdr)
 	unsigned int i, idx;
 	// Iterate over section headers
 	for(i = 0; i < hdr->e_shnum; i++) 
-    {
+  {
 		ELF32_SectionHeader *section = &shdr[i];
  
 		// If this is a relocation section
 		if(section->sh_type == SHT_REL) 
-        {
+    {
 			// Process each entry in the table
 			for(idx = 0; idx < section->sh_size / section->sh_entsize; idx++) 
-            {
+      {
 				Elf32_Rel *reltab = &((Elf32_Rel *)((int)hdr + section->sh_offset))[idx];
 				int result = ELF_DoReloc(hdr, reltab, section);
 				// On error, display a message and return
 				if(result == ELF_RELOC_ERR) 
-                {
+        {
 					printf("ELF - ErrorFailed to relocate symbol.\n");
 					return ELF_RELOC_ERR;
 				}
@@ -254,14 +262,17 @@ int ELF_DoReloc(ELF32_Header *hdr, Elf32_Rel *rel, ELF32_SectionHeader *reltab)
 	// Symbol value
 	int symval = 0;
 	if(ELF32_R_SYM(rel->r_info) != SHN_UNDEF) 
-    {
-		symval = ELF32_GetSymbolValue(hdr, reltab->sh_link, ELF32_R_SYM(rel->r_info));
-		if(symval == ELF_RELOC_ERR) return ELF_RELOC_ERR;
+  {
+		symval = ELF_GetSymbolValue(hdr, reltab->sh_link, ELF32_R_SYM(rel->r_info));
+		if(symval == ELF_RELOC_ERR) 
+		{
+			return ELF_RELOC_ERR;
+		}
 	}
 
 	// Relocate based on type
 	switch(ELF32_R_TYPE(rel->r_info)) 
-    {
+  {
 		case R_386_NONE:
 			// No relocation
 			break;
@@ -279,4 +290,9 @@ int ELF_DoReloc(ELF32_Header *hdr, Elf32_Rel *rel, ELF32_SectionHeader *reltab)
 			return ELF_RELOC_ERR;
 	}
 	return symval;
+}
+
+void* ELF_LookupSymbol(const char* name) 
+{
+	return 0;
 }

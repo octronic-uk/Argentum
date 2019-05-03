@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define SCREEN_FB_IO_CMD     0x03D4
+#define SCREEN_FB_IO_DATA    0x03D5
+#define SCREEN_FB_CURSOR_HI  14
+#define SCREEN_FB_CURSOR_LOW 15
+
 enum _VgaColor
 {
 	VGA_COLOR_BLACK = 0,
@@ -30,6 +35,7 @@ struct ScreenDriver
 	uint32_t CurrentRow;
 	uint32_t CurrentColumn;
 	uint8_t Color;
+	bool EnableEcho;
 } ;
 
 bool ScreenDriver_Constructor(struct ScreenDriver* self);
@@ -44,3 +50,7 @@ uint16_t _VgaEntry(struct ScreenDriver* self, unsigned char uc, uint8_t color);
 void ScreenDriver_SetHeader(struct ScreenDriver* self, const char* data);
 void ScreenDriver_SetCursorPosition(struct ScreenDriver* self, uint8_t column, uint8_t row);
 void ScreenDriver_ClearRow(struct ScreenDriver* self, uint8_t row);
+void ScreenDriver_SetFramebufferCursorPosition(struct ScreenDriver* self, uint16_t position);
+void ScreenDriver_SetEcho(struct ScreenDriver* self, bool echo);
+char ScreenDriver_ReadCharacter(struct ScreenDriver* self);
+uint32_t ScreenDriver_ReadString(struct ScreenDriver* self, char* buffer, uint32_t size);

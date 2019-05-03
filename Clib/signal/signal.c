@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdio.h>
 
 typedef void (*__sighandler_t)(int);
 

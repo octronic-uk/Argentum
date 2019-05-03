@@ -1,13 +1,11 @@
 #include <stdio.h>
 
-int sprintf(char *buf, const char *fmt, ...)
+int sprintf(char *s, const char *fmt, ...)
 {
-	va_list ap;
-	int r;
-
-	va_start(ap, fmt);
-	r = vsprintf(&buf, fmt, ap);
-	va_end(ap);
-
-	return r;
+	int i;
+	va_list Args;
+	va_start(Args,fmt);
+	i=vsprintf(s,fmt,Args);
+	va_end(Args);
+	return i;
 }

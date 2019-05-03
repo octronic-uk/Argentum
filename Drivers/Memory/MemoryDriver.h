@@ -6,7 +6,6 @@
 
 #define MEMORY_UPPER_RAM_BASE   0x0100000
 #define MEMORY_PHYSICAL_AREA_TABLE_SIZE 16
-
 struct MemoryPhysicalArea
 {
 	uint32_t Address;
@@ -43,12 +42,10 @@ void MemoryDriver_SetMultibootInfo(struct MemoryDriver* self, multiboot_info_t* 
 // Internal
 
 void MemoryDriver_Detect(struct MemoryDriver* self);
-struct MemoryBlockHeader* MemoryDriver_FindFreeBlock(struct MemoryDriver* self, uint32_t size);
+struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self, uint32_t size);
 struct MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(void* value);
-uint32_t MemoryDriver_CheckForUnusedNeighbors(struct MemoryDriver* self, struct MemoryBlockHeader* header);
+uint32_t MemoryDriver_CheckForUnusedNeighbors(struct MemoryDriver* self, struct MemoryBlockHeader* header,uint32_t requested_size);
+struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* self, struct MemoryBlockHeader* resized_header);
 
-// Tests
-
-void MemoryDriver_TestAllocate(struct MemoryDriver* self);
-void MemoryDriver_TestReallocate(struct MemoryDriver* self);
-void MemoryDriver_TestFree(struct MemoryDriver* self);
+// Debug
+void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self);

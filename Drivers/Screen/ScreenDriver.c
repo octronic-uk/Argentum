@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <Drivers/IO/IODriver.h>
 
 #define SCREEN_VBP 0x000B8000
 #define SCREEN_TAB_SIZE 4
@@ -20,6 +21,7 @@ bool ScreenDriver_Constructor(struct ScreenDriver* self)
 	self->CurrentRow = 0;
 	self->CurrentColumn = 0;
 	self->Color = _VgaEntryColor(self, VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+	self->EnableEcho = false;
 	ScreenDriver_Clear(self);
 	return true;
 }
@@ -34,6 +36,8 @@ void ScreenDriver_PutEntryAt(struct ScreenDriver* self, unsigned char c, uint8_t
 	uint32_t index = (y * SCREEN_COLUMNS * SCREEN_BYTES_PER_ELEMENT) + (x*SCREEN_BYTES_PER_ELEMENT);
 	self->VideoBasePointer[index] = c;
 	self->VideoBasePointer[index+1] = color;
+
+	ScreenDriver_SetFramebufferCursorPosition(self, (y*SCREEN_COLUMNS) + x);
 }
 
 void ScreenDriver_PutChar(struct ScreenDriver* self, char c)
@@ -137,4 +141,29 @@ uint8_t _VgaEntryColor(struct ScreenDriver* self, enum _VgaColor fg, enum _VgaCo
 uint16_t _VgaEntry(struct ScreenDriver* self, unsigned char uc, uint8_t color)
 {
 	return (uint16_t) uc | (uint16_t) color << 8;
+}
+
+
+void ScreenDriver_SetFramebufferCursorPosition(struct ScreenDriver* self, uint16_t position)
+{
+	IO_WritePort8b(SCREEN_FB_IO_CMD,  SCREEN_FB_CURSOR_HI);
+	IO_WritePort8b(SCREEN_FB_IO_DATA, (position >> 8) & 0x00FF);
+
+	IO_WritePort8b(SCREEN_FB_IO_CMD,  SCREEN_FB_CURSOR_LOW);
+	IO_WritePort8b(SCREEN_FB_IO_DATA, position & 0x00FF);
+}
+
+void ScreenDriver_SetEcho(struct ScreenDriver* self, bool echo)
+{
+	self->EnableEcho = echo;
+}
+
+char ScreenDriver_ReadCharacter(struct ScreenDriver* self)
+{
+
+}
+
+uint32_t ScreenDriver_ReadString(struct ScreenDriver* self, char* buffer, uint32_t size)
+{
+
 }

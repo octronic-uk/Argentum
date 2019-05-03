@@ -1,5 +1,5 @@
 #include <math.h>
-
+#include <stdio.h>
 double asin(double x)
 {
     printf("stdlib: asin\n");

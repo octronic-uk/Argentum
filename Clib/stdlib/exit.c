@@ -1,5 +1,5 @@
 #include <stdlib.h>
-
+#include <stdio.h>
 __attribute__((__noreturn__)) void exit(int status)
 {
 

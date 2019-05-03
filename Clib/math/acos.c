@@ -1,5 +1,5 @@
 #include <math.h>
-
+#include <stdio.h>
 double acos(double x)
 {
     printf("stdlib: acos\n");

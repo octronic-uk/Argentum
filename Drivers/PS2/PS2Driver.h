@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "ScancodeParser.h"
 
 /*
     https://wiki.osdev.org/%228042%22_PS/2_Controller
@@ -62,37 +63,11 @@
 #define PS2_WAIT_FOR 50
 #define PS2_RESPONSE_BUFFER_SIZE 32
 
-enum _Ps2KeyboardNextByte
-{
-    Status,
-    Scancode
-} ;
-
-struct _Ps2KeyboardEvent
-{
-	uint8_t mKeycode;
-	uint8_t mStatus;
-};
-
-enum _Ps2ResponseType
-{
-    Data,
-    Command
-};
-
-struct _Ps2Response
-{
-    enum _Ps2ResponseType Type;
-    uint8_t Data;
-};
-
 struct PS2Driver
 {
-    enum _Ps2KeyboardNextByte KeyboardNextByteExpected;
     bool Debug;
     bool SecondPortExists;
-    struct _Ps2Response ResponseBuffer[PS2_RESPONSE_BUFFER_SIZE];
-    uint8_t ResponseBufferIndex;
+    struct ScancodeParser ScancodeParser;
 };
 
 bool PS2Driver_Constructor(struct PS2Driver* self);
@@ -132,3 +107,5 @@ void PS2Driver_FirstPortInterruptHandler();
 void PS2Driver_SecondPortInterruptHandler();
 
 void PS2Driver_WaitForKeyPress(const char* msg);
+char PS2Driver_WaitForChar();
+char PS2Driver_ScancodeToChar(uint8_t scancode);

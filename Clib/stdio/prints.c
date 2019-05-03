@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int prints(char **out, const char *string, int width, int flags)
+int prints(char *out, const char *string, int width, int flags)
 {
 	int pc = 0, padchar = ' ';
 

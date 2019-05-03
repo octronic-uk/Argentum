@@ -1,6 +1,7 @@
 #include <Objects/Kernel/Kernel.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <Drivers/Memory/MemoryTest.h>
 
 bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 {
@@ -11,13 +12,17 @@ bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 		return false;
 	}
 
+	//MemoryTest_RunSuite(&self->Memory);
+	//SerialDriver_TestPort1(&self->Serial);
+
 	if (!Kernel_InitObjects(self))
 	{
 		printf("Kernel: FATAL - Failed to init objects\n");
 		return false;
 	}
 
-	Kernel_StackTrace(100);
+	//StorageManager_Test(&self->StorageManager);
+
 	return true;
 }
 
@@ -37,8 +42,6 @@ bool Kernel_InitDrivers(struct Kernel* self)
 		return false;
 	}
 
-	
-
 	if(!InterruptDriver_Constructor(&self->Interrupt))
 	{
 		return false;
@@ -53,8 +56,6 @@ bool Kernel_InitDrivers(struct Kernel* self)
 		return false;
 	}
 
-	//SerialDriver_TestPort1(&self->Serial);
-
 	if(!PS2Driver_Constructor(&self->PS2))
 	{
 		return false;
@@ -64,13 +65,12 @@ bool Kernel_InitDrivers(struct Kernel* self)
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0x00);
 	InterruptDriver_Enable_STI(&self->Interrupt);
 
-/*
-	if (!ACPIDriver_Constructor(&self->ACPI))
+/*	if (!ACPIDriver_Constructor(&self->ACPI))
 	{
 		return false;
 	}
+	*/
 
-*/
 	if (!PCIDriver_Constructor(&self->PCI))
 	{
 		return false;
@@ -86,11 +86,6 @@ bool Kernel_InitDrivers(struct Kernel* self)
 		return false;
 	}
 
-	//PS2Driver_WaitForKeyPress("Kernel: Drivers init complete");
-	MemoryDriver_TestAllocate(&self->Memory);
-	MemoryDriver_TestReallocate(&self->Memory);
-	MemoryDriver_TestFree(&self->Memory);
-
 	return true;
 }
 
@@ -101,7 +96,6 @@ bool Kernel_InitObjects(struct Kernel* self)
 		return false;
 	}
 
-	//StorageManager_Test(&self->StorageManager);
 	//PS2Driver_WaitForKeyPress("Kernel: Object init complete");
 	return true;
 }

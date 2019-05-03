@@ -8,17 +8,13 @@
 #include <Objects/Kernel/Kernel.h>
 
 extern struct Kernel _Kernel;
-volatile bool PS2Driver_WaitingForKeyPress = false;
 
 bool PS2Driver_Constructor(struct PS2Driver* self)
 {
     printf("PS2 Driver: Constructing\n");
-//    self->Debug = false;
     self->Debug = false;
-    self->ResponseBufferIndex = 0;
-    memset(self->ResponseBuffer, 0, sizeof(struct _Ps2Response)*PS2_RESPONSE_BUFFER_SIZE);
     self->SecondPortExists = false;
-    self->KeyboardNextByteExpected = Status;
+    ScancodeParser_Constructor(&self->ScancodeParser);
 
     PS2Driver_CMD_DisableFirstPort(self);
     PS2Driver_CMD_DisableSecondPort(self);
@@ -93,6 +89,7 @@ void PS2Driver_FlushDataBuffer(struct PS2Driver* self)
     while (1);
     return;
 }
+
 uint8_t PS2Driver_ReadDataPort(struct PS2Driver* self)
 {
     if (self->Debug)
@@ -575,7 +572,6 @@ void PS2Driver_SetupInterruptHandlers(struct PS2Driver* self)
 
 void PS2Driver_FirstPortInterruptHandler()
 {
-    static uint8_t last = 0x00;
     struct PS2Driver* self = &_Kernel.PS2;
     if (self->Debug) 
     {
@@ -588,11 +584,8 @@ void PS2Driver_FirstPortInterruptHandler()
         {
             printf("PS2: Got Keyboard Event scancode: 0x%x\n",keycode);
         }
-        if (last == 0xF0 && keycode == 0x29)
-        {
-            PS2Driver_WaitingForKeyPress = 0;
-        }
-        last = keycode;
+
+        ScancodeParser_ParseScancode(&self->ScancodeParser,keycode);
     }
 }
 
@@ -620,6 +613,7 @@ void PS2Driver_SetDebug(struct PS2Driver* self, uint8_t debug)
 void PS2Driver_WaitForKeyPress(const char* msg)
 {
     printf("%s Press 'Space' to continue... (%d)\n", msg, _Kernel.PIT.Ticks );
-    PS2Driver_WaitingForKeyPress = 1;
-    while  (PS2Driver_WaitingForKeyPress) {}
+    while (1) 
+    {
+    }
 }
