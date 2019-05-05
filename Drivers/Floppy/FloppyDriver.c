@@ -36,7 +36,6 @@ bool FloppyDriver_Constructor(struct FloppyDriver* self)
     if (self->Debug)
     {
         printf("Floppy: CMOS Configuration 0x%x\n",cmosConfig);
-        PS2Driver_WaitForKeyPress("");
     }
     uint8_t master, slave;
     master = (cmosConfig & 0xF0) >> 4;
@@ -656,7 +655,6 @@ void FloppyDriver_DebugDMABuffer(struct FloppyDriver* self)
         printf("%02x ",fpy_dma_buf[i]);
     }
     printf("\n----------------------------------------\n");
-    PS2Driver_WaitForKeyPress("");
 }
 
 uint8_t* FloppyDriver_GetDMABuffer(struct FloppyDriver* self)

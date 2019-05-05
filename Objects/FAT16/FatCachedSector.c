@@ -29,5 +29,4 @@ void FatCachedSector_Debug(struct FatCachedSector* self)
     printf("\tInUse:         %d\n",self->InUse);
     printf("\tInvalid:       %d\n",self->Invalid);
     printf("\tLast Access:   %d\n",self->LastAccess);
-    PS2Driver_WaitForKeyPress("FatCachedSector Debug");
 }

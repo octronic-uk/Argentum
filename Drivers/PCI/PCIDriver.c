@@ -47,7 +47,6 @@ bool PCIDriver_Constructor(struct PCIDriver* self)
 					if (current_header > PCI_MAX_HEADERS) 
 					{
 						printf("PCI: Maximum number of device headers reached. Increase it!!\n");
-						PS2Driver_WaitForKeyPress("PCIDriver wait");
 						break;
 					}
 				}
@@ -67,11 +66,6 @@ void PCIDriver_DumpDevices(struct PCIDriver* self)
 		struct PCIConfigHeader* header = &self->ConfigHeaderList[i];
 		PCIDriver_DumpDevice(self, header);
 	}
-
-	if (self->Debug)
-	{
-		PS2Driver_WaitForKeyPress("PCI: Init Complete");
-	}
 }
 
 void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCIConfigHeader* header)
@@ -87,7 +81,6 @@ void PCIDriver_DumpDevice(struct PCIDriver* self, const struct PCIConfigHeader* 
 	printf("\tBAR3      0x%x\n", header->mBAR3);
 	printf("\tBAR4      0x%x\n", header->mBAR4);
 	printf("\tBAR5      0x%x\n", header->mBAR5);
-	PS2Driver_WaitForKeyPress("PCI Device Pause");
 }
 
 uint8_t PCIDriver_CountHeaders(struct PCIDriver* self)

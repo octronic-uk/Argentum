@@ -106,6 +106,5 @@ void PS2Driver_SetupInterruptHandlers(struct PS2Driver* self);
 void PS2Driver_FirstPortInterruptHandler();
 void PS2Driver_SecondPortInterruptHandler();
 
-void PS2Driver_WaitForKeyPress(const char* msg);
 char PS2Driver_WaitForChar();
 char PS2Driver_ScancodeToChar(uint8_t scancode);

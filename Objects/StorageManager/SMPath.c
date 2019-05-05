@@ -2,7 +2,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <Drivers/PS2/PS2Driver.h>
 
 bool SMPath_Constructor(struct SMPath* self)
 {
@@ -45,17 +44,24 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
     if (self->Debug) printf("StorageManager: Device String: %s\n",self->DeviceString);
 
     // is 'ATA'||'ata'
-    if (strncmp(self->DeviceString,SM_PATH_BUS_ATA_STR, 3) == 0 || 
-        strncmp(self->DeviceString,SM_PATH_BUS_ATA_LOWER_STR, 3) == 0)
+    if (strncmp(self->DeviceString,SM_PATH_BUS_ATA_STR, SM_PATH_BUS_NAME_LEN) == 0 || 
+        strncmp(self->DeviceString,SM_PATH_BUS_ATA_LOWER_STR, SM_PATH_BUS_NAME_LEN) == 0)
     {
         self->DriveType = DRIVE_TYPE_ATA;
         device_str_idx = 3;
     }
     // is 'FDD'||'fdd'
-    else if (strncmp(self->DeviceString, SM_PATH_BUS_FDD_STR, 3) == 0 || 
-             strncmp(self->DeviceString, SM_PATH_BUS_FDD_LOWER_STR, 3) == 0)
+    else if (strncmp(self->DeviceString, SM_PATH_BUS_FDD_STR, SM_PATH_BUS_NAME_LEN) == 0 || 
+             strncmp(self->DeviceString, SM_PATH_BUS_FDD_LOWER_STR, SM_PATH_BUS_NAME_LEN) == 0)
     {
         self->DriveType = DRIVE_TYPE_FLOPPY;
+        device_str_idx = 3;
+    }
+    // is 'RAM' || 'ram'
+    else if (strncmp(self->DeviceString, SM_PATH_BUS_RAM_STR, SM_PATH_BUS_NAME_LEN) == 0 ||
+             strncmp(self->DeviceString, SM_PATH_BUS_RAM_LOWER_STR, SM_PATH_BUS_NAME_LEN) == 0)
+    {
+        self->DriveType = DRIVE_TYPE_RAMDISK;
         device_str_idx = 3;
     }
     else
@@ -121,7 +127,6 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
                 if (self->Debug)
                 {
                     printf("SMPath: Error - Invalid char \"%c\"\n",address[addr_index]);
-                    PS2Driver_WaitForKeyPress("SMPath Pause");
                 }
                 
                 self->ParseError = SM_PATH_ERR_INVALID_PATH_CHAR;
@@ -133,7 +138,6 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
     if (self->Debug)
     {
         printf("SMPath: Parsed Successfully\n");
-        PS2Driver_WaitForKeyPress("SMPath Pause");
     }
     return true;
 }
@@ -197,6 +201,10 @@ void SMPath_Debug(struct SMPath* self)
     {
         drive_type = "Floppy";
     }
+    else if (self->DriveType == DRIVE_TYPE_RAMDISK)
+    {
+        drive_type = "RamDisk";
+    }
 
     printf("SMPath:\n");
     printf("\tType:   %s\n", drive_type);
@@ -220,46 +228,43 @@ void SMPath_Debug(struct SMPath* self)
 void SMPath_TestParser()
 {
     printf("\n\nStorageManager: Testing Parser...\n");
-    struct SMPath addr1, addr2, addr3;
+    struct SMPath addr1, addr2, addr3, addr4;
 
 	char* test_address_1 = "ata1p0://dir_1";
 	char* test_address_2 = "FDD1://dir_1/some_file.ext";
 	char* test_address_3 = "fdd0:///dir_1/dir_2/file.ext";
+	char* test_address_4 = "ram0:///dir_x/dir_y/file_z.ext";
 
 	SMPath_Constructor(&addr1);
 	SMPath_Constructor(&addr2);
 	SMPath_Constructor(&addr3);
+    SMPath_Constructor(&addr4);
 
-	if (SMPath_Parse(&addr1, test_address_1))
-	{
-		SMPath_Debug(&addr1);
-	}
+	if (SMPath_Parse(&addr1, test_address_1)) SMPath_Debug(&addr1);
 	else
 	{
         printf("SMPath: Failed to parse address 1: %s\n",SMPath_GetParseErrorString(&addr1));
         return;
 	}
-    PS2Driver_WaitForKeyPress("SMPath Pause");
 
-	if (SMPath_Parse(&addr2, test_address_2))
-	{
-		SMPath_Debug(&addr2);
-	}
+	if (SMPath_Parse(&addr2, test_address_2)) SMPath_Debug(&addr2);
 	else
 	{
 		printf("SMPath: Failed to parse address 2: %s\n",SMPath_GetParseErrorString(&addr2));
         return;
 	}
-	PS2Driver_WaitForKeyPress("SMPath Pause");
 
-	if (SMPath_Parse(&addr3, test_address_3))
-	{
-		SMPath_Debug(&addr3);
-	}
+	if (SMPath_Parse(&addr3, test_address_3)) SMPath_Debug(&addr3);
 	else
 	{
 		printf("SMPath: Failed to parse address 3: %s\n",SMPath_GetParseErrorString(&addr3));
         return;
 	}
-    PS2Driver_WaitForKeyPress("SMPath: Parser test passed");
+
+    if (SMPath_Parse(&addr4, test_address_4)) SMPath_Debug(&addr4);
+	else
+	{
+		printf("SMPath: Failed to parse address 4: %s\n",SMPath_GetParseErrorString(&addr4));
+        return;
+	}
 }

@@ -609,11 +609,3 @@ void PS2Driver_SetDebug(struct PS2Driver* self, uint8_t debug)
 {
     self->Debug = debug;
 }
-
-void PS2Driver_WaitForKeyPress(const char* msg)
-{
-    printf("%s Press 'Space' to continue... (%d)\n", msg, _Kernel.PIT.Ticks );
-    while (1) 
-    {
-    }
-}

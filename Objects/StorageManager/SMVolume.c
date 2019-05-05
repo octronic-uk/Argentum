@@ -30,7 +30,6 @@ bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint
     return false;
 }
 
-
 bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition)
 {
     memset(self,0,sizeof(struct SMVolume));
@@ -45,6 +44,23 @@ bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, u
        return true;
     }
     printf("SMVolume: Error - Unable to construct corresponding Floppy FatVolume\n");
+    return false;
+}
+
+bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition)
+{
+    memset(self,0,sizeof(struct SMVolume));
+
+    self->Debug = true;
+    self->Exists = true;
+    self->ParentDrive = parent;
+    self->SectorsInPartition = sectors_in_partition;
+
+    if (FatVolume_RamDiskConstructor(&self->FatVolume, parent->RamDiskIndex))
+    {
+       return true;
+    }
+    printf("SMVolume: Error - Unable to construct corresponding RamDisk FatVolume\n");
     return false;
 }
 
@@ -74,7 +90,6 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, 
         if (self->Debug)
         {
             printf("SMVolume: Comparing %s with target %s\n",entry_name,dir_name);
-            PS2Driver_WaitForKeyPress("SMVolume Pause");
         }
 
         // Chech each entry in the listing 
@@ -86,7 +101,6 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, 
                 if (self->Debug)
                 {
                     printf("SMVolume: Last Directory in path is %s\n",path->Directories[path->WalkIndex]);
-                    PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
                 return SMDirectoryEntry_Constructor(out,self,entry->FirstCluster, entry->Attributes);
             }
@@ -100,7 +114,6 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, 
                 if (self->Debug)
                 {
                     printf("SMVolume: Reading first sector 0x%x, cluster 0x%x of next directory in path\n", sector, entry->FirstCluster);
-                    PS2Driver_WaitForKeyPress("SMVolume Pause");
                 }
 
                 if(FatVolume_ReadSector(&self->FatVolume,sector,next_sector_buffer))
@@ -108,13 +121,11 @@ bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* out, 
                     if (self->Debug)
                     {
                         FatVolume_DebugSector(next_sector_buffer);
-                        PS2Driver_WaitForKeyPress("SMVolume Pause");
                     }
                     path->WalkIndex++; 
                     if (self->Debug)
                     {
                         printf("SMVolume: Walking to dir %d\n",path->WalkIndex);
-                        PS2Driver_WaitForKeyPress("SMVolume Pause");
                     }
                     return SMVolume_GetDirectory(self, out, next_sector_buffer, path);
                 }

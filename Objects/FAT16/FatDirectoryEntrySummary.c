@@ -58,5 +58,4 @@ void FatDirectoryEntrySummary_Debug(struct FatDirectoryEntrySummary* self)
     printf("FatDirectoryEntrySummary:\n", self->Name);
     printf("\tFirst Cluster: 0x%x\n",self->FirstCluster);
     printf("\tFirst Sector:  0x%x\n",self->FirstSector);
-    PS2Driver_WaitForKeyPress("FatDirectoryEntrySummary Debug");
 }

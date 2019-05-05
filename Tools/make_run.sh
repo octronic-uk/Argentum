@@ -13,5 +13,5 @@ fi
 
 # Run in QEMU
 
-${RUN_QEMU}  > AgOut.txt
+${RUN_QEMU} 
 

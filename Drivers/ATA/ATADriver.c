@@ -29,14 +29,12 @@ bool ATADriver_Constructor(struct ATADriver* self)
         if (self->Debug)
         {
             printf("ATA: Using PCI Device %x:%x\n", ata_device->mVendorID, ata_device->mDeviceID);
-            PS2Driver_WaitForKeyPress("ATA Pause");
         }
 
         uint8_t readInterruptLine = PCIDriver_DeviceReadConfig8b(&_Kernel.PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET);
         if (self->Debug)
         {
             printf("ATA: Current Interrupt Line 0x%x\n",readInterruptLine);
-            PS2Driver_WaitForKeyPress("ATA Pause");
         }
         PCIDriver_DeviceWriteConfig8b(&_Kernel.PCI, ata_device, PCI_DEVICE_INTERRUPT_LINE_OFFSET, 0xFE);
         readInterruptLine = PCIDriver_DeviceReadConfig8b(&_Kernel.PCI, ata_device,PCI_DEVICE_INTERRUPT_LINE_OFFSET);
@@ -53,7 +51,6 @@ bool ATADriver_Constructor(struct ATADriver* self)
             {
                 printf("ATA: Device does not need IRQ Assignment\n");
                 printf("ATA: ProgIF 0x%x\n",ata_device->mProgIF);
-                PS2Driver_WaitForKeyPress("ATA Pause");
             }
 
             // This is a Parallel IDE Controller which use IRQ 14 and IRQ 15.
@@ -65,7 +62,6 @@ bool ATADriver_Constructor(struct ATADriver* self)
                 if (self->Debug)
                 {
                     printf("ATA:\t- Bus IS Parallel IDE Controller using IRQ 14/15\n");
-                    PS2Driver_WaitForKeyPress("ATA Pause");
                 }
             }
         }   
@@ -100,7 +96,6 @@ bool ATADriver_Constructor(struct ATADriver* self)
     }
     else
     {
-        PS2Driver_WaitForKeyPress("No ATA Device Found in PCI Config Space");
         return false;
     }
     return true;

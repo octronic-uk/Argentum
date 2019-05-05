@@ -21,7 +21,7 @@ bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 		return false;
 	}
 
-	//StorageManager_Test(&self->StorageManager);
+	StorageManager_Test(&self->StorageManager);
 
 	return true;
 }
@@ -95,8 +95,6 @@ bool Kernel_InitObjects(struct Kernel* self)
 	{
 		return false;
 	}
-
-	//PS2Driver_WaitForKeyPress("Kernel: Object init complete");
 	return true;
 }
 

@@ -253,6 +253,8 @@ void* MemoryDriver_Allocate(struct MemoryDriver* self, uint32_t size)
 */
 void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t requested_size)
 {
+
+
 	if (self->Debug) 
 		printf("Memory: Reallocate  area=0x%x requested for sz=%d\n", (uint32_t)ptr, requested_size);
 
@@ -436,13 +438,33 @@ void MemoryDriver_SetMultibootInfo(struct MemoryDriver* self, multiboot_info_t* 
 	self->MultibootInfo = mbi;
 }
 
+void MemoryDriver_CleanupHeap(struct MemoryDriver* self)
+{
+	struct MemoryBlockHeader* block = self->StartBlock;
+	struct MemoryBlockHeader* lastInUse = block;
+
+	while (block->Next)
+	{
+		if (block->InUse)
+		{
+			lastInUse = block;
+		}
+		block = block->Next;
+	}
+
+	if (lastInUse)
+	{
+		lastInUse->Next = 0;
+	}
+}
+
 void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self)
 {
 	printf("Memory: Memory Map =========================================\n\n");
 	struct MemoryBlockHeader* block = self->StartBlock;
 	while(block)
 	{
-		printf("\tBlock=0x%x\tMem=0x%x\tSz=%d\tInUse=%d\tNext=0x%x\n",
+		printf("Block=0x%x\tMem=0x%x\tSz=%d\tInUse=%d\tNext=0x%x\n",
 			block,
 			(uint32_t)block+sizeof(struct MemoryBlockHeader),
 			block->Size,

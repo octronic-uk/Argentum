@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <Drivers/PS2/PS2Driver.h>
+#include <Drivers/PS2/ScancodeParser.h>
 #include <Objects/Kernel/Kernel.h>
 
 extern struct Kernel _Kernel;

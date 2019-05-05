@@ -46,6 +46,7 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 struct MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(void* value);
 uint32_t MemoryDriver_CheckForUnusedNeighbors(struct MemoryDriver* self, struct MemoryBlockHeader* header,uint32_t requested_size);
 struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* self, struct MemoryBlockHeader* resized_header);
+void MemoryDriver_CleanupHeap(struct MemoryDriver* self);
 
 // Debug
 void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self);

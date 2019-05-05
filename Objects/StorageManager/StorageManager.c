@@ -19,9 +19,16 @@ bool StorageManager_Constructor(struct StorageManager* self)
     memset(self,0,sizeof(struct StorageManager));
 	self->Debug = false; 
 
+	StorageManager_SetupRamDisk0(self);
 	StorageManager_ProbeFloppyDrives(self);
 	StorageManager_ProbeATADrives(self);
 	return true;
+}
+
+void StorageManager_SetupRamDisk0(struct StorageManager* self)
+{
+	RamDisk_Constructor(&self->RamDisks[0], RAMDISK_SIZE_1MB*10);
+	SMDrive_RamDiskConstructor(&self->RamDiskDrives[0],0);
 }
 
 bool StorageManager_ProbeATADrives(struct StorageManager* self)
@@ -35,7 +42,6 @@ bool StorageManager_ProbeATADrives(struct StorageManager* self)
 			if (self->Debug)
 			{
 				printf("StorageManager: Initialising ATA Drive %d %s\n", i, device->model);
-				PS2Driver_WaitForKeyPress("StorageManager Pause");
 			}
 			SMDrive_ATAConstructor(&self->AtaDrives[i], i);
 		}
@@ -62,16 +68,28 @@ bool StorageManager_ProbeFloppyDrives(struct StorageManager* self)
 void StorageManager_ListDrives(struct StorageManager* self)
 {
 	printf("StorageManager: Drives\n");
+
+	uint32_t i;
+
+	for (i=0; i<SM_MAX_RAM_DISKS; i++)
+	{
+		struct SMDrive* rd = &self->RamDiskDrives[i];
+		if (rd->Exists)
+		{
+			printf("\tFound RAM Disk %d\n",i);
+		}
+	}
+
 	if (FloppyDriver_MasterPresent(&_Kernel.Floppy))
 	{
 		printf("\tFound Floppy 0 (Master)\n");
 	}
+
 	if (FloppyDriver_SlavePresent(&_Kernel.Floppy))
 	{
 		printf("\tFound Floppy 1 (Slave)\n");
 	}
 
-	uint32_t i;
 	for (i=0;i<SM_MAX_ATA_DRIVES;i++)
 	{
 		if (self->AtaDrives[i].Exists)
@@ -105,12 +123,23 @@ struct SMDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8
 	}
 }
 
+struct SMDrive* StorageManager_GetRamDiskDrive(struct StorageManager* self, uint8_t drive_id)
+{
+	if (self->RamDiskDrives[drive_id].Exists)
+	{
+		return &self->RamDiskDrives[drive_id];
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* dir, const char* path_str)
 {
 	if (self->Debug) 
 	{
 		printf("StorageManager: Opening file %s\n",path_str);
-		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 	struct SMPath path;
 	if (SMPath_ConstructAndParse(&path,path_str))
@@ -120,7 +149,6 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* d
 	if (self->Debug) 
 	{
 		printf("StorageManager: Failed to Construct/Parse Path: %s\n", SMPath_GetParseErrorString(&path));
-		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 	return false;
 }
@@ -141,14 +169,12 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 	else
 	{
 		printf("StorageManager: Error- Cannot open directory, path has invalid drive type\n");
-		PS2Driver_WaitForKeyPress("StorageManager Pause");
 		return false;
 	}
 
 	if (!drive) 
 	{
 		printf("StorageManager: Error - Failed to get drive\n");
-		PS2Driver_WaitForKeyPress("StorageManager Pause");
 		return false;
 	}
 
@@ -156,7 +182,6 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 	if (!volume) 
 	{
 		printf("StorageManager: Failed to get volume %d\n",path->VolumeIndex);
-		PS2Driver_WaitForKeyPress("StorageManager Pause");
 		return false;
 	}
 
@@ -167,7 +192,6 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 	if (self->Debug)
 	{
 		printf("StorageManager: Reading root sector\n");
-		PS2Driver_WaitForKeyPress("StorageManager Pause");
 	}
 
 	if(FatVolume_ReadSector(&volume->FatVolume, volume->FatVolume.RootDirSectorNumber, root_sector_buffer))
@@ -176,7 +200,6 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 		{
 			FatVolume_DebugSector(root_sector_buffer);
 			printf("StorageManager: Starting GetDirectory Recursion\n");
-			PS2Driver_WaitForKeyPress("StorageManager Pause");
 		}
 		return SMVolume_GetDirectory(volume, dir, root_sector_buffer, path);
 	}
@@ -197,12 +220,10 @@ bool StorageManager_Test(struct StorageManager* self)
 		if (ata0v0)
 		{
 			printf("StorageManager: Got ata0p0 \n");
-			PS2Driver_WaitForKeyPress("SM Pause");
 		}
 		else
 		{
 			printf("StorageManager: Error getting ata0p0");
-			PS2Driver_WaitForKeyPress("SM Pause");
 		}
 		
 	}
@@ -218,18 +239,15 @@ bool StorageManager_Test(struct StorageManager* self)
 		if (SMDirectoryEntry_IsFile(&fdd_file))
 		{
 			printf("StorageManager: StorageManager has opened the file at %s\n", fdd_file_path);
-			PS2Driver_WaitForKeyPress("SM Pause");
 		}
 		else
 		{
 			printf("StorageManager: Directory %s is not a file\n", fdd_file_path);
-			PS2Driver_WaitForKeyPress("SM Pause");
 		}
 	}
 	else 
 	{
 		printf("StorageManager: StorageManager has FAILED to open the file at %s\n", fdd_file_path);
-		PS2Driver_WaitForKeyPress("SM Pause");
 	}
 
 	// ATA
@@ -241,18 +259,15 @@ bool StorageManager_Test(struct StorageManager* self)
 		if (SMDirectoryEntry_IsFile(&ata_file))
 		{
 			printf("StorageManager: StorageManager has opened the file at %s\n", ata_file_path);
-			PS2Driver_WaitForKeyPress("SM Pause");
 		}
 		else
 		{
 			printf("StorageManager: Directory %s is not a file\n", ata_file_path);
-			PS2Driver_WaitForKeyPress("SM Pause");
 		}
 	}
 	else
 	{
 		printf("StorageManager: StorageManager has FAILED to open the file at %s\n", ata_file_path);
-		PS2Driver_WaitForKeyPress("SM Pause");
 	}
 	
 	return true;

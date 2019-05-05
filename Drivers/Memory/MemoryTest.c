@@ -315,7 +315,7 @@ void MemoryTest_Free(struct MemoryDriver* self)
 	int i;
 	for (i=0; i<n_tests; i++)
 	{
-		void *ptr = MemoryDriver_Allocate(self, i+1);
+		void *ptr = MemoryDriver_Allocate(self, 1+(i*i));
 		if (!ptr)
 		{
 			printf("MemoryTest: Error - ptr_%d is null after allocation\n",i);

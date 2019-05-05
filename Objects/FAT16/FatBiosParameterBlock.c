@@ -22,7 +22,6 @@ void FatBPB_Debug(struct FatBiosParameterBlock* self)
 	printf("\tHead Size Count:       0x%x\n", self->HeadSideCount);
 	printf("\tHidden Sector Count:   0x%x\n", self->HiddenSectorCount);
 	printf("\tTotal Sectors 32:      0x%x\n", self->TotalSectors32);
-    PS2Driver_WaitForKeyPress("FAT BPB Pause");
 }
 
 void FatBPB_DebugEBR16(struct FatExtendedBootRecord16* ebr)
@@ -42,7 +41,6 @@ void FatBPB_DebugEBR16(struct FatExtendedBootRecord16* ebr)
 	printf("\tLabel:                    %s\n",   vol_label);
 	printf("\tSytem ID String:          %s\n",   sys_id);
 	printf("\tBoot Partition Signature: 0x%x\n", ebr->BootPartitionSignature);
-    PS2Driver_WaitForKeyPress("FAT BPB Pause");
 }
 
 void FatBPB_DebugEBR32(struct FatExtendedBootRecord32* ebr)
@@ -61,7 +59,6 @@ void FatBPB_DebugEBR32(struct FatExtendedBootRecord32* ebr)
 	printf("\tVolume Label:             %s\n",ebr->VolumeLabel);
 	printf("\tSystem Identifier:        %s\n",ebr->SystemIdentifier);
 	printf("\tBoot Pertition Signature: 0x%x\n",ebr->BootPartitionSignature);
-    PS2Driver_WaitForKeyPress("FAT BPB Pause");
 }
 
 uint32_t FatBPB_GetTotalSectors(struct FatBiosParameterBlock* self)

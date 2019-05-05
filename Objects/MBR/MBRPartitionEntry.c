@@ -19,5 +19,4 @@ void MBRPartitionEntry_Debug(int index, struct MBRPartitionEntry* pe)
     printf("\t\tLBA First Sector: 0x%x\n",pe->LBAFirstSector);
     printf("\t\tSectors In Partition: 0x%x\n",pe->SectorsInPartition);
 
-    PS2Driver_WaitForKeyPress("MBR PE Pause");
 }

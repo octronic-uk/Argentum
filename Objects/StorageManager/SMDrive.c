@@ -9,6 +9,7 @@
 #include <Objects/FAT16/FatVolume.h>
 #include <Objects/MBR/MBRPartitionEntry.h>
 #include <Objects/StorageManager/SMDrive.h>
+#include <Objects/RamDisk/RamDisk.h>
 
 extern struct Kernel _Kernel;
 
@@ -18,11 +19,6 @@ bool SMDrive_ATAConstructor(struct SMDrive* self, uint8_t ata_device_id)
     self->Exists = true;
     self->Debug = false;
     self->AtaIndex = ata_device_id;
-
-    if (self->Debug) 
-    {
-        PS2Driver_WaitForKeyPress("SMDrive: Reading MBR");
-    }
 
     MBR_Constructor(&self->MasterBootRecord, &_Kernel.ATA, self->AtaIndex);
 
@@ -43,7 +39,16 @@ bool SMDrive_FloppyConstructor(struct SMDrive* self, uint8_t floppy_drive_id)
     self->Debug = true;
     self->FloppyIndex = floppy_drive_id;
     self->Exists = true;
-    SMVolume_FloppyConstructor(&self->Volumes[0],self, self->FloppyIndex);
+    SMVolume_FloppyConstructor(&self->Volumes[0], self, self->FloppyIndex);
+} 
+
+bool SMDrive_RamDiskConstructor(struct SMDrive* self, uint8_t ram_disk_id)
+{
+    printf("SMDrive: RamDisk Constructing drive %d\n", ram_disk_id);
+    self->Debug = true;
+    self->RamDiskIndex = ram_disk_id;
+    self->Exists = true;
+    SMVolume_RamDiskConstructor(&self->Volumes[0], self, self->RamDiskIndex);
 } 
 
 struct MBRPartitionEntry* SMDrive_ATAGetMBRPartitionEntry(struct MBR* mbr, uint8_t volume)

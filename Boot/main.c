@@ -7,16 +7,12 @@ struct Kernel _Kernel;
 
 void kmain(multiboot_info_t* mbi)
 {
-    if( Kernel_Constructor(&_Kernel, mbi))
-    {
-        printf("Ag: Invoking Lua\n");
-    }
-    else
+    if( !Kernel_Constructor(&_Kernel, mbi))
     {
         printf("Ag: Fatal Error - Kernel Construction Failed\n");
         abort();
     }
     
-    printf("Ag: System Halted\n");
+    printf("Ag: Finished! - System Halted\n");
     abort();
 }

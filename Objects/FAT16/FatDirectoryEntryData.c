@@ -26,7 +26,6 @@ void FatDirectoryEntryData_Debug(struct FatDirectoryEntryData* self)
     printf("\tFirst Cluster Number:    0x%x\n", self->FirstClusterNumber);
     printf("\tFile Size:               0x%x\n", self->FileSize);
 
-    PS2Driver_WaitForKeyPress("FAT Dir Cluster Pasuse");
 }
 
 void FatDirectoryEntryData_DebugAttributes(struct FatDirectoryEntryData* self)

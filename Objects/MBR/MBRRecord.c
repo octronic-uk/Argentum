@@ -16,7 +16,6 @@ void MBRRecord_Debug(struct MBRRecord* record)
     printf("\tBootatrapCodeArea2: 0x%x (%d)\n", record->BootstrapCodeArea2, offsetof(struct MBRRecord,BootstrapCodeArea2));
     printf("\tDiskSignature: 0x%x (%d)\n", record->DiskSignature, offsetof(struct MBRRecord,DiskSignature));
     printf("\tCopyProtected: 0x%x (%d)\n", record->CopyProtected, offsetof(struct MBRRecord,CopyProtected));
-    PS2Driver_WaitForKeyPress("MBR Record Pause");
 
     MBRPartitionEntry_Debug(1, &record->PartitionEntry1);
     MBRPartitionEntry_Debug(2, &record->PartitionEntry2);
@@ -24,5 +23,4 @@ void MBRRecord_Debug(struct MBRRecord* record)
     MBRPartitionEntry_Debug(4, &record->PartitionEntry4);
 
     printf("\tBootSignature: 0x%x (%d)\n", record->BootSignature, offsetof(struct MBRRecord,BootSignature));
-    PS2Driver_WaitForKeyPress("MBR Record Pause");
 }

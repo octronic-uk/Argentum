@@ -21,10 +21,13 @@ struct SMDrive
     uint8_t AtaIndex;
     // Floppy
     uint8_t FloppyIndex;
+    // Ram Disk
+    uint8_t RamDiskIndex;
 };
 
-bool SMDrive_ATAConstructor(struct SMDrive* self, uint8_t ata_device_id);
-bool SMDrive_FloppyConstructor(struct SMDrive* self, uint8_t floppy_device_id);
+bool SMDrive_ATAConstructor(struct SMDrive* self, uint8_t ata_device_index);
+bool SMDrive_FloppyConstructor(struct SMDrive* self, uint8_t floppy_device_index);
+bool SMDrive_RamDiskConstructor(struct SMDrive* self, uint8_t ram_disk_index);
 
 struct MBRPartitionEntry* SMDrive_ATAGetMBRPartitionEntry(struct MBR* mbr, uint8_t partition);
 void SMDrive_ATAListVolumes(struct SMDrive* self);

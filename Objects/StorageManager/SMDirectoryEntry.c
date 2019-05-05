@@ -18,7 +18,6 @@ bool SMDirectoryEntry_Constructor(struct SMDirectoryEntry* self, struct SMVolume
         printf("SMDirectoryEntry: This is an archive\n"); 
         printf("\tFirst cluster number 0x%x\n",cluster);
         printf("\tFirst sector 0x%x\n", first_sector);
-        PS2Driver_WaitForKeyPress("Archive cluster");
         return true;
     }
     // Not necessary for files
@@ -37,7 +36,6 @@ bool SMDirectoryEntry_Constructor(struct SMDirectoryEntry* self, struct SMVolume
     }
 
     printf("SMDirectoryEntry: Error - Unknown Attrubutes 0x%x\n",self->FatAttributes);
-    PS2Driver_WaitForKeyPress("SMDirectoryEntry Error");
     return false;
 }
 

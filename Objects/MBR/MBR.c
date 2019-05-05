@@ -17,7 +17,6 @@ bool MBR_Constructor(struct MBR* self, struct ATADriver* ata, uint8_t ata_device
     if (self->Debug) 
     {
         printf("MBR: Constructing Record for device: %s\n",self->IDEDevice->model);
-        PS2Driver_WaitForKeyPress("MBR Pause");
     }
 	if (self->IDEDevice->reserved != 1)
 	{

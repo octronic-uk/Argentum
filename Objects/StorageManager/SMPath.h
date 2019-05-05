@@ -7,15 +7,17 @@
 #define SM_PATH_MAX_DIRS 16
 #define SM_PATH_MAX_DRIVE 3
 #define SM_PATH_MAX_VOLUME 3
+#define SM_PATH_BUS_NAME_LEN 3
 #define SM_PATH_DEVICE_DELIMETER "://"
 #define SM_PATH_DELIMETER '/'
 #define SM_PATH_DEVICE_BUFFER_LENGTH 8
 #define SM_PATH_VOLUME_DELIMETER 'p'
 #define SM_PATH_BUS_FDD_STR "FDD"
 #define SM_PATH_BUS_FDD_LOWER_STR "fdd"
-
 #define SM_PATH_BUS_ATA_STR "ATA"
 #define SM_PATH_BUS_ATA_LOWER_STR "ata"
+#define SM_PATH_BUS_RAM_STR "RAM"
+#define SM_PATH_BUS_RAM_LOWER_STR "ram"
 
 /**
  * A path to a file should appear in the following format
@@ -73,7 +75,8 @@ enum SMPathDriveType
 {
     DRIVE_TYPE_ERROR = 0,
     DRIVE_TYPE_FLOPPY,
-    DRIVE_TYPE_ATA
+    DRIVE_TYPE_ATA,
+    DRIVE_TYPE_RAMDISK
 };
 
 /**
