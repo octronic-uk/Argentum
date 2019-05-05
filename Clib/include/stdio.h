@@ -60,6 +60,7 @@ FILE*    freopen(const char* filename, const char* mode, FILE* stream);
 int      fprintf(FILE* stream, const char* format, ...);
 int 	 fputc ( int character, FILE * stream );
 int      fputs ( const char * str, FILE * stream );
+int      fscanf ( FILE * stream, const char * format, ... );
 int      fseek ( FILE * stream, long int offset, int origin );
 long int ftell ( FILE * stream );
 uint32_t fwrite ( const void * ptr, uint32_t size, uint32_t count, FILE * stream );

@@ -80,9 +80,14 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 				{
 					printf("Memory: Found free'd block of size %d for allocation of new size %d at 0x%x\n" ,current_block->Size, requested_size, (uint32_t)current_block);
 				}
+				uint32_t old_size = current_block->Size;
 				current_block->Size = requested_size;
 				current_block->InUse = true;
-				MemoryDriver_InsertDummyBlock(self,current_block);
+				// Restore old size
+				if (!MemoryDriver_InsertDummyBlock(self,current_block))
+				{
+					current_block->Size = old_size;
+				}
 				return current_block;
 			}
 			// Check for unused neighbors
@@ -93,24 +98,19 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 				if (space_available >= requested_size)
 				{
 					// Resize
+					uint32_t old_size = current_block->Size;
 					current_block->Size = requested_size;
 					current_block->InUse = true;
-					
+					current_block->Next = (struct MemoryBlockHeader*)(((uint32_t)current_block) + sizeof(struct MemoryBlockHeader) + space_available);
 
 					void* mem_area = (void*) ((uint32_t)current_block) + sizeof(struct MemoryBlockHeader);
 					memset(mem_area, 0, sizeof(struct MemoryBlockHeader)+space_available);
-					// Fix links
 
-					MemoryDriver_InsertDummyBlock(self,current_block);
+					if (!MemoryDriver_InsertDummyBlock(self,current_block))
+					{
+						current_block->Size = old_size;
+					}
 
-/*
-					struct MemoryBlockHeader* block_after_space = (struct MemoryBlockHeader*) (
-						((uint32_t)current_block) +
-						sizeof(struct MemoryBlockHeader) + 
-						space_available
-					);
-					current_block->Next = block_after_space;
-					*/
 					// Return
 					return current_block;
 				}
@@ -152,8 +152,10 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 
 struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* self, struct MemoryBlockHeader* resized_header)
 {
+	if (self->Debug) printf("Memory: Attempting to insert dummy block\n");
 	struct MemoryBlockHeader* next = resized_header->Next;
 
+	if (self->Debug) printf("Memory: next block is now 0x%x\n",(uint32_t)next);
 	// No next block to resize to
 	if (!next)
 	{
@@ -165,7 +167,6 @@ struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* sel
 	uint32_t space_ends = ((uint32_t)next);
 	int32_t space_available = space_ends - space_begins;
 	int32_t dummy_data_size = space_available - sizeof(struct MemoryBlockHeader);
-
 
 	if (dummy_data_size > 0)
 	{
@@ -181,8 +182,7 @@ struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* sel
 		return dummy_block;
 	}
 
-	if (self->Debug) printf("Memory: Not enough space to insert dummy block\n");
-	
+	if (self->Debug) printf("Memory: Not enough space to insert dummy block (%d)\n",dummy_data_size);
 	return 0;
 }
 
@@ -288,9 +288,13 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 		{
 			printf("Memory: Realloc, block will accomodate reallocation\n");
 		}
+		uint32_t old_size = header->Size;
 		header->InUse = true;
 		header->Size = requested_size;
-		MemoryDriver_InsertDummyBlock(self,header);
+		if (!MemoryDriver_InsertDummyBlock(self,header))
+		{
+			header->Size = old_size;
+		}
 		return (void*) ((uint32_t)header)+sizeof(struct MemoryBlockHeader);
 	}
 
@@ -301,9 +305,13 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 		if (self->Debug) printf("Memory: There is enough available space to resize the block\n");
 		header->Size = requested_size;
 		header->InUse = true;
-		header->Next = (struct MemoryBlockHeader*)(((uint32_t)header)+available_space);
-		MemoryDriver_InsertDummyBlock(self,header);
-		return (void*) ((uint32_t)header)+sizeof(struct MemoryBlockHeader);
+		header->Next = (struct MemoryBlockHeader*)(((uint32_t)header) + sizeof(struct MemoryBlockHeader) + available_space);
+		uint32_t old_size = header->Size;
+		if (!MemoryDriver_InsertDummyBlock(self, header))
+		{
+			header->Size = old_size;
+		}
+		return (void*) ((uint32_t)header) + sizeof(struct MemoryBlockHeader);
 	}
 
 
@@ -434,7 +442,18 @@ void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self)
 	struct MemoryBlockHeader* block = self->StartBlock;
 	while(block)
 	{
-		printf("\tBlock=0x%x\tSz=%d\tInUse=%d\tNext=0x%x\n",block,block->Size,block->InUse,block->Next);	
+		printf("\tBlock=0x%x\tMem=0x%x\tSz=%d\tInUse=%d\tNext=0x%x\n",
+			block,
+			(uint32_t)block+sizeof(struct MemoryBlockHeader),
+			block->Size,
+			block->InUse,
+			block->Next);	
+
+		if (block->Next != 0 && ((uint32_t)block->Next != (uint32_t)block + sizeof(struct MemoryBlockHeader) + block->Size))
+		{
+			printf("Memory Error!!! \n");
+		}
+
 		block = block->Next;
 	}
 	printf("\n============================================================\n");

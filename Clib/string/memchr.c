@@ -1,7 +1,12 @@
 #include <string.h>
 #include <stdio.h>
-void* memchr(const char* ptr, int value, uint32_t num)
+void* memchr(const char* s, int c, uint32_t n)
 {
-    printf("stdlib: memchr\n");
+    unsigned char *p = (unsigned char*)s;
+    while( n-- )
+        if( *p != (unsigned char)c )
+            p++;
+        else
+            return p;
     return 0;
 }

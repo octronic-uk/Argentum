@@ -1,15 +1,8 @@
 #include <string.h>
 
-char* strcpy(const char* destination, const char* source )
+char* strcpy(char* dest, const char* src )
 {
-    char* src = (char*)source;
-    char* dst = (char*)destination;
-
-    do
-    {
-        *dst++ = *src++;
-    }
-    while(*src);
-
-    return 0;
+    char* tmp = dest;
+    while (*tmp++ = *src++);
+    return dest;
 }

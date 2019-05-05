@@ -2,7 +2,7 @@
  *  Ansi C "itoa" based on Kernighan & Ritchie's "Ansi C"
  *
  */
-#include <itoa.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 

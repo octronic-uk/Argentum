@@ -1,7 +1,14 @@
 #include <math.h>
-#include <stdio.h>
-double ceil (double x)
+
+double ceil(double i)
 {
-    printf("stdlib: ceil\n");
-    return 0.0;
+	if (i<0)
+		return -floor(-i);
+	else
+	{
+		double d = floor(i);
+		if (d!=i)
+			d+=1.0;
+		return d;
+	}
 }

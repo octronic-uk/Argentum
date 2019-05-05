@@ -1,7 +1,9 @@
 #include <string.h>
 #include <stdio.h>
-char*    strpbrk(const char* str1, const char* str2 )
+char*    strpbrk(const char* s1, const char* s2 )
 {
-    printf("stdlib: strpbrk\n");
+    while(*s1)
+    if(strchr(s2, *s1++))
+        return (char*)--s1;
     return 0;
 }

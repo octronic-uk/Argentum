@@ -15,3 +15,8 @@ Boot/*.o
 *.files
 *.config
 compile_commands.json
+.vscode
+.Trashes
+.TemporaryItems
+.fseventsd
+.DocumentRevisions-V100

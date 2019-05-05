@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 bool in_base(char ch, int base)
 {
     switch (base)

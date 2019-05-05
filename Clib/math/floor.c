@@ -1,7 +1,9 @@
 #include <math.h>
-#include <stdio.h>
-double floor(double x)
+
+double floor(double i)
 {
-    printf("stdlib: floor\n");
-    return 0.0;
+	if (i<0) 
+		return -ceil(-i);
+	else
+		return (double)(int)i;
 }

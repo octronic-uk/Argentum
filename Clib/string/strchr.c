@@ -7,7 +7,7 @@ char* strchr(const char* str, int character)
     {
         if (str[i] == (char)character)
         {
-            return &str[i];
+            return (char*)&str[i];
         }
         i++;
     }

@@ -1,7 +1,8 @@
 #include <string.h>
-#include <stdio.h>
-uint32_t strspn(const char * str1, const char * str2)
+
+uint32_t strspn(const char * s1, const char * s2)
 {
-    printf("stdlib: strspn\n");
-    return 0;
+    uint32_t ret=0;
+    while(*s1 && strchr(s2,*s1++)) ret++;
+    return ret; 
 }

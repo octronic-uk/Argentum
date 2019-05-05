@@ -1,11 +1,8 @@
 #include <string.h>
 
-size_t strlen(const char* str)
+uint32_t strlen(const char* s)
 {
-	size_t len = 0;
-	while (str[len])
-    {
-		len++;
-    }
-	return len;
+	const char *p = s;
+	while (*s) ++s;
+	return s - p;
 }

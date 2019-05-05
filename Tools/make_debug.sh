@@ -2,7 +2,7 @@
 
 . Tools/env.sh
 
-${RUN_MAKE} clean
+#${RUN_MAKE} clean
 
 ${RUN_MAKE}
 

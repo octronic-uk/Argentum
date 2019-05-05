@@ -1,7 +1,6 @@
 #include <math.h>
-#include <stdio.h>
-double cos (double x)
+
+double cos(double i)
 {
-    printf("stdlib: cos\n");
-    return 0.0;
+	return sin(i+PI/2);
 }

@@ -4,6 +4,7 @@
 
 #define RAND_MAX 0
 #define	HUGE_VAL 0
+#define PI 3.14159265358979324
 
 double fabs (double x);
 double sin(double x);
@@ -17,6 +18,7 @@ double floor(double x);
 double ceil (double x);
 double fmod (double numer, double denom);
 double sqrt (double x);
+double ldexp (double x, int exp);
 double log (double x);
 double log2  (double x);
 double log10 (double x);

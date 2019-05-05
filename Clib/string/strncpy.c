@@ -5,10 +5,14 @@
  */
 #include <string.h>
 
-char* strncpy(char *dest, const char *src, size_t count)
+char* strncpy(char *dest, const char *src, uint32_t n)
 {
-  char *tmp = dest;
-  while (count-- && (*dest++ = *src++) != '\0')
-    /* nothing */;
-  return tmp;
+   char* tmp = (char*)dest;
+    do {
+        if (!n--)
+            return dest;
+    } while (*tmp++ = *src++);
+    while (n--)
+        *tmp++ = 0;
+    return dest;
 }
