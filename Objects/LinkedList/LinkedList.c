@@ -3,12 +3,15 @@
 #include <stdio.h>
 #include <string.h>
 
+
+#include <Objects/Kernel/Kernel.h>
 #include <Drivers/Memory/MemoryDriver.h>
 
-void LinkedList_Constructor(struct LinkedList* self, struct MemoryDriver* memory)
+extern struct Kernel _Kernel;
+
+void LinkedList_Constructor(struct LinkedList* self)
 {
 	self->Head = 0;
-	self->Memory = memory;
 }
 
 void LinkedList_Destructor(struct LinkedList* self)
@@ -18,7 +21,7 @@ void LinkedList_Destructor(struct LinkedList* self)
 	while(current != 0)
 	{
 		next = current->Next;
-		MemoryDriver_Free(self->Memory, current);
+		MemoryDriver_Free(&_Kernel.Memory, current);
 		current = next;
 	}
 }
@@ -68,7 +71,7 @@ void LinkedList_Delete(struct LinkedList* self, void* data)
 			{
 				self->Head = current->Next;
 			}
-			MemoryDriver_Free(self->Memory, current);
+			MemoryDriver_Free(&_Kernel.Memory, current);
 			return;
 		}
 		previous = current;
@@ -115,7 +118,7 @@ void* LinkedList_At(struct LinkedList* self, uint32_t index)
 
 struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data)
 {
-	struct LinkedListNode* newNode = MemoryDriver_Allocate(self->Memory, sizeof(struct LinkedListNode));
+	struct LinkedListNode* newNode = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct LinkedListNode));
 	if (!newNode)
 	{
 		return 0;
@@ -147,7 +150,7 @@ void LinkedList_FreeAllData(struct LinkedList* self)
 	struct LinkedListNode* current = self->Head;
 	while(current)
 	{
-		MemoryDriver_Free(self->Memory, current->Data);
+		MemoryDriver_Free(&_Kernel.Memory, current->Data);
 		current = current->Next;
 	}
 }

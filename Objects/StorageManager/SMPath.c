@@ -1,12 +1,16 @@
 #include "SMPath.h"
 
+#include <Objects/Kernel/Kernel.h>
 #include <string.h>
 #include <stdio.h>
+
+extern struct Kernel _Kernel;
 
 bool SMPath_Constructor(struct SMPath* self)
 {
     memset(self,0,sizeof(struct SMPath));
     self->Debug = false;
+    LinkedList_Constructor(&self->Directories);
     return true;
 }
 
@@ -19,23 +23,29 @@ bool SMPath_ConstructAndParse(struct SMPath* self, const char* path)
     return SMPath_Parse(self,path);
 }
 
+bool SMPath_Destructor(struct SMPath* self)
+{
+    LinkedList_FreeAllData(&self->Directories);
+    LinkedList_Destructor(&self->Directories);
+}
+
 bool SMPath_Parse(struct SMPath* self, const char* address)
 {
     if (self->Debug) printf("SMPath: Parsing \"%s\"\n",address);
 
-    uint32_t addr_index = 0;
+    uint32_t address_string_index = 0;
     bool drive_found = false;
 
     // Get device String
     uint8_t dev_idx;
     for (dev_idx = 0; dev_idx < SM_PATH_DEVICE_BUFFER_LENGTH; dev_idx++)
     {
-        if (strcmp(&address[addr_index], SM_PATH_DEVICE_DELIMETER) == 0)
+        if (strcmp(&address[address_string_index], SM_PATH_DEVICE_DELIMETER) == 0)
         {
             drive_found = true;
             break;
         }
-        self->DeviceString[dev_idx] = address[addr_index++];
+        self->DeviceString[dev_idx] = address[address_string_index++];
     }
 
     // Force null terminate the device str
@@ -93,47 +103,57 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
     }
 
     // Consume Device Delimeter
-    addr_index+=3;
+    address_string_index+=3;
 
-    int8_t path_index = 0;
-    int8_t name_index = 0;
 
-    while (address[addr_index])
+    // Allocate new name
+    char* current_name = MemoryDriver_Allocate(&_Kernel.Memory, FAT_LFN_NAME_SIZE);
+    memset(current_name, 0, FAT_LFN_NAME_SIZE);
+    LinkedList_PushBack(&self->Directories, current_name);
+
+    int8_t path_count_index = 0;
+    int8_t name_char_index = 0;
+
+    while (address[address_string_index])
     {
-        if (address[addr_index] == SM_PATH_DELIMETER)
+        if (address[address_string_index] == SM_PATH_DELIMETER)
         {
-            if (name_index) 
+            if (name_char_index) 
             {
-                path_index++;
-                name_index = 0;
+                // Allocate new name
+                current_name = MemoryDriver_Allocate(&_Kernel.Memory, FAT_LFN_NAME_SIZE);
+                memset(current_name, 0, FAT_LFN_NAME_SIZE);
+                LinkedList_PushBack(&self->Directories, current_name);
+                path_count_index++;
+                name_char_index = 0;
             }
         }
         else
         {
             // Reached max size?
-            if (name_index >= FAT_LFN_NAME_SIZE-1)
+            if (name_char_index >= FAT_LFN_NAME_SIZE-1)
             {
                 self->ParseError = SM_PATH_ERR_NAME_TOO_LONG;
                 return false;
             }
             // Is valid path char?
-            else if (SMPath_ValidPathChar(address[addr_index]))
+            else if (SMPath_ValidPathChar(address[address_string_index]))
             {
-                self->Directories[path_index][name_index++] = address[addr_index];
+                current_name[name_char_index++] = address[address_string_index];
             }
             // Invalid path char
             else
             {
                 if (self->Debug)
                 {
-                    printf("SMPath: Error - Invalid char \"%c\"\n",address[addr_index]);
+                    printf("SMPath: Error - Invalid char \"%c\"\n",address[address_string_index]);
                 }
                 
                 self->ParseError = SM_PATH_ERR_INVALID_PATH_CHAR;
                 return false;
             }
         }
-        addr_index++;
+        address_string_index++;
     }
     if (self->Debug)
     {
@@ -215,12 +235,12 @@ void SMPath_Debug(struct SMPath* self)
        printf("\tVolume: %d\n", self->VolumeIndex);
     }
     
-    uint8_t i;
-    for (i=0; i<SM_PATH_MAX_DIRS; i++)
+    uint8_t i, count;
+    count = LinkedList_Size(&self->Directories);
+    for (i=0; i<count; i++)
     {
-        if (!self->Directories[i][0]) break;
-
-        printf("\tDirectory %d : %s\n",i,self->Directories[i]);
+        char* dir = (char*)LinkedList_At(&self->Directories,i);
+        printf("\tDirectory %d : %s\n",i,dir);
     }
 }
 
@@ -240,31 +260,40 @@ void SMPath_TestParser()
 	SMPath_Constructor(&addr3);
     SMPath_Constructor(&addr4);
 
+    bool retval = 1;
+
 	if (SMPath_Parse(&addr1, test_address_1)) SMPath_Debug(&addr1);
 	else
 	{
         printf("SMPath: Failed to parse address 1: %s\n",SMPath_GetParseErrorString(&addr1));
-        return;
+        retval = 0;
 	}
 
-	if (SMPath_Parse(&addr2, test_address_2)) SMPath_Debug(&addr2);
+	if (retval && SMPath_Parse(&addr2, test_address_2)) SMPath_Debug(&addr2);
 	else
 	{
 		printf("SMPath: Failed to parse address 2: %s\n",SMPath_GetParseErrorString(&addr2));
-        return;
+        retval = 0;
 	}
 
-	if (SMPath_Parse(&addr3, test_address_3)) SMPath_Debug(&addr3);
+	if (retval && SMPath_Parse(&addr3, test_address_3)) SMPath_Debug(&addr3);
 	else
 	{
 		printf("SMPath: Failed to parse address 3: %s\n",SMPath_GetParseErrorString(&addr3));
-        return;
+        retval = 0;
 	}
 
-    if (SMPath_Parse(&addr4, test_address_4)) SMPath_Debug(&addr4);
+    if (retval && SMPath_Parse(&addr4, test_address_4)) SMPath_Debug(&addr4);
 	else
 	{
 		printf("SMPath: Failed to parse address 4: %s\n",SMPath_GetParseErrorString(&addr4));
-        return;
+        retval = 0;
 	}
+
+    SMPath_Destructor(&addr1);
+    SMPath_Destructor(&addr2);
+    SMPath_Destructor(&addr3);
+    SMPath_Destructor(&addr4);
+
+    return;
 }

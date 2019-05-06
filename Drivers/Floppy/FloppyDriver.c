@@ -497,9 +497,14 @@ bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector 
 
 }
 
-bool FloppyDriver_ReadSectorLBA(struct FloppyDriver* self, uint32_t lba) 
+bool FloppyDriver_ReadSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t* buffer) 
 {
-    return FloppyDriver_ReadSector(self, FloppyDriver_LbaToChs(lba));
+    if (FloppyDriver_ReadSector(self, FloppyDriver_LbaToChs(lba)))
+    {
+        memcpy(buffer, fpy_dma_buf, FAT_SECTOR_SIZE);
+        return true;
+    }
+    return false;
 }
 
 bool FloppyDriver_ReadSector(struct FloppyDriver* self, struct CylinderHeadSector chs) 
@@ -507,8 +512,9 @@ bool FloppyDriver_ReadSector(struct FloppyDriver* self, struct CylinderHeadSecto
     return FloppyDriver_DoSector(self, chs, floppy_dir_read);
 }
 
-bool FloppyDriver_WriteSectorLBA(struct FloppyDriver* self, uint32_t lba) 
+bool FloppyDriver_WriteSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t* buffer) 
 {
+    memcpy(fpy_dma_buf, buffer,  FAT_SECTOR_SIZE);
     return FloppyDriver_WriteSector(self,FloppyDriver_LbaToChs(lba));
 }
 

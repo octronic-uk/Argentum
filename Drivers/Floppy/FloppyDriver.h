@@ -37,9 +37,9 @@ int FloppyDriver_Seek(struct FloppyDriver* self, unsigned cyli, int head);
 static void FloppyDriver_DMAInit(struct FloppyDriver* self, enum FloppyDirection dir);
 
 bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector cyl, enum FloppyDirection dir);
-bool FloppyDriver_ReadSectorLBA(struct FloppyDriver* self, uint32_t lba);
+bool FloppyDriver_ReadSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t* buffer);
 bool FloppyDriver_ReadSector(struct FloppyDriver* self, struct CylinderHeadSector cyl);
-bool FloppyDriver_WriteSectorLBA(struct FloppyDriver* self, uint32_t lba);
+bool FloppyDriver_WriteSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t* buffer);
 bool FloppyDriver_WriteSector(struct FloppyDriver* self, struct CylinderHeadSector cyl);
 
 void FloppyDriver_InterruptHandler();

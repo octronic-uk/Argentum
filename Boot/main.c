@@ -12,6 +12,8 @@ void kmain(multiboot_info_t* mbi)
         printf("Ag: Fatal Error - Kernel Construction Failed\n");
         abort();
     }
+
+    Kernel_Destructor(&_Kernel);
     
     printf("Ag: Finished! - System Halted\n");
     abort();

@@ -98,6 +98,23 @@ bool Kernel_InitObjects(struct Kernel* self)
 	return true;
 }
 
+void Kernel_Destructor(struct Kernel* self)
+{
+	Kernel_DestroyObjects(self);
+	Kernel_DestroyDrivers(self);
+}
+
+void Kernel_DestroyObjects(struct Kernel* self)
+{
+	StorageManager_Destructor(&self->StorageManager);
+}
+
+void Kernel_DestroyDrivers(struct Kernel* self)
+{
+
+}
+
+
 void Kernel_StackTrace(unsigned int MaxFrames)
 {
     struct StackFrame *stk;

@@ -8,7 +8,7 @@
 #include <Drivers/IO/IODriver.h>
 #include <Drivers/Memory/MemoryDriver.h>
 #include <Drivers/PS2/PS2Driver.h>
-#include <Objects/Structures/LinkedList.h>
+#include <Objects/LinkedList/LinkedList.h>
 
 extern struct Kernel _Kernel;
 
@@ -21,8 +21,8 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self)
     self->SciInterrupt = 0;
     self->V1Header = 0;
 
-    LinkedList_Constructor(&self->InterruptSourceOverrideRecordPointers, &_Kernel.Memory);
-    LinkedList_Constructor(&self->IoApicRecordPointers, &_Kernel.Memory);
+    LinkedList_Constructor(&self->InterruptSourceOverrideRecordPointers);
+    LinkedList_Constructor(&self->IoApicRecordPointers);
 
     void* rsdpPointer = ACPIDriver_FindRsdpPointer(self);
 

@@ -15,5 +15,5 @@ struct RamDisk
 
 bool RamDisk_Constructor(struct RamDisk* self, uint32_t size_b);
 void RamDisk_Destructor(struct RamDisk* self);
-uint8_t* RamDisk_ReadSectorLBA(struct RamDisk* self, uint32_t lba);
+bool RamDisk_ReadSectorLBA(struct RamDisk* self, uint32_t lba, uint8_t* buffer);
 bool RamDisk_WriteSectorLBA(struct RamDisk* self, uint32_t lba, uint8_t* data);

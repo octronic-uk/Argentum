@@ -35,14 +35,16 @@ void RamDisk_Destructor(struct RamDisk* self)
     MemoryDriver_Free(&_Kernel.Memory, self->Block);
 }
 
-uint8_t* RamDisk_ReadSectorLBA(struct RamDisk* self, uint32_t lba)
+bool RamDisk_ReadSectorLBA(struct RamDisk* self, uint32_t lba, uint8_t* buffer)
 {
     uint32_t idx = lba*512;
     if (idx > self->Size)
     {
         return 0;
     }
-    return &self->Block[idx];
+
+    memcpy(buffer, &self->Block[idx], FAT_SECTOR_SIZE);
+    return true;
 }
 
 bool RamDisk_WriteSectorLBA(struct RamDisk* self, uint32_t lba, uint8_t* data)
@@ -52,6 +54,6 @@ bool RamDisk_WriteSectorLBA(struct RamDisk* self, uint32_t lba, uint8_t* data)
     {
         return false;
     }
-    memcpy(&self->Block[idx],data,512);
+    memcpy(&self->Block[idx], data, FAT_SECTOR_SIZE);
     return true;
 }

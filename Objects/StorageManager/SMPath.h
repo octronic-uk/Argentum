@@ -4,6 +4,8 @@
 #include <stdbool.h>
 
 #include "../FAT16/FatConstants.h"
+#include <Objects/LinkedList/LinkedList.h>
+
 #define SM_PATH_MAX_DIRS 16
 #define SM_PATH_MAX_DRIVE 3
 #define SM_PATH_MAX_VOLUME 3
@@ -93,13 +95,18 @@ struct SMPath
     int8_t  DriveIndex;
     int8_t  VolumeIndex;
     uint8_t WalkIndex;
-    char    Directories [SM_PATH_MAX_DIRS][FAT_LFN_NAME_SIZE];
+    struct  LinkedList Directories;
 };
 
 /**
  * @brief Constructs a SMPath object.
  */
 bool SMPath_Constructor(struct SMPath* self);
+
+/**
+ * @brief Constructs a SMPath object.
+ */
+bool SMPath_Destructor(struct SMPath* self);
 
 /**
  * Constructs a SMPath object and parses the provided path.

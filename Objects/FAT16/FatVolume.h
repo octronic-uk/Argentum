@@ -3,7 +3,6 @@
 #include "FatConstants.h"
 #include "FatBiosParameterBlock.h"
 #include "FatDirectoryEntryData.h"
-#include "FatCachedSector.h"
 
 /**
  @brief Contains data relating to a FAT volume including the Bios Parameter Block
@@ -19,7 +18,6 @@ struct FatVolume
 	uint32_t FirstClusterNumber;
 	uint32_t SectorCount;
 	struct   FatBiosParameterBlock BiosParameterBlock;
-	struct   FatCachedSector SectorCache[FAT_CACHED_SECTORS_SIZE];
 	uint32_t RootDirSectorNumber;
 } __attribute__((packed));
 
@@ -64,9 +62,3 @@ bool FatVolume_WriteSector(struct FatVolume* self, uint32_t sector_to_write, uin
 	@brief Print out the contents of the given sector for debugging
 */
 void FatVolume_DebugSector(uint8_t* sector);
-
-/**
-	@brief Get the next sector cache to use
- */
-
-struct FatCachedSector* FatVolume_GetNextAvailableCachedSector(struct FatVolume* volume);

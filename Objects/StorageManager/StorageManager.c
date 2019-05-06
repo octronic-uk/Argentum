@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <Drivers/PS2/PS2Driver.h>
 #include <Drivers/Floppy/FloppyDriver.h>
 #include <Objects/Kernel/Kernel.h>
 #include <Objects/FAT16/FatConstants.h>
-#include "SMDrive.h"
-#include "SMDirectoryEntry.h"
+#include <Objects/RamDisk/RamDisk.h>
+#include <Objects/StorageManager/SMDrive.h>
+#include <Objects/StorageManager/SMDirectoryEntry.h>
 
 extern struct Kernel _Kernel;
 
@@ -18,6 +18,7 @@ bool StorageManager_Constructor(struct StorageManager* self)
 
     memset(self,0,sizeof(struct StorageManager));
 	self->Debug = false; 
+	LinkedList_Constructor(&self->RamDisks);
 
 	StorageManager_SetupRamDisk0(self);
 	StorageManager_ProbeFloppyDrives(self);
@@ -25,9 +26,24 @@ bool StorageManager_Constructor(struct StorageManager* self)
 	return true;
 }
 
+void StorageManager_Destructor(struct StorageManager *self)
+{
+	printf("StorageManager: Destructing\n");
+	uint32_t i, num_ram_disks = LinkedList_Size(&self->RamDisks);
+	for (i=0; i<num_ram_disks; i++)
+	{
+		struct RamDisk* rd = (struct RamDisk*)LinkedList_At(&self->RamDisks, i);
+		RamDisk_Destructor(rd);
+	}
+	LinkedList_FreeAllData(&self->RamDisks);
+	LinkedList_Destructor(&self->RamDisks);
+}
+
 void StorageManager_SetupRamDisk0(struct StorageManager* self)
 {
-	RamDisk_Constructor(&self->RamDisks[0], RAMDISK_SIZE_1MB*10);
+	struct RamDisk* rd = (struct RamDisk*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof (struct RamDisk));
+	LinkedList_PushBack(&self->RamDisks, rd);
+	RamDisk_Constructor(rd, RAMDISK_SIZE_1MB*10);
 	SMDrive_RamDiskConstructor(&self->RamDiskDrives[0],0);
 }
 
@@ -144,7 +160,9 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* d
 	struct SMPath path;
 	if (SMPath_ConstructAndParse(&path,path_str))
 	{
-		return StorageManager_OpenPath(self,dir,&path);
+		bool retval = StorageManager_OpenPath(self,dir,&path);
+		SMPath_Destructor(&path);
+		return retval;
 	}
 	if (self->Debug) 
 	{
@@ -155,6 +173,9 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* d
 
 bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntry* dir, struct SMPath* path)
 {
+	printf("StorageManager: Opening Path\n");
+	SMPath_Debug(path);
+
 	struct SMDrive* drive = 0;
 	if (path->DriveType == DRIVE_TYPE_ATA)
 	{
@@ -165,6 +186,11 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 	{
 		if (self->Debug) printf("StorageManager: Opening file on Floppy Drive\n");
 		drive = StorageManager_GetFloppyDrive(self,path->DriveIndex);
+	}
+	else if (path->DriveType == DRIVE_TYPE_RAMDISK)
+	{
+		if (self->Debug) printf("StorageManager: Opening file on RamDisk Drive\n");
+		drive = StorageManager_GetRamDiskDrive(self,path->DriveIndex);
 	}
 	else
 	{
@@ -185,25 +211,38 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 		return false;
 	}
 
+	uint32_t sector_count = SMVolume_GetRootDirectorySectorCount(volume);
+	uint32_t root_buffer_size = sector_count*FAT_SECTOR_SIZE;
+
 	// Read root directory
-	uint8_t root_sector_buffer[FAT_SECTOR_SIZE];
-	memset(root_sector_buffer,0,FAT_SECTOR_SIZE);
+	// TODO leaky leaky
+	uint8_t* root_sector_buffer = MemoryDriver_Allocate(&_Kernel.Memory, root_buffer_size);
+	memset(root_sector_buffer, 0, root_buffer_size);
 
 	if (self->Debug)
 	{
-		printf("StorageManager: Reading root sector\n");
+		printf("StorageManager: Reading root directory sector(s)\n");
 	}
 
-	if(FatVolume_ReadSector(&volume->FatVolume, volume->FatVolume.RootDirSectorNumber, root_sector_buffer))
+	uint32_t i;
+	for (i=0; i<sector_count; i++)
 	{
-		if (self->Debug)
+		if(!FatVolume_ReadSector(&volume->FatVolume, volume->FatVolume.RootDirSectorNumber+i, &root_sector_buffer[FAT_SECTOR_SIZE*i]))
 		{
-			FatVolume_DebugSector(root_sector_buffer);
-			printf("StorageManager: Starting GetDirectory Recursion\n");
+			printf("StorageManager: Error unable to read sector %d of volume\n",i);
+			MemoryDriver_Free(&_Kernel.Memory,root_sector_buffer);
+			return false;
 		}
-		return SMVolume_GetDirectory(volume, dir, root_sector_buffer, path);
 	}
-	return false;
+
+	if (self->Debug)
+	{
+		FatVolume_DebugSector(root_sector_buffer);
+		printf("StorageManager: Starting GetDirectory Recursion\n");
+	}
+	bool retval =  SMVolume_GetDirectory(volume, dir, root_sector_buffer, sector_count, path);
+	MemoryDriver_Free(&_Kernel.Memory,root_sector_buffer);
+	return retval;
 }
 
 bool StorageManager_Test(struct StorageManager* self)

@@ -23,12 +23,12 @@ bool SMDirectoryEntry_Constructor(struct SMDirectoryEntry* self, struct SMVolume
     // Not necessary for files
     else if (self->FatAttributes == FAT_DIR_ATTR_DIRECTORY)
     {
-        uint8_t sector_data[FAT_SECTOR_SIZE];
+        uint8_t  sector_data[FAT_SECTOR_SIZE];
         uint32_t sector = FatVolume_GetFirstSectorOfCluster(&volume->FatVolume,cluster);
 
         if(FatVolume_ReadSector(&volume->FatVolume, sector, sector_data))
         {
-            if (FatTableListing_Constructor(&self->FatListing, &self->Volume->FatVolume, sector_data))
+            if (FatTableListing_Constructor(&self->FatListing, &self->Volume->FatVolume, sector_data, 1))
             {
                 return true;     
             } 
@@ -39,9 +39,9 @@ bool SMDirectoryEntry_Constructor(struct SMDirectoryEntry* self, struct SMVolume
     return false;
 }
 
-void SMDirectoryEntry_Destructor(struct SMDirectoryEntry* directory)
+void SMDirectoryEntry_Destructor(struct SMDirectoryEntry* self)
 {
-
+    FatTableListing_Destructor(&self->FatListing);
 }
 
 bool SMDirectoryEntry_IsFile(struct SMDirectoryEntry* self)

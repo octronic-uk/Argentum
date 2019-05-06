@@ -101,8 +101,8 @@ uint32_t FatBPB_GetFirstDataSector(struct FatBiosParameterBlock* self)
 {
 	uint32_t first_data_sector = 
 		self->ReservedSectorCount + 
-		(self->TableCount * FatBPB_GetFatSizeInSectors(self)) + // was fat_size) + 
-		FatBPB_GetRootDirectorySizeInSectors(self);//root_dir_sectors;
+		(self->TableCount * FatBPB_GetFatSizeInSectors(self)) +  
+		FatBPB_GetRootDirectorySizeInSectors(self);
 	return first_data_sector;
 }
 

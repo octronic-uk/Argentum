@@ -5,19 +5,18 @@
 
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/Memory/MemoryDriver.h>
-#include <Drivers/PS2/PS2Driver.h>
-#include <Drivers/PIT/PITDriver.h>
-
+#include <Objects/RamDisk/RamDisk.h>
 #include <Objects/MBR/MBR.h>
 #include <Objects/FAT16/FatDirectoryEntryData.h>
 #include <Objects/FAT16/FatLfnCluster.h>
+#include <Objects/LinkedList/LinkedList.h>
 
 extern struct Kernel _Kernel;
 
 bool FatVolume_ATAConstructor(struct FatVolume* self,  uint8_t ata_device_index, uint8_t partition_index, uint32_t lba_first_sector, uint32_t sector_count) 
 {
     printf("FatVolume: ATA Constructor\n");
-    self->Debug = false;
+    self->Debug = true;
 
     self->AtaDeviceIndex = ata_device_index;
     self->PartitionIndex = partition_index;
@@ -42,7 +41,7 @@ bool FatVolume_ATAConstructor(struct FatVolume* self,  uint8_t ata_device_index,
 bool FatVolume_FloppyConstructor(struct FatVolume* self,  uint8_t device_index) 
 {
     printf("FatVolume: Floppy Constructor\n");
-    self->Debug = false;
+    self->Debug = true;
 
     self->AtaDeviceIndex = -1;
     self->PartitionIndex = -1;
@@ -142,33 +141,47 @@ void FatVolume_DebugSector(uint8_t* sector)
 
 bool FatVolume_WriteSector(struct FatVolume* self, uint32_t sector_to_write, uint8_t* buffer)
 {
-    printf("FatVolume: Error - WRITE IS NOT YET IMPLEMENTED\n");
+    uint32_t physical_sector = self->FirstSectorNumber + sector_to_write;
+    if (self->Debug) 
+    {
+        printf("FatVolume: Reading volume sector 0x%x (Physical sector 0x%x)\n",sector_to_write, physical_sector);
+    }
+
+    // Write to an ATA disk
+    if (self->AtaDeviceIndex >= 0 && self->PartitionIndex >= 0)
+    {
+        uint8_t ata_error = ATADriver_IDEAccess(&_Kernel.ATA, ATA_WRITE, self->AtaDeviceIndex, physical_sector, 1, (void*)buffer);
+
+        if (ata_error)
+        {
+            printf("FatVolume: Error - ATA Error writing to sector %d.\n",physical_sector);
+            return false;
+        }
+    } 
+    // Write to Floppy disk
+    else if (self->FloppyDeviceIndex >= 0)
+    {
+        if (!FloppyDriver_WriteSectorLBA(&_Kernel.Floppy, physical_sector, buffer))
+        {
+            printf("FatVolume: Error - Floppy Error reading sector %d.\n",physical_sector);
+            return false;
+        }
+    }
+    // Write to RamDisk 
+    else if (self->RamDiskIndex >= 0)
+    {
+        struct RamDisk* rd = (struct RamDisk*)LinkedList_At(&_Kernel.StorageManager.RamDisks,self->RamDiskIndex);
+        if (!RamDisk_WriteSectorLBA(rd, physical_sector,buffer))
+        {
+            printf("FatVolume: Error - RamDisk Error writing sector %d.\n",physical_sector);
+            return false;
+        }
+    }
+    return true;
 }
 
 bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8_t* buffer)
 {
-    // Check the sector cache
-    uint32_t index;
-    for (index=0; index < FAT_CACHED_SECTORS_SIZE; index++)
-    {
-        struct FatCachedSector* next = &self->SectorCache[index];
-        if (next->SectorNumber == sector_to_read && next->InUse && !next->Invalid)
-        {
-            if (self->Debug)
-            {
-                printf("FatVolume: Found cached sector 0x%x\n",sector_to_read);
-            }
-            memcpy(buffer,next->Data,FAT_SECTOR_SIZE);
-            next->LastAccess = _Kernel.PIT.Ticks;
-
-            if (self->Debug) 
-            {
-                FatCachedSector_Debug(next);
-            }
-            return true;
-        }
-    }
-
     // Read the BPB from first sector of partition
     uint32_t physical_sector = self->FirstSectorNumber + sector_to_read;
     if (self->Debug) 
@@ -190,89 +203,21 @@ bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8
     // Read from Floppy disk
     else if (self->FloppyDeviceIndex >= 0)
     {
-        if (!FloppyDriver_ReadSectorLBA(&_Kernel.Floppy, physical_sector))
+        if (!FloppyDriver_ReadSectorLBA(&_Kernel.Floppy, physical_sector, buffer))
         {
             printf("FatVolume: Error - Floppy Error reading sector %d.\n",physical_sector);
             return false;
         }
-        memcpy(buffer, FloppyDriver_GetDMABuffer(&_Kernel.Floppy), FAT_SECTOR_SIZE);
     }
+    // Read from RamDisk 
     else if (self->RamDiskIndex >= 0)
     {
-        uint8_t* sector = RamDisk_ReadSectorLBA(&_Kernel.StorageManager.RamDisks[self->RamDiskIndex], physical_sector);
-        if (!sector)
+        struct RamDisk* rd = (struct RamDisk*)LinkedList_At(&_Kernel.StorageManager.RamDisks,self->RamDiskIndex);
+        if (!RamDisk_ReadSectorLBA(rd, physical_sector,buffer))
         {
             printf("FatVolume: Error - RamDisk Error reading sector %d.\n",physical_sector);
             return false;
         }
-        memcpy(buffer, sector, FAT_SECTOR_SIZE);
     }
-
-    // Insert sector into cache
-    if (self->Debug) 
-    {
-        printf("FatVolume: Caching sector 0x%x\n",sector_to_read);
-    }
-    struct FatCachedSector* cached = FatVolume_GetNextAvailableCachedSector(self);
-    if (cached)
-    {
-        FatCachedSector_Constructor(cached, self, sector_to_read);
-        memcpy(cached->Data,buffer,FAT_SECTOR_SIZE);
-
-        if(self->Debug) 
-        {
-            FatCachedSector_Debug(cached);
-        }
-    } 
-    else
-    {
-        printf("FatVolume: Error - Next Cache Block returned NULL??\n");
-        return false;
-    }
-    
     return true;
-}
-
-struct FatCachedSector* FatVolume_GetNextAvailableCachedSector(struct FatVolume* volume)
-{
-    struct FatCachedSector* oldest = 0;
-
-    // Find a free block
-
-    uint32_t index;
-    for (index=0; index < FAT_CACHED_SECTORS_SIZE; index++)
-    {
-        struct FatCachedSector* next = &volume->SectorCache[index];
-        // This block is not being used
-        if (!next->InUse) 
-        {
-            if (volume->Debug)
-            {
-                printf("FatVolume: Using not-in-use sector cache block %d\n",index);
-            }
-            return next;
-        } 
-        // The block was written to and is now invalid, so reusable
-        else if (next->Invalid)
-        {
-            if (volume->Debug)
-            {
-                printf("FatVolume: Using invalid sector cache block %d\n",index);
-            }
-            return next; 
-        }
-
-        // Check if this is the oldest block
-        if (!oldest)
-        {
-            oldest = next;
-        }
-        else if (next->LastAccess < oldest->LastAccess)
-        {
-            oldest = next;
-        }
-    } 
-
-    // Use the oldest block
-    return oldest;
 }

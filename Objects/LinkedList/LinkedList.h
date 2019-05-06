@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct MemoryDriver;
-
 struct LinkedListNode
 {
   void* Data;
@@ -13,11 +11,10 @@ struct LinkedListNode
 
 struct LinkedList
 {
-  struct MemoryDriver* Memory;
   struct LinkedListNode* Head;
 };
 
-void LinkedList_Constructor(struct LinkedList* self, struct MemoryDriver* memory);
+void LinkedList_Constructor(struct LinkedList* self);
 void LinkedList_Destructor(struct LinkedList* self);
 void LinkedList_PushBack(struct LinkedList* self, void* data);
 void LinkedList_Delete(struct LinkedList* self, void* data);
