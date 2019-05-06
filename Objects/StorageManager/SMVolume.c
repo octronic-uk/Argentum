@@ -24,8 +24,11 @@ bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint
 
     if (FatVolume_ATAConstructor(&self->FatVolume, self->ParentDrive->AtaIndex, self->VolumeIndex, self->FirstSectorIndex, self->SectorsInPartition))
     {
-        SMVolume_DebugRootDirectorySize(self);
-       return true;
+        if (FatVolume_ReadFileAllocationTableData(&self->FatVolume))
+        {
+            SMVolume_DebugRootDirectorySize(self);
+            return true;
+        }
     }
     printf("SMVolume: Error - Unable to construct corresponding ATA FatVolume\n");
     return false;
@@ -42,10 +45,12 @@ bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, u
 
     if (FatVolume_FloppyConstructor(&self->FatVolume, parent->FloppyIndex))
     {
-        SMVolume_DebugRootDirectorySize(self);
-       return true;
+        if (FatVolume_ReadFileAllocationTableData(&self->FatVolume))
+        {
+            SMVolume_DebugRootDirectorySize(self);
+            return true;
+        }
     }
-
 
     printf("SMVolume: Error - Unable to construct corresponding Floppy FatVolume\n");
     return false;
@@ -62,26 +67,34 @@ bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, 
 
     if (FatVolume_RamDiskConstructor(&self->FatVolume, parent->RamDiskIndex))
     {
-       SMVolume_DebugRootDirectorySize(self);
-       return true;
+        if (FatVolume_ReadFileAllocationTableData(&self->FatVolume))
+        {
+            SMVolume_DebugRootDirectorySize(self);
+            return true;
+        }
     }
     printf("SMVolume: Error - Unable to construct corresponding RamDisk FatVolume\n");
     return false;
 }
 
+
+void SMVolume_Destructor(struct SMVolume* self)
+{
+    FatVolume_Destructor(&self->FatVolume);
+}
 bool SMVolume_GetDirectory(
     struct SMVolume* self, struct SMDirectoryEntry* out, uint8_t* sector_buffer, 
     uint32_t sector_count, struct SMPath* path
 ){
-    struct FatTableListing fatListing;
-    if (!FatTableListing_Constructor(&fatListing, &self->FatVolume, sector_buffer, sector_count))
+    struct FatDirectoryListing fatListing;
+    if (!FatDirectoryListing_Constructor(&fatListing, &self->FatVolume, sector_buffer, sector_count))
     {
         printf("SMVolume: Error - Could not read directory listing\n");
-        FatTableListing_Destructor(&fatListing);
+        FatDirectoryListing_Destructor(&fatListing);
         return false;
     }
 
-    if (self->Debug) FatTableListing_Debug(&fatListing);
+    if (self->Debug) FatDirectoryListing_Debug(&fatListing);
 
     const char* target_name = LinkedList_At(&path->Directories,path->WalkIndex);
     uint8_t num_dirs = LinkedList_Size(&path->Directories);
@@ -110,7 +123,7 @@ bool SMVolume_GetDirectory(
                     printf("SMVolume: Last Directory in path is %s\n",target_name);
                 }
                 bool retval =  SMDirectoryEntry_Constructor(out,self,entry->FirstCluster, entry->Attributes);
-                FatTableListing_Destructor(&fatListing);
+                FatDirectoryListing_Destructor(&fatListing);
                 return retval;
             }
             // Recurse to next directory
@@ -137,18 +150,18 @@ bool SMVolume_GetDirectory(
                         printf("SMVolume: Walking to dir %d\n",path->WalkIndex);
                     }
                     bool retval = SMVolume_GetDirectory(self, out, next_sector_buffer, 1, path);
-                    FatTableListing_Destructor(&fatListing);
+                    FatDirectoryListing_Destructor(&fatListing);
                     return retval;
                 }
                 else
                 {
-                    FatTableListing_Destructor(&fatListing);
+                    FatDirectoryListing_Destructor(&fatListing);
                     return false;
                 }
             }
         }
     }
-    FatTableListing_Destructor(&fatListing);
+    FatDirectoryListing_Destructor(&fatListing);
     return false;
 }
 

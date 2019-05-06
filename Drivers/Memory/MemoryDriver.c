@@ -411,7 +411,7 @@ void MemoryDriver_Detect(struct MemoryDriver* self)
 			{
 				printf(" <-- KERNEL");
 				// Align to 0x100000
-				uint32_t align = (0x100000 - ((uint32_t)&endKernel % 0x100000));
+				uint32_t align = (MEMORY_STACK_ALIGN - ((uint32_t)&endKernel % MEMORY_STACK_ALIGN));
 				self->HeapBaseAddress = (uint32_t)&endKernel + align;
 				self->HeapSize = (MEMORY_UPPER_RAM_BASE + self->PhysicalAreas[physicalAreaIndex].Length) - ((uint32_t)&endKernel + align) ;
 				self->StartBlock = (struct MemoryBlockHeader*) self->HeapBaseAddress;

@@ -17,9 +17,7 @@ struct StorageManager
     // Ram Disk Objects
     struct LinkedList RamDisks; 
     // SM Drive Descriptors
-    struct SMDrive RamDiskDrives[SM_MAX_RAM_DISKS]; 
-    struct SMDrive AtaDrives[SM_MAX_ATA_DRIVES];
-    struct SMDrive FloppyDrives[SM_MAX_FLOPPY_DRIVES];
+    struct LinkedList Drives; 
 };
 
 bool StorageManager_Constructor(struct StorageManager* self);

@@ -1,4 +1,4 @@
-#include "FatTableListing.h"
+#include "FatDirectoryListing.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -44,10 +44,10 @@ extern struct Kernel _Kernel;
     8 Increment pointers and/or counters and check the next entry. 
         Goto 1
 */
-bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume* volume, uint8_t* cluster_data_start, uint32_t sector_count)
+bool FatDirectoryListing_Constructor(struct FatDirectoryListing* self, struct FatVolume* volume, uint8_t* cluster_data_start, uint32_t sector_count)
 {
     // Init
-    memset(self,0,sizeof(struct FatTableListing));
+    memset(self,0,sizeof(struct FatDirectoryListing));
     self->Debug = false;
     self->Volume = volume;
 
@@ -88,7 +88,7 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                     if (self->Debug) 
                     {
                         printf(
-                            "FatTableListing: Found LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
+                            "FatDirectoryListing: Found LFN: %s\n\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
                             lfn_name_current,
                             lfn_first_sector,
                             self->Volume->FirstSectorNumber + lfn_first_sector
@@ -141,7 +141,7 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
                     if (self->Debug) 
                     {
                         printf(
-                            "FatTableListing: \n"
+                            "FatDirectoryListing: \n"
                             "\tFound Non-LFN: %s\n"
                             "\tFirst Cluster at sector 0x%x (Phys 0x%x)\n",
                             full_name,
@@ -171,7 +171,7 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
         {
             if (self->Debug) 
             {
-                printf("FatTableListing: Unused Cluster\n");
+                printf("FatDirectoryListing: Unused Cluster\n");
             }
         }
         cluster_data += FAT_CLUSTER_SIZE_B;
@@ -180,20 +180,20 @@ bool FatTableListing_Constructor(struct FatTableListing* self, struct FatVolume*
     self->EntryCount = entry_index;
     if (self->Debug) 
     {
-        printf("FatTableListing: Reached end of cluster chain, found %d entries\n",entry_index);
+        printf("FatDirectoryListing: Reached end of cluster chain, found %d entries\n",entry_index);
     }
     return true;
 }
 
-void FatTableListing_Destructor(struct FatTableListing* self)
+void FatDirectoryListing_Destructor(struct FatDirectoryListing* self)
 {
     LinkedList_FreeAllData(&self->Entries);
     LinkedList_Destructor(&self->Entries);
 }
 
-void FatTableListing_Debug(struct FatTableListing* self)
+void FatDirectoryListing_Debug(struct FatDirectoryListing* self)
 {
-    printf("FatTableListing: Debugging Listing\n");
+    printf("FatDirectoryListing: Debugging Listing\n");
     uint32_t count = self->EntryCount;
     uint32_t i;
     for (i=0; i<count; i++)

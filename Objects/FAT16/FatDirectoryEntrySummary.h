@@ -14,7 +14,7 @@ struct FatDirectoryEntrySummary
     struct FatVolume* Volume;
     char Name[FAT_LFN_NAME_SIZE];
     uint32_t FileSize;
-    uint32_t FirstCluster;
+    uint16_t FirstCluster;
     uint32_t FirstSector;
     uint32_t PhysicalFirstSector;
     uint8_t  Attributes;
@@ -23,7 +23,7 @@ struct FatDirectoryEntrySummary
 bool FatDirectoryEntrySummary_Constructor
 (
     struct FatDirectoryEntrySummary* self, struct FatVolume* volume, 
-    const char* name, uint32_t first_sector, uint32_t first_cluster, 
+    const char* name, uint32_t first_sector, uint16_t first_cluster, 
     uint8_t attributes, uint32_t file_size
 );
 

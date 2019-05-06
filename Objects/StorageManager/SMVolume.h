@@ -25,6 +25,7 @@ struct SMVolume
 bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent,  uint8_t partition_id, uint32_t first_sector, uint32_t sectors_in_partition);
 bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition);
 bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition);
+void SMVolume_Destructor(struct SMVolume* self);
 
 bool SMVolume_GetDirectory(struct SMVolume* self, struct SMDirectoryEntry* dir, uint8_t* sector_buffer, uint32_t sector_count, struct SMPath* path);
 void SMVolume_DebugRootDirectorySize(struct SMVolume* self);

@@ -16,12 +16,11 @@ extern struct Kernel _Kernel;
 bool FatVolume_ATAConstructor(struct FatVolume* self,  uint8_t ata_device_index, uint8_t partition_index, uint32_t lba_first_sector, uint32_t sector_count) 
 {
     printf("FatVolume: ATA Constructor\n");
+    memset(self,0,sizeof(struct FatVolume));
     self->Debug = true;
-
     self->AtaDeviceIndex = ata_device_index;
     self->PartitionIndex = partition_index;
     self->FloppyDeviceIndex = -1;
-
     self->FirstSectorNumber = lba_first_sector;
     self->SectorCount = sector_count;
 
@@ -41,8 +40,8 @@ bool FatVolume_ATAConstructor(struct FatVolume* self,  uint8_t ata_device_index,
 bool FatVolume_FloppyConstructor(struct FatVolume* self,  uint8_t device_index) 
 {
     printf("FatVolume: Floppy Constructor\n");
+    memset(self,0,sizeof(struct FatVolume));
     self->Debug = true;
-
     self->AtaDeviceIndex = -1;
     self->PartitionIndex = -1;
     self->FloppyDeviceIndex = device_index;
@@ -66,13 +65,12 @@ bool FatVolume_FloppyConstructor(struct FatVolume* self,  uint8_t device_index)
 bool FatVolume_RamDiskConstructor(struct FatVolume* self,  uint8_t device_index) 
 {
     printf("FatVolume: RamDisk Constructor\n");
+    memset(self,0,sizeof(struct FatVolume));
     self->Debug = true;
-
     self->AtaDeviceIndex = -1;
     self->PartitionIndex = -1;
     self->FloppyDeviceIndex = -1;
     self->RamDiskIndex = device_index;
-
     self->FirstSectorNumber = 0;
     self->SectorCount = 0;
 
@@ -87,6 +85,11 @@ bool FatVolume_RamDiskConstructor(struct FatVolume* self,  uint8_t device_index)
     }
 
     return true;
+}
+
+void FatVolume_Destructor(struct FatVolume* self)
+{
+    MemoryDriver_Free(&_Kernel.Memory, self->FileAllocationTableData);
 }
 
 bool FatVolume_ReadBPB(struct FatVolume* self)
@@ -217,6 +220,38 @@ bool FatVolume_ReadSector(struct FatVolume* self, uint32_t sector_to_read, uint8
         {
             printf("FatVolume: Error - RamDisk Error reading sector %d.\n",physical_sector);
             return false;
+        }
+    }
+    return true;
+}
+
+
+enum FatType FatVolume_GetFatType(struct FatVolume* self)
+{
+    return FatBPB_GetFATType(&self->BiosParameterBlock);
+}
+
+bool FatVolume_ReadFileAllocationTableData(struct FatVolume* self)
+{
+    if (self->Debug) printf("FatVolume: Reading File Allocation Table\n");
+    uint32_t fat_start_sector = self->BiosParameterBlock.ReservedSectorCount;
+    uint32_t fat_size_in_sectors = self->BiosParameterBlock.TableSize16;
+    uint32_t data_size = fat_size_in_sectors * FAT_SECTOR_SIZE;
+    self->FileAllocationTableData = MemoryDriver_Allocate(&_Kernel.Memory, data_size);
+    memset(self->FileAllocationTableData,0,data_size);
+
+    if (self->FileAllocationTableData)
+    {
+        uint32_t i;
+        for (i=0; i<fat_size_in_sectors; i++)
+        {
+            if (self->Debug) printf("FatVolume: Reading FAT Table sector 0x%x (physical 0x%x)\n",i, fat_start_sector+i);
+            if (!FatVolume_ReadSector(self, fat_start_sector + i, &self->FileAllocationTableData[i*FAT_SECTOR_SIZE]))
+            {
+                printf("FatVolume: Error reading FileAllocationTable\n");
+                MemoryDriver_Free(&_Kernel.Memory, self->FileAllocationTableData);
+                return false;
+            }
         }
     }
     return true;

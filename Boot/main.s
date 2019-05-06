@@ -15,7 +15,7 @@
 .section .bss
 .align 16
 stack_bottom:
-.skip 1024*1024*4 # Stack size
+.skip 1024*1024*2 # Stack size
 stack_top:
 
 .global fpy_dma_buf 

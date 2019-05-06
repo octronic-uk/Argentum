@@ -18,6 +18,7 @@ struct FatVolume
 	uint32_t FirstClusterNumber;
 	uint32_t SectorCount;
 	struct   FatBiosParameterBlock BiosParameterBlock;
+	uint8_t* FileAllocationTableData;
 	uint32_t RootDirSectorNumber;
 } __attribute__((packed));
 
@@ -35,6 +36,11 @@ bool FatVolume_FloppyConstructor(struct FatVolume* self, uint8_t device_index);
     @brief Construct a FatVolume object for a RamDisk
  */
 bool FatVolume_RamDiskConstructor(struct FatVolume* self, uint8_t device_index);
+
+/**
+ 	@brief Destruct a FatVolume object
+ */
+void FatVolume_Destructor(struct FatVolume* self);
 
 /**
 	@brief Get the first sector of the given cluster
@@ -62,3 +68,7 @@ bool FatVolume_WriteSector(struct FatVolume* self, uint32_t sector_to_write, uin
 	@brief Print out the contents of the given sector for debugging
 */
 void FatVolume_DebugSector(uint8_t* sector);
+
+enum FatType FatVolume_GetFatType(struct FatVolume* self);
+
+bool FatVolume_ReadFileAllocationTableData(struct FatVolume* self);

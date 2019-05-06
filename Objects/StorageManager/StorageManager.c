@@ -19,6 +19,7 @@ bool StorageManager_Constructor(struct StorageManager* self)
     memset(self,0,sizeof(struct StorageManager));
 	self->Debug = false; 
 	LinkedList_Constructor(&self->RamDisks);
+	LinkedList_Constructor(&self->Drives);
 
 	StorageManager_SetupRamDisk0(self);
 	StorageManager_ProbeFloppyDrives(self);
@@ -29,7 +30,19 @@ bool StorageManager_Constructor(struct StorageManager* self)
 void StorageManager_Destructor(struct StorageManager *self)
 {
 	printf("StorageManager: Destructing\n");
-	uint32_t i, num_ram_disks = LinkedList_Size(&self->RamDisks);
+
+	// Drives
+	uint32_t i, num_drives = LinkedList_Size(&self->Drives);
+	for (i=0; i<num_drives; i++)
+	{
+		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives, i);
+		SMDrive_Destructor(drive);
+	}
+	LinkedList_FreeAllData(&self->Drives);
+	LinkedList_Destructor(&self->Drives);
+
+	// Ram Disks
+	uint32_t num_ram_disks = LinkedList_Size(&self->RamDisks);
 	for (i=0; i<num_ram_disks; i++)
 	{
 		struct RamDisk* rd = (struct RamDisk*)LinkedList_At(&self->RamDisks, i);
@@ -44,7 +57,10 @@ void StorageManager_SetupRamDisk0(struct StorageManager* self)
 	struct RamDisk* rd = (struct RamDisk*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof (struct RamDisk));
 	LinkedList_PushBack(&self->RamDisks, rd);
 	RamDisk_Constructor(rd, RAMDISK_SIZE_1MB*10);
-	SMDrive_RamDiskConstructor(&self->RamDiskDrives[0],0);
+
+	struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+	LinkedList_PushBack(&self->Drives, drive);
+	SMDrive_RamDiskConstructor(drive,0);
 }
 
 bool StorageManager_ProbeATADrives(struct StorageManager* self)
@@ -59,7 +75,9 @@ bool StorageManager_ProbeATADrives(struct StorageManager* self)
 			{
 				printf("StorageManager: Initialising ATA Drive %d %s\n", i, device->model);
 			}
-			SMDrive_ATAConstructor(&self->AtaDrives[i], i);
+			struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+			LinkedList_PushBack(&self->Drives,drive);
+			SMDrive_ATAConstructor(drive, i);
 		}
 	}
 
@@ -71,12 +89,16 @@ bool StorageManager_ProbeFloppyDrives(struct StorageManager* self)
 	if (FloppyDriver_MasterPresent(&_Kernel.Floppy))
 	{
 		printf("StorageManager: Initialising Floppy 0 (Master)\n");
-		SMDrive_FloppyConstructor(&self->FloppyDrives[0], 0);
+		struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+		LinkedList_PushBack(&self->Drives, drive);
+		SMDrive_FloppyConstructor(drive, 0);
 	}
 	if (FloppyDriver_SlavePresent(&_Kernel.Floppy))
 	{
 		printf("StorageManager: Initialising Floppy 1 (Slave)\n");
-		SMDrive_FloppyConstructor(&self->FloppyDrives[1], 1);
+		struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+		LinkedList_PushBack(&self->Drives, drive);
+		SMDrive_FloppyConstructor(drive, 1);
 	}
 	return true;
 }
@@ -85,70 +107,79 @@ void StorageManager_ListDrives(struct StorageManager* self)
 {
 	printf("StorageManager: Drives\n");
 
-	uint32_t i;
+	uint32_t i, count = LinkedList_Size(&self->Drives);
 
-	for (i=0; i<SM_MAX_RAM_DISKS; i++)
+	for (i=0; i<count; i++)
 	{
-		struct SMDrive* rd = &self->RamDiskDrives[i];
-		if (rd->Exists)
+		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		if (drive->Exists)
 		{
-			printf("\tFound RAM Disk %d\n",i);
-		}
-	}
-
-	if (FloppyDriver_MasterPresent(&_Kernel.Floppy))
-	{
-		printf("\tFound Floppy 0 (Master)\n");
-	}
-
-	if (FloppyDriver_SlavePresent(&_Kernel.Floppy))
-	{
-		printf("\tFound Floppy 1 (Slave)\n");
-	}
-
-	for (i=0;i<SM_MAX_ATA_DRIVES;i++)
-	{
-		if (self->AtaDrives[i].Exists)
-		{
-			printf("\tFound ATA Drive %d\n",i);
+			enum SMDriveType type = SMDrive_GetDriveType(drive);
+			char* type_str;
+			int8_t index = -1; 
+			switch (type)
+			{
+				case SM_DRIVE_TYPE_ATA: 
+					type_str = "ata";
+					index = drive->AtaIndex;
+					break;
+				case SM_DRIVE_TYPE_FLOPPY: 
+					type_str = "fdd";
+					index = drive->FloppyIndex;
+					break;
+				case SM_DRIVE_TYPE_RAMDISK: 
+					type_str = "ram";
+					index = drive->RamDiskIndex;
+					break;
+				default:
+					type_str = "none";
+					break;
+			}
+			printf("\tFound SMDrive %s%d\n",type_str, index);
 		}
 	}
 }
 
 struct SMDrive* StorageManager_GetATADrive(struct StorageManager* self, uint8_t drive_id)
 {
-	if (self->AtaDrives[drive_id].Exists)
+	uint32_t i, count = LinkedList_Size(&self->Drives);
+	for (i=0; i<count; i++)
 	{
-		return &self->AtaDrives[drive_id];
+		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		if (drive->AtaIndex == drive_id && drive->Exists)
+		{
+			return drive;
+		}
 	}
-	else
-	{
-		return 0;
-	}
+	return 0;
 }
 
 struct SMDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8_t drive_id)
 {
-	if (self->FloppyDrives[drive_id].Exists)
+	uint32_t i, count = LinkedList_Size(&self->Drives);
+	for (i=0; i<count; i++)
 	{
-		return &self->FloppyDrives[drive_id];
+		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		if (drive->FloppyIndex == drive_id && drive->Exists)
+		{
+			return drive;
+		}
 	}
-	else
-	{
-		return 0;
-	}
+	return 0;
 }
 
 struct SMDrive* StorageManager_GetRamDiskDrive(struct StorageManager* self, uint8_t drive_id)
 {
-	if (self->RamDiskDrives[drive_id].Exists)
+	uint32_t i, count = LinkedList_Size(&self->Drives);
+	for (i=0; i<count; i++)
 	{
-		return &self->RamDiskDrives[drive_id];
+		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		if (drive->RamDiskIndex == drive_id && drive->Exists)
+		{
+			return drive;
+		}
 	}
-	else
-	{
-		return 0;
-	}
+	return 0;
 }
 
 bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* dir, const char* path_str)

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #define MEMORY_UPPER_RAM_BASE   0x0100000
+#define MEMORY_STACK_ALIGN 0x10
 #define MEMORY_PHYSICAL_AREA_TABLE_SIZE 16
 struct MemoryPhysicalArea
 {

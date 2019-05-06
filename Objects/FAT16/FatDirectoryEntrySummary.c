@@ -8,7 +8,7 @@ bool FatDirectoryEntrySummary_Constructor(
     struct FatVolume* volume, 
     const char* name, 
     uint32_t first_sector,
-    uint32_t first_cluster,
+    uint16_t first_cluster,
     uint8_t attributes,
     uint32_t file_size
 )
