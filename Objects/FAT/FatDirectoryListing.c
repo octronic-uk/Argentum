@@ -200,6 +200,6 @@ void FatDirectoryListing_Debug(struct FatDirectoryListing* self)
     {
         struct FatDirectoryEntrySummary *e = LinkedList_At(&self->Entries,i);
         char* type = FatDirectoryEntryData_GetDirectoryTypeString(e->Attributes);
-        printf("\t-> (%s) %08dB %s \n", type,  e->FileSize, e->Name);
+        printf("\t-> (%s) %08d bytes %s \n", type,  e->FileSize, e->Name);
     }
 }

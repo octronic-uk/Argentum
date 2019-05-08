@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include <Objects/FAT16/FatVolume.h>
+#include <Objects/FAT/FatVolume.h>
 
 #define VOLUME_NAME_SIZE 32
 

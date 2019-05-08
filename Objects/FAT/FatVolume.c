@@ -7,8 +7,8 @@
 #include <Drivers/Memory/MemoryDriver.h>
 #include <Objects/RamDisk/RamDisk.h>
 #include <Objects/MBR/MBR.h>
-#include <Objects/FAT16/FatDirectoryEntryData.h>
-#include <Objects/FAT16/FatLfnCluster.h>
+#include <Objects/FAT/FatDirectoryEntryData.h>
+#include <Objects/FAT/FatLfnCluster.h>
 #include <Objects/LinkedList/LinkedList.h>
 
 extern struct Kernel _Kernel;
@@ -17,7 +17,7 @@ bool FatVolume_ATAConstructor(struct FatVolume* self,  uint8_t ata_device_index,
 {
     printf("FatVolume: ATA Constructor\n");
     memset(self,0,sizeof(struct FatVolume));
-    self->Debug = true;
+    self->Debug = false;
     self->AtaDeviceIndex = ata_device_index;
     self->PartitionIndex = partition_index;
     self->FloppyDeviceIndex = -1;
@@ -41,7 +41,7 @@ bool FatVolume_FloppyConstructor(struct FatVolume* self,  uint8_t device_index)
 {
     printf("FatVolume: Floppy Constructor\n");
     memset(self,0,sizeof(struct FatVolume));
-    self->Debug = true;
+    self->Debug = false;
     self->AtaDeviceIndex = -1;
     self->PartitionIndex = -1;
     self->FloppyDeviceIndex = device_index;
@@ -66,7 +66,7 @@ bool FatVolume_RamDiskConstructor(struct FatVolume* self,  uint8_t device_index)
 {
     printf("FatVolume: RamDisk Constructor\n");
     memset(self,0,sizeof(struct FatVolume));
-    self->Debug = true;
+    self->Debug = false;
     self->AtaDeviceIndex = -1;
     self->PartitionIndex = -1;
     self->FloppyDeviceIndex = -1;

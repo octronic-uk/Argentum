@@ -21,7 +21,7 @@ bool Kernel_Constructor(struct Kernel* self, multiboot_info_t* mbi)
 		return false;
 	}
 
-	StorageManager_Test(&self->StorageManager);
+	//StorageManager_Test(&self->StorageManager);
 
 	return true;
 }

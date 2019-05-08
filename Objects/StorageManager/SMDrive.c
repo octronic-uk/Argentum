@@ -7,7 +7,7 @@
 #include <Drivers/ATA/ATATypes.h>
 #include <Drivers/ATA/ATADriver.h>
 #include <Drivers/PS2/PS2Driver.h>
-#include <Objects/FAT16/FatVolume.h>
+#include <Objects/FAT/FatVolume.h>
 #include <Objects/MBR/MBRPartitionEntry.h>
 #include <Objects/StorageManager/SMDrive.h>
 #include <Objects/RamDisk/RamDisk.h>

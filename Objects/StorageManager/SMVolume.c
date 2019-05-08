@@ -4,10 +4,9 @@
 #include <string.h>
 
 #include <Objects/Kernel/Kernel.h>
-#include <Objects/FAT16/FatVolume.h>
+#include <Objects/FAT/FatVolume.h>
 #include <Objects/StorageManager/SMDrive.h>
 #include <Objects/StorageManager/SMDirectoryEntry.h>
-#include <Objects/StorageManager/SMFile.h>
 
 
 extern struct Kernel _Kernel;
@@ -15,7 +14,7 @@ extern struct Kernel _Kernel;
 bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
 {
     memset(self,0,sizeof(struct SMVolume));
-    self->Debug = true;
+    self->Debug = false;
     self->Exists = true;
     self->ParentDrive = parent;
     self->VolumeIndex = volume_index;
@@ -26,7 +25,7 @@ bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint
     {
         if (FatVolume_ReadFileAllocationTableData(&self->FatVolume))
         {
-            SMVolume_DebugRootDirectorySize(self);
+            if (self->Debug) SMVolume_DebugRootDirectorySize(self);
             return true;
         }
     }
@@ -38,7 +37,7 @@ bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, u
 {
     memset(self,0,sizeof(struct SMVolume));
 
-    self->Debug = true;
+    self->Debug = false;
     self->Exists = true;
     self->ParentDrive = parent;
     self->SectorsInPartition = FLOPPY_144_NUM_SECTORS;
@@ -47,7 +46,7 @@ bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, u
     {
         if (FatVolume_ReadFileAllocationTableData(&self->FatVolume))
         {
-            SMVolume_DebugRootDirectorySize(self);
+            if (self->Debug) SMVolume_DebugRootDirectorySize(self);
             return true;
         }
     }
@@ -60,7 +59,7 @@ bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, 
 {
     memset(self,0,sizeof(struct SMVolume));
 
-    self->Debug = true;
+    self->Debug = false;
     self->Exists = true;
     self->ParentDrive = parent;
     self->SectorsInPartition = sectors_in_partition;
@@ -69,7 +68,7 @@ bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, 
     {
         if (FatVolume_ReadFileAllocationTableData(&self->FatVolume))
         {
-            SMVolume_DebugRootDirectorySize(self);
+            if (self->Debug) SMVolume_DebugRootDirectorySize(self);
             return true;
         }
     }

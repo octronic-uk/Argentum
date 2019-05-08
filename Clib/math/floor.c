@@ -1,9 +1,25 @@
 #include <math.h>
 
-double floor(double i)
+double floor(double x)
 {
-	if (i<0) 
-		return -ceil(-i);
+	union {double f; uint64_t i;} u = {x};
+	int e = u.i >> 52 & 0x7ff;
+	double y;
+
+	if (e >= 0x3ff+52 || x == 0)
+		return x;
+	/* y = int(x) - x, where int(x) is an integer neighbor of x */
+	if (u.i >> 63)
+		y = (double)(x - 0x1p52) + 0x1p52 - x;
 	else
-		return (double)(int)i;
+		y = (double)(x + 0x1p52) - 0x1p52 - x;
+	/* special case because of non-nearest rounding modes */
+	if (e <= 0x3ff-1) 
+	{
+		y = y;
+		return u.i >> 63 ? -1 : 0;
+	}
+	if (y > 0)
+		return x + y - 1;
+	return x + y;
 }

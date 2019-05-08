@@ -55,7 +55,7 @@ long int strtol(const char* nptr, char** endptr, int base)
     i = 0;
     sum = 0;
 
-    while (is_space(nptr[i])) 
+    while (isspace(nptr[i])) 
     {
         i++;
     }

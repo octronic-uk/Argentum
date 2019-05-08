@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
 int      memcmp(const void*, const void*, uint32_t);
 void*    memcpy(void* __restrict, const void* __restrict, uint32_t);
 void*    memmove(void*, const void*, uint32_t);
@@ -30,6 +31,7 @@ int      strcoll(const char* str1, const char * str2);
 char*    strdup(const char *str1);
 
 
-int atoi(const char *nptr);
-int is_space(char ch);
-int chrtoi(char ch, int base);
+int   atoi(const char *nptr);
+int   isspace(int ch);
+int   chrtoi(char ch, int base);
+char* skipwhite(const char *q);

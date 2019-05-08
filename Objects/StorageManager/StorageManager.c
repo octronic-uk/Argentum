@@ -5,7 +5,7 @@
 
 #include <Drivers/Floppy/FloppyDriver.h>
 #include <Objects/Kernel/Kernel.h>
-#include <Objects/FAT16/FatConstants.h>
+#include <Objects/FAT/FatConstants.h>
 #include <Objects/RamDisk/RamDisk.h>
 #include <Objects/StorageManager/SMDrive.h>
 #include <Objects/StorageManager/SMDirectoryEntry.h>
@@ -301,7 +301,7 @@ bool StorageManager_Test(struct StorageManager* self)
 	SMPath_TestParser();
 
 	// Floppy
-	char* fdd_file_path = "fdd0://HELP.COM";
+	char* fdd_file_path = "fdd0://HELP.HL_";
 	struct SMDirectoryEntry fdd_file;
 
 	if(StorageManager_Open(self, &fdd_file, fdd_file_path))
@@ -322,6 +322,7 @@ bool StorageManager_Test(struct StorageManager* self)
 
 	// ATA
 	char* ata_file_path = "ata0p0://STL_FILE/SquirrelChess.rar";
+	//char* ata_file_path = "ata0p0://test.txt";
 	struct SMDirectoryEntry ata_file;
 
 	if(StorageManager_Open(self, &ata_file, ata_file_path))
@@ -329,6 +330,13 @@ bool StorageManager_Test(struct StorageManager* self)
 		if (SMDirectoryEntry_IsFile(&ata_file))
 		{
 			printf("StorageManager: StorageManager has opened the file at %s\n", ata_file_path);
+
+			#define test_buf_sz 10000
+			#define test_offset 1234304
+			SMDirectoryEntry_SetFileOffset(&ata_file, test_offset);
+			uint8_t buf[test_buf_sz];
+			SMDirectoryEntry_Read(&ata_file, test_buf_sz, buf);
+			FatVolume_DebugSector(buf);
 		}
 		else
 		{

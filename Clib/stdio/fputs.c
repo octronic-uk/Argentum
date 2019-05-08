@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <string.h>
 
 int fputs ( const char * str, FILE * stream )
 {
-    printf("stdlib: fputs\n");
-    return 0;
+    printf("%s",str);
+    return strlen(str);
 }

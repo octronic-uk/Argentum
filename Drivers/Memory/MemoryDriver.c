@@ -352,6 +352,7 @@ void MemoryDriver_Free(struct MemoryDriver* self, void* addr)
 		printf("Memory: Freeing Memory hdr=0x%x, block=0x%x, size=%`d\n",(uint32_t)header,(uint32_t)addr,header->Size);
 	}
 	header->InUse = 0;
+	MemoryDriver_CleanUpHeap(self);
 }
 
 void MemoryDriver_Detect(struct MemoryDriver* self)
@@ -438,13 +439,15 @@ void MemoryDriver_SetMultibootInfo(struct MemoryDriver* self, multiboot_info_t* 
 	self->MultibootInfo = mbi;
 }
 
-void MemoryDriver_CleanupHeap(struct MemoryDriver* self)
+void MemoryDriver_CleanUpHeap(struct MemoryDriver* self)
 {
 	struct MemoryBlockHeader* block = self->StartBlock;
-	struct MemoryBlockHeader* lastInUse = block;
+	struct MemoryBlockHeader* lastInUse = 0;
 
-	while (block->Next)
+	while (1)
 	{
+		if (!block) break;
+
 		if (block->InUse)
 		{
 			lastInUse = block;
@@ -460,23 +463,28 @@ void MemoryDriver_CleanupHeap(struct MemoryDriver* self)
 
 void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self)
 {
-	printf("Memory: Memory Map =========================================\n\n");
 	struct MemoryBlockHeader* block = self->StartBlock;
+
+	printf("Memory Map\n");
+	printf("+------------+------------+------------+----------+----------+------------+\n");
+	printf("| Block      | Pointer    | Size       | Size     | In use   | Next       |\n");
+	printf("+------------+------------+------------+----------+----------+------------+\n");
 	while(block)
 	{
-		printf("Block=0x%x\tMem=0x%x\tSz=%d\tInUse=%d\tNext=0x%x\n",
+		printf("| 0x%08x | 0x%08x | 0x%08x | %08d | %s | 0x%08x |\n",
 			block,
 			(uint32_t)block+sizeof(struct MemoryBlockHeader),
 			block->Size,
-			block->InUse,
+			block->Size,
+			block->InUse ? "Yes     " : "No      ",
 			block->Next);	
 
 		if (block->Next != 0 && ((uint32_t)block->Next != (uint32_t)block + sizeof(struct MemoryBlockHeader) + block->Size))
 		{
-			printf("Memory Error!!! \n");
+			printf("Contiguous Memory Error!!! \n");
 		}
 
 		block = block->Next;
 	}
-	printf("\n============================================================\n");
+	printf("+------------+------------+------------+----------+----------+------------+\n");
 }

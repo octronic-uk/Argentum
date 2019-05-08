@@ -1,6 +1,6 @@
 #include <string.h>
 
-int is_space(char ch)
+int isspace(int ch)
 {
     if (ch == ' ')  return 1; // (0x20) space (SPC)
     if (ch == '\t') return 1; // (0x09) horizontal tab (TAB)

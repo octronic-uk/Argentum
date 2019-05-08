@@ -10,7 +10,7 @@ __attribute__((__noreturn__)) void abort(void)
 {
 	printf("PANIC: abort()\n");
 
-	//MemoryDriver_PrintMemoryMap(&_Kernel.Memory);
+	MemoryDriver_PrintMemoryMap(&_Kernel.Memory);
 
 	while (1) { 
 		asm("cli");

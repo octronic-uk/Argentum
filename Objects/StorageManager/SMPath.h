@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "../FAT16/FatConstants.h"
+#include "../FAT/FatConstants.h"
 #include <Objects/LinkedList/LinkedList.h>
 
 #define SM_PATH_MAX_DIRS 16

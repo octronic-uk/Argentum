@@ -1,6 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-#ifndef _LINUX_CTYPE_H
-#define _LINUX_CTYPE_H
+#pragma once
 
 /*
  * NOTE! This ctype does not handle EOF like the standard C
@@ -31,8 +29,6 @@ static inline int isdigit(int c)
 #define islower(c)	((__ismask(c)&(_L)) != 0)
 #define isprint(c)	((__ismask(c)&(_P|_U|_L|_D|_SP)) != 0)
 #define ispunct(c)	((__ismask(c)&(_P)) != 0)
-/* Note: isspace() must return false for %NUL-terminator */
-#define isspace(c)	((__ismask(c)&(_S)) != 0)
 #define isupper(c)	((__ismask(c)&(_U)) != 0)
 #define isxdigit(c)	((__ismask(c)&(_D|_X)) != 0)
 
@@ -70,5 +66,3 @@ static inline int isodigit(const char c)
 {
 	return c >= '0' && c <= '7';
 }
-
-#endif
