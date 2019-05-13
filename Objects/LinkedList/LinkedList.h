@@ -9,20 +9,24 @@ struct LinkedListNode
   struct LinkedListNode* Next;
 };
 
+typedef struct LinkedListNode LinkedListNode;
+
 struct LinkedList
 {
-  struct LinkedListNode* Head;
+  LinkedListNode* Head;
 };
 
-void LinkedList_Constructor(struct LinkedList* self);
-void LinkedList_Destructor(struct LinkedList* self);
-void LinkedList_PushBack(struct LinkedList* self, void* data);
-void LinkedList_Delete(struct LinkedList* self, void* data);
-void LinkedList_Display(struct LinkedList* self);
-void LinkedList_Reverse(struct LinkedList* self);
-struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data);
-void LinkedList_FreeAllData(struct LinkedList* self);
+typedef struct LinkedList LinkedList;
 
-uint32_t LinkedList_Size(struct LinkedList* self);
-bool LinkedList_IsEmpty(struct LinkedList* self);
-void* LinkedList_At(struct LinkedList* self, uint32_t index);
+void LinkedList_Constructor(LinkedList* self);
+void LinkedList_Destructor(LinkedList* self);
+void LinkedList_PushBack(LinkedList* self, void* data);
+void LinkedList_Delete(LinkedList* self, void* data);
+void LinkedList_Display(LinkedList* self);
+void LinkedList_Reverse(LinkedList* self);
+LinkedListNode* LinkedList_CreateNode(LinkedList* self, void* data);
+void LinkedList_FreeAllData(LinkedList* self);
+
+uint32_t LinkedList_Size(LinkedList* self);
+bool LinkedList_IsEmpty(LinkedList* self);
+void* LinkedList_At(LinkedList* self, uint32_t index);

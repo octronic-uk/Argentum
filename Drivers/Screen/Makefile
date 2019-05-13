@@ -1,10 +1,8 @@
-SRC = $(wildcard *.c)
-OBJ = $(SRC:.c=.o)
+SUBDIRS := $(wildcard */.)
 
-all : $(OBJ)
+all clean:
+	@for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir -f Makefile $@; \
+	done
 
-.c.o:
-	$(CC) $< $(CFLAGS) -c -o $@
-
-clean:
-	rm -rf $(OBJ)
+.PHONY: all clean

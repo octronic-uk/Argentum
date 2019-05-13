@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool SMPath_Constructor(struct SMPath* self)
 {

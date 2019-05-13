@@ -44,10 +44,11 @@ void MemoryDriver_SetMultibootInfo(struct MemoryDriver* self, multiboot_info_t* 
 
 void MemoryDriver_Detect(struct MemoryDriver* self);
 struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self, uint32_t size);
-struct MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(void* value);
+struct MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(struct MemoryDriver* self, void* value);
 uint32_t MemoryDriver_CheckForUnusedNeighbors(struct MemoryDriver* self, struct MemoryBlockHeader* header,uint32_t requested_size);
 struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* self, struct MemoryBlockHeader* resized_header);
 void MemoryDriver_CleanUpHeap(struct MemoryDriver* self);
+bool MemoryDriver_IsValidBlock(struct MemoryDriver* self, struct MemoryBlockHeader* header);
 
 // Debug
 void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self);

@@ -10,7 +10,7 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include <Drivers/PCI/Vendors.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool ATADriver_Constructor(struct ATADriver* self)
 {

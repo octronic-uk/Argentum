@@ -62,10 +62,10 @@ void InterruptDriver_SendEOI_PIC1(struct InterruptDriver* self);
 void InterruptDriver_SendEOI_PIC2(struct InterruptDriver* self);
 void InterruptDriver_SetMask_PIC1(struct InterruptDriver* self, uint8_t mask);
 void InterruptDriver_SetMask_PIC2(struct InterruptDriver* self, uint8_t mask);
-uint8_t Interrupt_ReadISR_PIC1(struct InterruptDriver* self);
-uint8_t Interrupt_ReadISR_PIC2(struct InterruptDriver* self);
-uint8_t Interrupt_ReadIRR_PIC1(struct InterruptDriver* self);
-uint8_t Interrupt_ReadIRR_PIC2(struct InterruptDriver* self);
+uint8_t InterruptDriver_ReadISR_PIC1(struct InterruptDriver* self);
+uint8_t InterruptDriver_ReadISR_PIC2(struct InterruptDriver* self);
+uint8_t InterruptDriver_ReadIRR_PIC1(struct InterruptDriver* self);
+uint8_t InterruptDriver_ReadIRR_PIC2(struct InterruptDriver* self);
 
 void InterruptDriver_SetupDescriptorTable();
 void irq0_handler();

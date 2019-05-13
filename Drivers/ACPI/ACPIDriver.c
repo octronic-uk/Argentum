@@ -10,9 +10,9 @@
 #include <Drivers/PS2/PS2Driver.h>
 #include <Objects/LinkedList/LinkedList.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
-bool ACPIDriver_Constructor(struct ACPIDriver* self)
+bool ACPIDriver_Constructor(ACPIDriver* self)
 {
     printf("ACPI Driver Constructing\n");
     self->Debug = false;
@@ -32,7 +32,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self)
     }
 
 
-    self->V1Header = (struct ACPI_RsdpDescriptorV1*)rsdpPointer;
+    self->V1Header = (ACPI_RsdpDescriptorV1*)rsdpPointer;
 
     if (self->Debug) 
     {
@@ -80,7 +80,7 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self)
         printf("ACPI: Using RsdtAddress 0x%x\n",rsdt);
     }
 
-    struct ACPI_FADT* facp = ACPIDriver_FindSDTBySignature(self, ACPI_SIG_FACP, rsdt,version);
+    ACPI_FADT* facp = ACPIDriver_FindSDTBySignature(self, ACPI_SIG_FACP, rsdt,version);
     if (facp)
     {
        if (self->Debug) 
@@ -92,17 +92,17 @@ bool ACPIDriver_Constructor(struct ACPIDriver* self)
        ACPIDriver_SetSciInterrupt(self, facp->SCI_Interrupt);
     }
 
-    struct ACPI_SDTHeader* madt_sdt = ACPIDriver_FindSDTBySignature(self, ACPI_SIG_APIC, rsdt,version);
+    ACPI_SDTHeader* madt_sdt = ACPIDriver_FindSDTBySignature(self, ACPI_SIG_APIC, rsdt,version);
 
     if (madt_sdt)
     {
-        struct ACPI_MADT* madt = (struct ACPI_MADT*)madt_sdt;
+        ACPI_MADT* madt = (ACPI_MADT*)madt_sdt;
         ACPIDriver_ProcessMADT(self, madt);
     }
     return true;
 }
 
-void ACPIDriver_Destructor(struct ACPIDriver* self)
+void ACPIDriver_Destructor(ACPIDriver* self)
 {
     if (self->Debug)
     {
@@ -113,7 +113,7 @@ void ACPIDriver_Destructor(struct ACPIDriver* self)
     LinkedList_Destructor(&self->InterruptSourceOverrideRecordPointers);
 }
 
-void* ACPIDriver_GetEbdaPointer(struct ACPIDriver* self)
+void* ACPIDriver_GetEbdaPointer(ACPIDriver* self)
 {
     if (self->Debug) 
     {
@@ -124,7 +124,7 @@ void* ACPIDriver_GetEbdaPointer(struct ACPIDriver* self)
     return vPtr;
 }
 
-void* ACPIDriver_FindRsdpPointer(struct ACPIDriver* self)
+void* ACPIDriver_FindRsdpPointer(ACPIDriver* self)
 {
     void* currentAddr;
     void* ebdaStart = ACPIDriver_GetEbdaPointer(self);
@@ -171,11 +171,11 @@ void* ACPIDriver_FindRsdpPointer(struct ACPIDriver* self)
     return 0;
 }
 
-uint8_t ACPIDriver_CheckRsdpChecksum(struct ACPIDriver* self, struct ACPI_RsdpDescriptorV1* rsdp, uint8_t version)
+uint8_t ACPIDriver_CheckRsdpChecksum(ACPIDriver* self, ACPI_RsdpDescriptorV1* rsdp, uint8_t version)
 {
     uint32_t result = 0;
     uint8_t* headerBytes = (uint8_t*)rsdp;
-    uint32_t rsdpLen = sizeof(struct ACPI_RsdpDescriptorV1);
+    uint32_t rsdpLen = sizeof(ACPI_RsdpDescriptorV1);
     int i;
     for (i=0; i<rsdpLen; i++)
     {
@@ -196,7 +196,7 @@ uint8_t ACPIDriver_CheckRsdpChecksum(struct ACPIDriver* self, struct ACPI_RsdpDe
         }
         if (version)
         {
-            struct ACPI_RsdpDescriptorV2* v2 = (struct ACPI_RsdpDescriptorV2*)rsdp;
+            ACPI_RsdpDescriptorV2* v2 = (ACPI_RsdpDescriptorV2*)rsdp;
             if (self->Debug) 
             {
                 printf("ACPI: Version 2 > check not implemented\n");
@@ -215,7 +215,7 @@ uint8_t ACPIDriver_CheckRsdpChecksum(struct ACPIDriver* self, struct ACPI_RsdpDe
 }
 
 
-uint8_t ACPIDriver_CheckSDTChecksum(struct ACPIDriver* self, struct ACPI_SDTHeader *tableHeader)
+uint8_t ACPIDriver_CheckSDTChecksum(ACPIDriver* self, ACPI_SDTHeader *tableHeader)
 {
     unsigned char sum = 0;
     if (self->Debug) 
@@ -239,16 +239,16 @@ uint8_t ACPIDriver_CheckSDTChecksum(struct ACPIDriver* self, struct ACPI_SDTHead
 }
 
 
-void* ACPIDriver_FindSDTBySignature(struct ACPIDriver* self, const char* sig, void* RootSDT, uint8_t version)
+void* ACPIDriver_FindSDTBySignature(ACPIDriver* self, const char* sig, void* RootSDT, uint8_t version)
 {
     void* rsdt = 0;
     int entries = 0;
-    uint32_t  headerLen = sizeof(struct ACPI_SDTHeader);
+    uint32_t  headerLen = sizeof(ACPI_SDTHeader);
 
     if (version)
     {
         /* Version 2.0 > */
-        struct ACPI_XSDT* rsdt = (struct ACPI_XSDT*)RootSDT;
+        ACPI_XSDT* rsdt = (ACPI_XSDT*)RootSDT;
         entries = (rsdt->h.Length - headerLen) / 8;
         if (self->Debug) 
         {
@@ -259,7 +259,7 @@ void* ACPIDriver_FindSDTBySignature(struct ACPIDriver* self, const char* sig, vo
 
         for (int i = 0; i < entries; i++)
         {
-            struct ACPI_SDTHeader *h =  (struct ACPI_SDTHeader*) (uint32_t)start[i];
+            ACPI_SDTHeader *h =  (ACPI_SDTHeader*) (uint32_t)start[i];
             if (self->Debug) 
             {
                 printf("ACPI: Found signature (%c%c%c%c)\n",
@@ -296,7 +296,7 @@ void* ACPIDriver_FindSDTBySignature(struct ACPIDriver* self, const char* sig, vo
     else
     {
         /* Version 1.0 */
-        struct ACPI_RSDT *rsdt = (struct ACPI_RSDT*) RootSDT;
+        ACPI_RSDT *rsdt = (ACPI_RSDT*) RootSDT;
         entries = (rsdt->h.Length - headerLen) / 4;
         if (self->Debug) 
         {
@@ -306,10 +306,10 @@ void* ACPIDriver_FindSDTBySignature(struct ACPIDriver* self, const char* sig, vo
             );
         }
 
-        struct ACPI_SDTHeader** start = (struct ACPI_SDTHeader**) &rsdt->PointerToOtherSDT;
+        ACPI_SDTHeader** start = (ACPI_SDTHeader**) &rsdt->PointerToOtherSDT;
         for (int i = 0; i < entries; i++)
         {
-            struct ACPI_SDTHeader *h =  start[i];
+            ACPI_SDTHeader *h =  start[i];
             if (self->Debug) 
             {
                 printf("ACPI: Found signature (%c%c%c%c) at 0x%x\n",
@@ -354,7 +354,7 @@ void* ACPIDriver_FindSDTBySignature(struct ACPIDriver* self, const char* sig, vo
     return 0;
 }
 
-void ACPIDriver_SetFacsPointer(struct ACPIDriver* self, uint32_t ptr)
+void ACPIDriver_SetFacsPointer(ACPIDriver* self, uint32_t ptr)
 {
     self->FacsPointer = ptr;
     if (self->Debug) 
@@ -363,7 +363,7 @@ void ACPIDriver_SetFacsPointer(struct ACPIDriver* self, uint32_t ptr)
     }
 }
 
-void ACPIDriver_SetSciInterrupt(struct ACPIDriver* self, uint16_t sci)
+void ACPIDriver_SetSciInterrupt(ACPIDriver* self, uint16_t sci)
 {
     self->SciInterrupt = sci;
     if (self->Debug) 
@@ -372,7 +372,7 @@ void ACPIDriver_SetSciInterrupt(struct ACPIDriver* self, uint16_t sci)
     }
 }
 
-void ACPIDriver_SetDsdtPointer(struct ACPIDriver* self, uint32_t dsdt)
+void ACPIDriver_SetDsdtPointer(ACPIDriver* self, uint32_t dsdt)
 {
     self->DsdtPointer = dsdt;
     if (self->Debug) 
@@ -381,12 +381,12 @@ void ACPIDriver_SetDsdtPointer(struct ACPIDriver* self, uint32_t dsdt)
     }
 }
 
-void APCI_SetDebug(struct ACPIDriver* self, uint8_t debug)
+void APCI_SetDebug(ACPIDriver* self, uint8_t debug)
 {
     self->Debug = debug;
 }
 
-void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
+void ACPIDriver_ProcessMADT(ACPIDriver* self, ACPI_MADT* madt)
 {
     if (madt->Flags == 0x01)
     {
@@ -405,7 +405,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
     uint8_t error = 0;
     while (current < recordsEnd && !error)
     {
-        struct ACPI_MADTRecordBase* currentRecord = (struct ACPI_MADTRecordBase*)current;
+        ACPI_MADTRecordBase* currentRecord = (ACPI_MADTRecordBase*)current;
 
         switch (currentRecord->RecordType)
         {
@@ -415,7 +415,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 {
                     printf("ACPI: MADT Record Found: Processor Local Apic\n");
                 }
-                struct ACPI_MADTRecordApic* apic = (struct ACPI_MADTRecordApic*)current;
+                ACPI_MADTRecordApic* apic = (ACPI_MADTRecordApic*)current;
                 current += apic->Base.Length;
                 break;
             }
@@ -425,7 +425,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                 {
                     printf("ACPI: MADT Record Found: I/O Apic\n");
                 }
-                struct ACPI_MADTRecordIoApic* ioapic = (struct ACPI_MADTRecordIoApic*)current;
+                ACPI_MADTRecordIoApic* ioapic = (ACPI_MADTRecordIoApic*)current;
                 LinkedList_PushBack(&self->IoApicRecordPointers, ioapic);
                 current += ioapic->Base.Length;
                 break;
@@ -437,8 +437,8 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                     printf("ACPI: MADT Record Found: Interrupt Source Override\n");
                 }
 
-                struct ACPI_MADTRecordInputSourceOverride* intSrcOvr = 0;
-                intSrcOvr = (struct ACPI_MADTRecordInputSourceOverride*)current;
+                ACPI_MADTRecordInputSourceOverride* intSrcOvr = 0;
+                intSrcOvr = (ACPI_MADTRecordInputSourceOverride*)current;
                 LinkedList_PushBack(&self->InterruptSourceOverrideRecordPointers,intSrcOvr);
                 current += intSrcOvr->Base.Length;
                 break;
@@ -450,7 +450,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                     printf("ACPI: MADT Record Found: Non-Maskable Interrupt\n");
                 }
 
-                struct ACPI_MADTRecordNonMaskableInterrupt* nmi = (struct ACPI_MADTRecordNonMaskableInterrupt*)current;
+                ACPI_MADTRecordNonMaskableInterrupt* nmi = (ACPI_MADTRecordNonMaskableInterrupt*)current;
                 current += nmi->Base.Length;
                 break;
             }
@@ -461,7 +461,7 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
                     printf("ACPI: MADT Record Found: Local Apic Address Override\n");
                 }
 
-                struct ACPI_MADTRecordLocalApicAddressOverride* localApicAddrOvr = (struct ACPI_MADTRecordLocalApicAddressOverride*)current;
+                ACPI_MADTRecordLocalApicAddressOverride* localApicAddrOvr = (ACPI_MADTRecordLocalApicAddressOverride*)current;
                 current += localApicAddrOvr->Base.Length;
                 break;
             }
@@ -483,9 +483,9 @@ void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt)
     }
 }
 
-struct ACPI_IoApic ACPIDriver_GenerateIoApic(struct ACPIDriver* self, struct ACPI_MADTRecordIoApic* ioapic)
+ACPI_IoApic ACPIDriver_GenerateIoApic(ACPIDriver* self, ACPI_MADTRecordIoApic* ioapic)
 {
-    struct ACPI_IoApic device;
+    ACPI_IoApic device;
 
     *(volatile uint32_t*)(ioapic->IoApicAddress) = 0;
     device.Id = *(volatile uint32_t*)(ioapic->IoApicAddress + 0x10);
@@ -510,9 +510,9 @@ struct ACPI_IoApic ACPIDriver_GenerateIoApic(struct ACPIDriver* self, struct ACP
     return device;
 }
 
-void ACPIDriver_DriverDebugIoApic(struct ACPIDriver* self, struct ACPI_MADTRecordIoApic* record)
+void ACPIDriver_DriverDebugIoApic(ACPIDriver* self, ACPI_MADTRecordIoApic* record)
 {
-    struct ACPI_IoApic device = ACPIDriver_GenerateIoApic(self, record);
+    ACPI_IoApic device = ACPIDriver_GenerateIoApic(self, record);
     if (self->Debug)
     {
         printf("ACPI: I/0 Apic Record\n",record->IoApicId);
@@ -543,7 +543,7 @@ void ACPIDriver_DriverDebugIoApic(struct ACPIDriver* self, struct ACPI_MADTRecor
     }
 }
 
-void ACPIDriver_DebugInterruptSourceOverride(struct ACPIDriver* self, struct ACPI_MADTRecordInputSourceOverride* record)
+void ACPIDriver_DebugInterruptSourceOverride(ACPIDriver* self, ACPI_MADTRecordInputSourceOverride* record)
 {
     if (self->Debug)
     {
@@ -555,7 +555,7 @@ void ACPIDriver_DebugInterruptSourceOverride(struct ACPIDriver* self, struct ACP
     }
 }
 
-void ACPIDriver_DebugMADT(struct ACPIDriver* self)
+void ACPIDriver_DebugMADT(ACPIDriver* self)
 {
     int nElements, i;
     /*
@@ -568,7 +568,7 @@ void ACPIDriver_DebugMADT(struct ACPIDriver* self)
 
     for (nElements = LinkedList_Size(&self->InterruptSourceOverrideRecordPointers), i=0; i<nElements; i++)
     {
-        struct ACPI_MADTRecordInputSourceOverride* iso = LinkedList_At(&self->InterruptSourceOverrideRecordPointers, i);
+        ACPI_MADTRecordInputSourceOverride* iso = LinkedList_At(&self->InterruptSourceOverrideRecordPointers, i);
         ACPIDriver_DebugInterruptSourceOverride(self, iso);
     }
 

@@ -12,7 +12,7 @@
 #include <Drivers/ACPI/ACPIDriver.h>
 #include <Drivers/ACPI/ACPITableTypes.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool PCIDriver_Constructor(struct PCIDriver* self)
 {

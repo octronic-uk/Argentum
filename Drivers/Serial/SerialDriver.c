@@ -9,26 +9,26 @@
 #include <Drivers/IO/IODriver.h>
 #include <Drivers/Interrupt/InterruptDriver.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
-bool SerialDriver_Constructor(struct SerialDriver* self)
+bool SerialDriver_Constructor(SerialDriver* self)
 {
     printf("Serial Driver: Constructing\n");
     self->Debug = false;
     SerialDriver_SetPortAddressTable(self);
-    SerialDriver_SetupPort(self, &Serial_Port1_8N1);
+    SerialDriver_SetupPort(self, &SerialPort1_8N1);
     self->Initialised = true;
     return true;
 }
 
-void SerialDriver_Destructor(struct SerialDriver* self)
+void SerialDriver_Destructor(SerialDriver* self)
 {
     printf("Serial: Destructing\n");
 }
 
 // Helper Functions ============================================================
 
-void SerialDriver_SetPortAddressTable(struct SerialDriver* self)
+void SerialDriver_SetPortAddressTable(SerialDriver* self)
 {
     if (self->Debug) printf("Serial: Setting Port Address Table\n");
     self->PortAddresses[0] = SERIAL_PORT_1_ADDRESS;
@@ -37,9 +37,9 @@ void SerialDriver_SetPortAddressTable(struct SerialDriver* self)
     self->PortAddresses[3] = SERIAL_PORT_4_ADDRESS;
 }
 
-uint16_t SerialDriver_GetDivisorFromBaudRate(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+uint16_t SerialDriver_GetDivisorFromBaudRate(SerialDriver* self,  SerialPortDescriptor* desc)
 {
-    Serial_BaudRate baudRate = desc->mBaudRate;
+    SerialBaudRate baudRate = desc->mBaudRate;
     switch(baudRate)
     {
         case BAUD_115200:
@@ -67,7 +67,7 @@ uint16_t SerialDriver_GetDivisorFromBaudRate(struct SerialDriver* self, struct  
     return SERIAL_BAUD_DIVISOR_9600; 
 }
 
-uint8_t SerialDriver_GetDataBitsMask(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+uint8_t SerialDriver_GetDataBitsMask(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     switch (desc->mDataBits)
     {
@@ -83,7 +83,7 @@ uint8_t SerialDriver_GetDataBitsMask(struct SerialDriver* self, struct  Serial_P
     }
 }
 
-uint8_t SerialDriver_GetStopBitsMask(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+uint8_t SerialDriver_GetStopBitsMask(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     switch (desc->mStopBits)
     {
@@ -96,7 +96,7 @@ uint8_t SerialDriver_GetStopBitsMask(struct SerialDriver* self, struct  Serial_P
     }
 }
 
-uint8_t SerialDriver_GetParityMask(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+uint8_t SerialDriver_GetParityMask(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     switch (desc->mParity)
     {
@@ -115,7 +115,7 @@ uint8_t SerialDriver_GetParityMask(struct SerialDriver* self, struct  Serial_Por
 
 // Register Manipulation Functions =============================================
 
-uint8_t SerialDriver_ReadInterruptIDRegister(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+uint8_t SerialDriver_ReadInterruptIDRegister(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t iirAddress = baseAddress + SERIAL_INTERRUPT_ID_REGISTER_OFFSET;
@@ -123,7 +123,7 @@ uint8_t SerialDriver_ReadInterruptIDRegister(struct SerialDriver* self, struct  
     if (self->Debug) printf("Serial: <- Port %d IIR: 0x%x\n",desc->mPortID, desc->mInterruptID);
 }
 
-void SerialDriver_SetLineStatusRegister(struct SerialDriver* self, struct  Serial_PortDescriptor* desc, uint8_t val)
+void SerialDriver_SetLineStatusRegister(SerialDriver* self,  SerialPortDescriptor* desc, uint8_t val)
 {
     if (self->Debug) printf("Serial: -> Setting line status register 0x%x\n",val);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -131,7 +131,7 @@ void SerialDriver_SetLineStatusRegister(struct SerialDriver* self, struct  Seria
     IO_WritePort8b(lineStatusRegisterAddress,val);
 }
 
-void SerialDriver_EnableDLAB(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_EnableDLAB(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Enabling DLAB on port %d\n",desc->mPortID);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -142,7 +142,7 @@ void SerialDriver_EnableDLAB(struct SerialDriver* self, struct  Serial_PortDescr
     if (self->Debug) printf("Serial: <- LCR After enable DLAB 0x%x\n",currentLineControlValue);
 }
 
-void SerialDriver_DisableDLAB(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_DisableDLAB(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Disabling DLAB on port %d\n",desc->mPortID);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -154,7 +154,7 @@ void SerialDriver_DisableDLAB(struct SerialDriver* self, struct  Serial_PortDesc
     if (self->Debug) printf("Serial: <- LCR After disable DLAB 0x%x\n",currentLineControlValue);
 }
 
-void SerialDriver_SetBaudRate(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetBaudRate(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Setting baud for port %d\n",desc->mPortID);
     SerialDriver_EnableDLAB(self, desc);
@@ -169,7 +169,7 @@ void SerialDriver_SetBaudRate(struct SerialDriver* self, struct  Serial_PortDesc
     SerialDriver_DisableDLAB(self, desc);
 }
 
-void SerialDriver_SetDataBits(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetDataBits(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Setting data bits for port %d\n",desc->mPortID);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -181,7 +181,7 @@ void SerialDriver_SetDataBits(struct SerialDriver* self, struct  Serial_PortDesc
     if (self->Debug) printf("Serial: <- After data bits set 0x%x\n",currentLineControlValue);
 }
 
-void SerialDriver_SetStopBits(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetStopBits(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Setting stop bits for port %d\n",desc->mPortID);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -194,7 +194,7 @@ void SerialDriver_SetStopBits(struct SerialDriver* self, struct  Serial_PortDesc
     if (self->Debug) printf("Serial: <- After stop bits set 0x%x\n",currentLineControlValue);
 }
 
-void SerialDriver_SetParity(struct SerialDriver* self,struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetParity(SerialDriver* self, SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Setting parity for port %d\n",desc->mPortID);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -206,7 +206,7 @@ void SerialDriver_SetParity(struct SerialDriver* self,struct  Serial_PortDescrip
     if (self->Debug) printf("Serial: <- After Parity set 0x%x\n", currentLineControlValue);
 }
 
-void SerialDriver_SetInterruptEnableRegister(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetInterruptEnableRegister(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Setting interrupts for port %d 0x%x\n",desc->mPortID,desc->mInterruptEnable);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -216,7 +216,7 @@ void SerialDriver_SetInterruptEnableRegister(struct SerialDriver* self, struct  
     if (self->Debug) printf("Serial: <- Port %d interrupts set 0x%x\n",desc->mPortID, val);
 }
 
-void SerialDriver_ReadLineStatusRegister(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_ReadLineStatusRegister(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
     uint16_t lineStatusRegisterAddress = baseAddress + SERIAL_LINE_STATUS_REGISTER_OFFSET;
@@ -224,7 +224,7 @@ void SerialDriver_ReadLineStatusRegister(struct SerialDriver* self, struct  Seri
     desc->mLineStatus = lineStatus;
 }
 
-void SerialDriver_SetFifoControlRegister(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetFifoControlRegister(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Set FIFO Control Register 0x%x\n",desc->mFifoControl);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -232,7 +232,7 @@ void SerialDriver_SetFifoControlRegister(struct SerialDriver* self, struct  Seri
     IO_WritePort8b(fifoAddress, desc->mFifoControl);
 }
 
-void SerialDriver_SetModemControlRegister(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetModemControlRegister(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: -> Set Modem Control 0x%x\n",desc->mModemControl);
     uint16_t baseAddress = self->PortAddresses[desc->mPortID-1];
@@ -244,7 +244,7 @@ void SerialDriver_SetModemControlRegister(struct SerialDriver* self, struct  Ser
 
 // Serial IO Functions ========================================================
 
-uint8_t SerialDriver_Read8b(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+uint8_t SerialDriver_Read8b(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     while(!desc->mCanRead) {} 
 
@@ -256,7 +256,7 @@ uint8_t SerialDriver_Read8b(struct SerialDriver* self, struct  Serial_PortDescri
     return data;
 }
 
-void SerialDriver_Write8b(struct SerialDriver* self, struct  Serial_PortDescriptor* desc, uint8_t data)
+void SerialDriver_Write8b(SerialDriver* self,  SerialPortDescriptor* desc, uint8_t data)
 {
     /* 
         TODO 
@@ -271,7 +271,7 @@ void SerialDriver_Write8b(struct SerialDriver* self, struct  Serial_PortDescript
     IO_WritePort8b(baseAddress, data);
 }
 
-void SerialDriver_WriteString(struct SerialDriver* self, struct  Serial_PortDescriptor* desc, const char* string)
+void SerialDriver_WriteString(SerialDriver* self,  SerialPortDescriptor* desc, const char* string)
 {
     if (self->Debug) printf("Serial: Writing string out on port %d...\n",desc->mPortID);
     while (*string)
@@ -283,7 +283,7 @@ void SerialDriver_WriteString(struct SerialDriver* self, struct  Serial_PortDesc
 
 // Debug Functions =============================================================
 
-void SerialDriver_DebugLineStatus(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_DebugLineStatus(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) 
     {
@@ -324,7 +324,7 @@ void SerialDriver_DebugLineStatus(struct SerialDriver* self, struct  Serial_Port
     }
 }
 
-void SerialDriver_DebugInterruptID(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_DebugInterruptID(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug)
     {
@@ -368,7 +368,7 @@ void SerialDriver_DebugInterruptID(struct SerialDriver* self, struct  Serial_Por
 
 // Interrupt Handling ==========================================================
 
-void SerialDriver_SetupInterruptHandlerForPort1(struct SerialDriver* self)
+void SerialDriver_SetupInterruptHandlerForPort1(SerialDriver* self)
 {
     if(self->Debug) 
     {
@@ -379,8 +379,8 @@ void SerialDriver_SetupInterruptHandlerForPort1(struct SerialDriver* self)
 
 void SerialDriver_Port1InterruptHandler()
 {
-    struct SerialDriver* self = &_Kernel.Serial;
-    struct  Serial_PortDescriptor* desc = &Serial_Port1_8N1;
+    SerialDriver* self = &_Kernel.Serial;
+     SerialPortDescriptor* desc = &SerialPort1_8N1;
     if (self->Debug) 
     {
         printf("Serial: Interrupt on Port 1\n");
@@ -405,7 +405,7 @@ void SerialDriver_Port1InterruptHandler()
 
 // API Level Functions ========================================================
 
-void SerialDriver_SetupPort(struct SerialDriver* self, struct  Serial_PortDescriptor* desc)
+void SerialDriver_SetupPort(SerialDriver* self,  SerialPortDescriptor* desc)
 {
     if (self->Debug) printf("Serial: Setting up Port %d\n",desc->mPortID);
 
@@ -435,9 +435,3 @@ void SerialDriver_SetupPort(struct SerialDriver* self, struct  Serial_PortDescri
     desc->mInterruptEnable = previousInterrupts;
 }
 
-void SerialDriver_TestPort1(struct SerialDriver* self)
-{
-    char* test_str = "\n\nHello, World! From COM1\n\n";
-    printf("Serial: Writing a test string to port %d\n", Serial_Port1_8N1.mPortID);
-    SerialDriver_WriteString(self, &Serial_Port1_8N1, test_str);
-}

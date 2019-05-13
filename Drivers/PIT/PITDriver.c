@@ -5,7 +5,7 @@
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/Interrupt/InterruptDriver.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool PITDriver_Constructor(struct PITDriver* self)
 {

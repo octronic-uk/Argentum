@@ -17,12 +17,12 @@ enum ScancodeParserState
 struct ScancodeParser
 {
     bool Debug;
-    enum ScancodeParserState State;
+    volatile enum ScancodeParserState State;
     volatile struct KeyboardAction CurrentAction;
     volatile bool ActionValid;
-    bool Shift;
-    bool Alt;
-    bool Ctrl;
+    volatile bool Shift;
+    volatile bool Alt;
+    volatile bool Ctrl;
 };
 
 bool ScancodeParser_Constructor(struct ScancodeParser* self);

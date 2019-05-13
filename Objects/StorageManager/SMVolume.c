@@ -4,16 +4,16 @@
 #include <string.h>
 
 #include <Objects/Kernel/Kernel.h>
-#include <Objects/FAT/FatVolume.h>
-#include <Objects/StorageManager/SMDrive.h>
-#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include "FAT/FatVolume.h"
+#include "SMDrive.h"
+#include "SMDirectoryEntry.h"
 
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
-bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
+bool SMVolume_ATAConstructor(SMVolume* self, SMDrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
 {
-    memset(self,0,sizeof(struct SMVolume));
+    memset(self,0,sizeof(SMVolume));
     self->Debug = false;
     self->Exists = true;
     self->ParentDrive = parent;
@@ -33,9 +33,9 @@ bool SMVolume_ATAConstructor(struct SMVolume* self, struct SMDrive* parent, uint
     return false;
 }
 
-bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition)
+bool SMVolume_FloppyConstructor(SMVolume* self, SMDrive* parent, uint32_t sectors_in_partition)
 {
-    memset(self,0,sizeof(struct SMVolume));
+    memset(self,0,sizeof(SMVolume));
 
     self->Debug = false;
     self->Exists = true;
@@ -55,9 +55,9 @@ bool SMVolume_FloppyConstructor(struct SMVolume* self, struct SMDrive* parent, u
     return false;
 }
 
-bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, uint32_t sectors_in_partition)
+bool SMVolume_RamDiskConstructor(SMVolume* self, SMDrive* parent, uint32_t sectors_in_partition)
 {
-    memset(self,0,sizeof(struct SMVolume));
+    memset(self,0,sizeof(SMVolume));
 
     self->Debug = false;
     self->Exists = true;
@@ -77,15 +77,15 @@ bool SMVolume_RamDiskConstructor(struct SMVolume* self, struct SMDrive* parent, 
 }
 
 
-void SMVolume_Destructor(struct SMVolume* self)
+void SMVolume_Destructor(SMVolume* self)
 {
     FatVolume_Destructor(&self->FatVolume);
 }
 bool SMVolume_GetDirectory(
-    struct SMVolume* self, struct SMDirectoryEntry* out, uint8_t* sector_buffer, 
-    uint32_t sector_count, struct SMPath* path
+    SMVolume* self, SMDirectoryEntry* out, uint8_t* sector_buffer, 
+    uint32_t sector_count, SMPath* path
 ){
-    struct FatDirectoryListing fatListing;
+    FatDirectoryListing fatListing;
     if (!FatDirectoryListing_Constructor(&fatListing, &self->FatVolume, sector_buffer, sector_count))
     {
         printf("SMVolume: Error - Could not read directory listing\n");
@@ -102,7 +102,7 @@ bool SMVolume_GetDirectory(
     uint8_t fat_entry_index;
     for (fat_entry_index = 0; fat_entry_index < fatListing.EntryCount; fat_entry_index++)
     {
-        struct FatDirectoryEntrySummary* entry = LinkedList_At(&fatListing.Entries, fat_entry_index);
+        FatDirectoryEntrySummary* entry = LinkedList_At(&fatListing.Entries, fat_entry_index);
         char* entry_name = entry->Name;
 
         if (self->Debug)
@@ -121,7 +121,7 @@ bool SMVolume_GetDirectory(
                 {
                     printf("SMVolume: Last Directory in path is %s\n",target_name);
                 }
-                bool retval =  SMDirectoryEntry_Constructor(out,self,entry->FirstCluster, entry->Attributes);
+                bool retval =  SMDirectoryEntry_Constructor(out,self,entry);
                 FatDirectoryListing_Destructor(&fatListing);
                 return retval;
             }
@@ -164,19 +164,19 @@ bool SMVolume_GetDirectory(
     return false;
 }
 
-uint16_t SMVolume_GetRootDirectoryCount(struct SMVolume* self)
+uint16_t SMVolume_GetRootDirectoryCount(SMVolume* self)
 {
     return self->FatVolume.BiosParameterBlock.RootEntryCount;
 }
 
-uint32_t SMVolume_GetRootDirectorySectorCount(struct SMVolume* self)
+uint32_t SMVolume_GetRootDirectorySectorCount(SMVolume* self)
 {
     uint16_t num_root_directories = SMVolume_GetRootDirectoryCount(self);
     uint32_t root_dir_size_b = num_root_directories * 32 /* directory size */;
     return root_dir_size_b/self->FatVolume.BiosParameterBlock.BytesPerSector;
 }
 
-void SMVolume_DebugRootDirectorySize(struct SMVolume* self)
+void SMVolume_DebugRootDirectorySize(SMVolume* self)
 {
     uint16_t num_root_directories = SMVolume_GetRootDirectoryCount(self);
     uint32_t root_dir_size_b = num_root_directories * 32 /* directory size */;

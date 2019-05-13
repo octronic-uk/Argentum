@@ -7,17 +7,17 @@
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/Memory/MemoryDriver.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
-void LinkedList_Constructor(struct LinkedList* self)
+void LinkedList_Constructor(LinkedList* self)
 {
 	self->Head = 0;
 }
 
-void LinkedList_Destructor(struct LinkedList* self)
+void LinkedList_Destructor(LinkedList* self)
 {
-	struct LinkedListNode* current = self->Head;
-	struct LinkedListNode* next = current;
+	LinkedListNode* current = self->Head;
+	LinkedListNode* next = current;
 	while(current != 0)
 	{
 		next = current->Next;
@@ -26,9 +26,9 @@ void LinkedList_Destructor(struct LinkedList* self)
 	}
 }
 
-void LinkedList_Display(struct LinkedList* self)
+void LinkedList_Display(LinkedList* self)
 {
-	struct LinkedListNode* current = self->Head;
+	LinkedListNode* current = self->Head;
 	if(self->Head == 0)
 	{
 		return;
@@ -40,9 +40,9 @@ void LinkedList_Display(struct LinkedList* self)
 	}
 }
 
-void LinkedList_PushBack(struct LinkedList* self, void* data)
+void LinkedList_PushBack(LinkedList* self, void* data)
 {
-	struct LinkedListNode* current = 0;
+	LinkedListNode* current = 0;
 	if(self->Head == 0)
 	{
 		self->Head = LinkedList_CreateNode(self,data);
@@ -58,10 +58,10 @@ void LinkedList_PushBack(struct LinkedList* self, void* data)
 	}
 }
 
-void LinkedList_Delete(struct LinkedList* self, void* data)
+void LinkedList_Delete(LinkedList* self, void* data)
 {
-	struct LinkedListNode* current = self->Head;
-	struct LinkedListNode* previous = current;
+	LinkedListNode* current = self->Head;
+	LinkedListNode* previous = current;
 	while(current != 0)
 	{
 		if(current->Data == data)
@@ -79,11 +79,11 @@ void LinkedList_Delete(struct LinkedList* self, void* data)
 	}
 }
 
-void LinkedList_Reverse(struct LinkedList* self)
+void LinkedList_Reverse(LinkedList* self)
 {
-	struct LinkedListNode* reversed = 0;
-	struct LinkedListNode* current = self->Head;
-	struct LinkedListNode* temp = 0;
+	LinkedListNode* reversed = 0;
+	LinkedListNode* current = self->Head;
+	LinkedListNode* temp = 0;
 	while(current != 0)
 	{
 		temp = current;
@@ -94,9 +94,9 @@ void LinkedList_Reverse(struct LinkedList* self)
 	self->Head = reversed;
 }
 
-void* LinkedList_At(struct LinkedList* self, uint32_t index)
+void* LinkedList_At(LinkedList* self, uint32_t index)
 {
-	struct LinkedListNode* current = self->Head;
+	LinkedListNode* current = self->Head;
 
 	if (!current)
 	{
@@ -116,9 +116,9 @@ void* LinkedList_At(struct LinkedList* self, uint32_t index)
 }
 
 
-struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data)
+LinkedListNode* LinkedList_CreateNode(LinkedList* self, void* data)
 {
-	struct LinkedListNode* newNode = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct LinkedListNode));
+	LinkedListNode* newNode = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(LinkedListNode));
 	if (!newNode)
 	{
 		return 0;
@@ -128,10 +128,10 @@ struct LinkedListNode* LinkedList_CreateNode(struct LinkedList* self, void* data
 	return newNode;
 }
 
-uint32_t LinkedList_Size(struct LinkedList* self)
+uint32_t LinkedList_Size(LinkedList* self)
 {
     uint32_t size = 0;
-    struct LinkedListNode* current = self->Head;
+    LinkedListNode* current = self->Head;
     while (current)
     {
         size++;
@@ -140,14 +140,14 @@ uint32_t LinkedList_Size(struct LinkedList* self)
     return size;
 }
 
-bool LinkedList_IsEmpty(struct LinkedList* self)
+bool LinkedList_IsEmpty(LinkedList* self)
 {
 	return LinkedList_Size(self) == 0;
 }
 
-void LinkedList_FreeAllData(struct LinkedList* self)
+void LinkedList_FreeAllData(LinkedList* self)
 {
-	struct LinkedListNode* current = self->Head;
+	LinkedListNode* current = self->Head;
 	while(current)
 	{
 		MemoryDriver_Free(&_Kernel.Memory, current->Data);

@@ -2,7 +2,7 @@
 
 #include <Objects/Kernel/Kernel.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 void *realloc(void* ptr, uint32_t size)
 {

@@ -11,29 +11,34 @@
 #define SM_MAX_ATA_DRIVES    4
 #define SM_MAX_RAM_DISKS     4
 
+typedef struct FILE FILE;
+
 struct StorageManager
 {
     bool Debug;
     // Ram Disk Objects
-    struct LinkedList RamDisks; 
+    LinkedList RamDisks; 
     // SM Drive Descriptors
-    struct LinkedList Drives; 
+    LinkedList Drives; 
+    // Currently Open Files
+    LinkedList OpenFiles;
 };
+typedef struct StorageManager StorageManager;
 
-bool StorageManager_Constructor(struct StorageManager* self);
-void StorageManager_Destructor(struct StorageManager *self);
+bool StorageManager_Constructor(StorageManager* self);
+void StorageManager_Destructor(StorageManager *self);
 
-void StorageManager_ListDrives(struct StorageManager* self);
+void StorageManager_ListDrives(StorageManager* self);
 
-struct SMDrive* StorageManager_GetATADrive(struct StorageManager* self, uint8_t drive_id);
-struct SMDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8_t drive_id);
-struct SMDrive* StorageManager_GetRamDiskDrive(struct StorageManager* self, uint8_t drive_id);
+SMDrive* StorageManager_GetATADrive(StorageManager* self, uint8_t drive_id);
+SMDrive* StorageManager_GetFloppyDrive(StorageManager* self, uint8_t drive_id);
+SMDrive* StorageManager_GetRamDiskDrive(StorageManager* self, uint8_t drive_id);
 
-bool StorageManager_ProbeFloppyDrives(struct StorageManager* self);
-bool StorageManager_ProbeATADrives(struct StorageManager* self);
-void StorageManager_SetupRamDisk0(struct StorageManager* self);
+bool StorageManager_ProbeFloppyDrives(StorageManager* self);
+bool StorageManager_ProbeATADrives(StorageManager* self);
+void StorageManager_SetupRamDisk0(StorageManager* self);
 
-bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* dir, const char* path);
-bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntry* dir, struct SMPath* path);
-
-bool StorageManager_Test(struct StorageManager* self);
+bool StorageManager_Open(StorageManager* self, SMDirectoryEntry* dir, const char* path);
+bool StorageManager_OpenPath(StorageManager* self, SMDirectoryEntry* dir, SMPath* path);
+FILE* StorageManager_RequestFilePointer(StorageManager* self);
+void StorageManager_CloseFilePointer(StorageManager* self, FILE* f);

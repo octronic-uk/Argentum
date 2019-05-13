@@ -1,8 +1,8 @@
 #include <stdio.h>
+#include "FILE.h"
+#include <Objects/StorageManager/SMDirectoryEntry.h>
 
 long int ftell(FILE* stream)
 {
-
-    printf("stdlib: ftell\n");
-    return 0;
+    return stream->DirectoryEntry->FileOffset.ByteOffset;
 }

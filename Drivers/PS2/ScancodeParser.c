@@ -7,7 +7,7 @@
 
 bool ScancodeParser_Constructor(struct ScancodeParser* self)
 {
-    printf("ScancodeParser: Constructing");
+    printf("ScancodeParser: Constructing\n");
     memset(self,0,sizeof(struct ScancodeParser));
     self->Debug = false;
     self->State = STATE_START;

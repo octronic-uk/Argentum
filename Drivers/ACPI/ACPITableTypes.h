@@ -9,17 +9,18 @@ struct ACPI_RsdpDescriptorV1
     char OEMID[6];
     uint8_t Revision;
     void* RsdtAddress;
-} __attribute__ ((packed)) 
-;
+} __attribute__ ((packed)) ;
+typedef struct ACPI_RsdpDescriptorV1 ACPI_RsdpDescriptorV1;
 
 struct ACPI_RsdpDescriptorV2
 {
-    struct ACPI_RsdpDescriptorV1 V1Descriptor;
+    ACPI_RsdpDescriptorV1 V1Descriptor;
     uint32_t Length;
     uint64_t XsdtAddress;
     uint8_t ExtendedChecksum;
     uint8_t Reserved[3];
 } __attribute__ ((packed));
+typedef struct ACPI_RsdpDescriptorV2 ACPI_RsdpDescriptorV2;
 
 struct ACPI_SDTHeader
 {
@@ -33,6 +34,7 @@ struct ACPI_SDTHeader
   uint32_t CreatorID;
   uint32_t CreatorRevision;
 } __attribute__((packed));
+typedef struct ACPI_SDTHeader ACPI_SDTHeader;
 
 struct ACPI_GenericAddressStructure
 {
@@ -42,10 +44,11 @@ struct ACPI_GenericAddressStructure
   uint8_t AccessSize;
   uint64_t Address;
 } __attribute__((packed));
+typedef struct ACPI_GenericAddressStructure ACPI_GenericAddressStructure;
 
 struct ACPI_FADT
 {
-    struct ACPI_SDTHeader h;
+    ACPI_SDTHeader h;
     uint32_t FirmwareCtrl;
     uint32_t Dsdt;
  
@@ -92,7 +95,7 @@ struct ACPI_FADT
     uint32_t Flags;
  
     // 12 byte structure; see below for details
-    struct ACPI_GenericAddressStructure ResetReg;
+    ACPI_GenericAddressStructure ResetReg;
  
     uint8_t  ResetValue;
     uint8_t  Reserved3[3];
@@ -101,27 +104,31 @@ struct ACPI_FADT
     uint64_t                X_FirmwareControl;
     uint64_t                X_Dsdt;
  
-    struct ACPI_GenericAddressStructure X_PM1aEventBlock;
-    struct ACPI_GenericAddressStructure X_PM1bEventBlock;
-    struct ACPI_GenericAddressStructure X_PM1aControlBlock;
-    struct ACPI_GenericAddressStructure X_PM1bControlBlock;
-    struct ACPI_GenericAddressStructure X_PM2ControlBlock;
-    struct ACPI_GenericAddressStructure X_PMTimerBlock;
-    struct ACPI_GenericAddressStructure X_GPE0Block;
-    struct ACPI_GenericAddressStructure X_GPE1Block;
+    ACPI_GenericAddressStructure X_PM1aEventBlock;
+    ACPI_GenericAddressStructure X_PM1bEventBlock;
+    ACPI_GenericAddressStructure X_PM1aControlBlock;
+    ACPI_GenericAddressStructure X_PM1bControlBlock;
+    ACPI_GenericAddressStructure X_PM2ControlBlock;
+    ACPI_GenericAddressStructure X_PMTimerBlock;
+    ACPI_GenericAddressStructure X_GPE0Block;
+    ACPI_GenericAddressStructure X_GPE1Block;
 }  __attribute__((packed));
+typedef struct ACPI_FADT ACPI_FADT;
 
 struct ACPI_RSDT 
 {
-    struct ACPI_SDTHeader h;
+    ACPI_SDTHeader h;
     uint32_t PointerToOtherSDT; // (h.Length - sizeof(h)) / 4;
 };
 
+typedef struct ACPI_RSDT ACPI_RSDT ;
+
 struct ACPI_XSDT
 {
-    struct ACPI_SDTHeader h;
+    ACPI_SDTHeader h;
     uint64_t PointerToOtherSDT; // (h.Length - sizeof(h)) / 8;
 };
+typedef struct ACPI_XSDT ACPI_XSDT;
 
 struct ACPI_FACS
 {
@@ -138,61 +145,69 @@ struct ACPI_FACS
     uint8_t  Reserved1[24];          /* Reserved, must be zero */
 
 }__attribute__((packed));
+typedef struct ACPI_FACS ACPI_FACS;
 
 struct  ACPI_MADT
 {
-    struct ACPI_SDTHeader h;
+    ACPI_SDTHeader h;
     uint32_t LocalAPICAddress;
     uint32_t Flags;
     uint8_t RecordsStart;
 };
+typedef struct  ACPI_MADT ACPI_MADT;
 
 struct ACPI_MADTRecordBase
 {
     uint8_t RecordType;
     uint8_t Length;
 }__attribute__((packed));
+typedef struct ACPI_MADTRecordBase ACPI_MADTRecordBase;
 
 struct ACPI_MADTRecordApic
 {
-    struct ACPI_MADTRecordBase Base;
+    ACPI_MADTRecordBase Base;
     uint8_t AcpiProcessorId;
     uint8_t AcpiId;
     uint32_t Flags;
 } __attribute__((packed));
+typedef struct ACPI_MADTRecordApic ACPI_MADTRecordApic;
 
 struct ACPI_MADTRecordIoApic
 {
-    struct ACPI_MADTRecordBase Base;
+    ACPI_MADTRecordBase Base;
     uint8_t IoApicId;
     uint8_t Reserved;
     uint32_t IoApicAddress;
     uint32_t GlobalSystemInterruptBase; 
 } __attribute__((packed));
+typedef struct ACPI_MADTRecordIoApic ACPI_MADTRecordIoApic;
 
 struct ACPI_MADTRecordInputSourceOverride
 {
-    struct ACPI_MADTRecordBase Base;
+    ACPI_MADTRecordBase Base;
     uint8_t BusSource;
     uint8_t IrqSource;
     uint32_t GlobalSystemInterrupt;
     uint16_t Flags;
 } __attribute__((packed));
+typedef struct ACPI_MADTRecordInputSourceOverride ACPI_MADTRecordInputSourceOverride;
 
 struct ACPI_MADTRecordNonMaskableInterrupt
 {
-    struct ACPI_MADTRecordBase Base;
+    ACPI_MADTRecordBase Base;
     uint8_t ApicProcessorId;
     uint16_t Flags;
     uint8_t LintNumber;
 } __attribute__((packed));
+typedef struct ACPI_MADTRecordNonMaskableInterrupt ACPI_MADTRecordNonMaskableInterrupt;
 
 struct ACPI_MADTRecordLocalApicAddressOverride
 {
-    struct ACPI_MADTRecordBase Base;
+    ACPI_MADTRecordBase Base;
     uint8_t Reserved;
     uint64_t LocalApic;
 } __attribute__((packed));
+typedef struct ACPI_MADTRecordLocalApicAddressOverride ACPI_MADTRecordLocalApicAddressOverride;
 
 union ACPI_IoApicRedirectionEntry
 {
@@ -226,3 +241,4 @@ struct ACPI_IoApic
     uint8_t IrqRedirectEntries;
     union ACPI_IoApicRedirectionEntry IrqRedirections[24];
 };
+typedef struct ACPI_IoApic ACPI_IoApic;

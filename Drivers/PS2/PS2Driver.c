@@ -4,10 +4,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <Drivers/IO/IODriver.h>
-#include <Drivers/Screen/ScreenDriver.h>
+#include <Drivers/Screen/TextMode/TextModeDriver.h>
 #include <Objects/Kernel/Kernel.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool PS2Driver_Constructor(struct PS2Driver* self)
 {

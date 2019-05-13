@@ -12,29 +12,30 @@ struct ACPIDriver
     uint32_t FacsPointer;
     uint32_t DsdtPointer;
     uint16_t SciInterrupt;
-    struct ACPI_RsdpDescriptorV1* V1Header;
-    struct LinkedList IoApicRecordPointers;
-    struct LinkedList InterruptSourceOverrideRecordPointers;
+    ACPI_RsdpDescriptorV1* V1Header;
+    LinkedList IoApicRecordPointers;
+    LinkedList InterruptSourceOverrideRecordPointers;
 } ;
+typedef struct ACPIDriver ACPIDriver;
 
-bool ACPIDriver_Constructor(struct ACPIDriver* self);
-void ACPIDriver_Destructor(struct ACPIDriver* self);
+bool ACPIDriver_Constructor(ACPIDriver* self);
+void ACPIDriver_Destructor(ACPIDriver* self);
 
-void* ACPIDriver_GetEbdaPointer(struct ACPIDriver* self);
-void* ACPIDriver_FindRsdpPointer(struct ACPIDriver* self);
+void* ACPIDriver_GetEbdaPointer(ACPIDriver* self);
+void* ACPIDriver_FindRsdpPointer(ACPIDriver* self);
 
-uint8_t ACPIDriver_CheckRsdpChecksum(struct ACPIDriver* self, struct ACPI_RsdpDescriptorV1* rsdp, uint8_t version);
-uint8_t ACPIDriver_CheckSDTChecksum(struct ACPIDriver* self, struct ACPI_SDTHeader *tableHeader);
+uint8_t ACPIDriver_CheckRsdpChecksum(ACPIDriver* self, ACPI_RsdpDescriptorV1* rsdp, uint8_t version);
+uint8_t ACPIDriver_CheckSDTChecksum(ACPIDriver* self, ACPI_SDTHeader *tableHeader);
 
-void* ACPIDriver_FindSDTBySignature(struct ACPIDriver* self, const char* sig, void* RootSDT, uint8_t version);
+void* ACPIDriver_FindSDTBySignature(ACPIDriver* self, const char* sig, void* RootSDT, uint8_t version);
 
-void ACPIDriver_SetFacsPointer(struct ACPIDriver* self, uint32_t ptr);
-void ACPIDriver_SetSciInterrupt(struct ACPIDriver* self, uint16_t sci);
-void ACPIDriver_SetDsdtPointer(struct ACPIDriver* self, uint32_t dsdt);
-void APCIDriver_SetDebug(struct ACPIDriver* self, uint8_t debug);
+void ACPIDriver_SetFacsPointer(ACPIDriver* self, uint32_t ptr);
+void ACPIDriver_SetSciInterrupt(ACPIDriver* self, uint16_t sci);
+void ACPIDriver_SetDsdtPointer( ACPIDriver* self, uint32_t dsdt);
+void APCIDriver_SetDebug(ACPIDriver* self, uint8_t debug);
 
-void ACPIDriver_ProcessMADT(struct ACPIDriver* self, struct ACPI_MADT* madt);
+void ACPIDriver_ProcessMADT(ACPIDriver* self, ACPI_MADT* madt);
 
-void ACPIDriver_DebugIoApic(struct ACPIDriver* self, struct ACPI_MADTRecordIoApic* record);
-void ACPIDriver_DebugInterruptSourceOverride(struct ACPIDriver* self, struct ACPI_MADTRecordInputSourceOverride* record);
-void ACPIDriver_DebugMADT(struct ACPIDriver* self);
+void ACPIDriver_DebugIoApic(ACPIDriver* self, ACPI_MADTRecordIoApic* record);
+void ACPIDriver_DebugInterruptSourceOverride(ACPIDriver* self, ACPI_MADTRecordInputSourceOverride* record);
+void ACPIDriver_DebugMADT(ACPIDriver* self);

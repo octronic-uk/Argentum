@@ -7,12 +7,12 @@
 #include <Drivers/ATA/ATATypes.h>
 #include <Drivers/ATA/ATADriver.h>
 #include <Drivers/PS2/PS2Driver.h>
-#include <Objects/FAT/FatVolume.h>
-#include <Objects/MBR/MBRPartitionEntry.h>
-#include <Objects/StorageManager/SMDrive.h>
-#include <Objects/RamDisk/RamDisk.h>
+#include "FAT/FatVolume.h"
+#include "MBR/MBRPartitionEntry.h"
+#include "SMDrive.h"
+#include "RamDisk/RamDisk.h"
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool SMDrive_ATAConstructor(struct SMDrive* self, uint8_t ata_device_id)
 {

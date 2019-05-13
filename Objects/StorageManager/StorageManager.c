@@ -5,21 +5,23 @@
 
 #include <Drivers/Floppy/FloppyDriver.h>
 #include <Objects/Kernel/Kernel.h>
-#include <Objects/FAT/FatConstants.h>
-#include <Objects/RamDisk/RamDisk.h>
-#include <Objects/StorageManager/SMDrive.h>
-#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include "FAT/FatConstants.h"
+#include "RamDisk/RamDisk.h"
+#include "SMDrive.h"
+#include "SMDirectoryEntry.h"
+#include <Clib/stdio/FILE.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
-bool StorageManager_Constructor(struct StorageManager* self)
+bool StorageManager_Constructor(StorageManager* self)
 {
 	printf("StorageManager: Constructing\n");
 
-    memset(self,0,sizeof(struct StorageManager));
+    memset(self,0,sizeof(StorageManager));
 	self->Debug = false; 
 	LinkedList_Constructor(&self->RamDisks);
 	LinkedList_Constructor(&self->Drives);
+	LinkedList_Constructor(&self->OpenFiles);
 
 	StorageManager_SetupRamDisk0(self);
 	StorageManager_ProbeFloppyDrives(self);
@@ -27,7 +29,7 @@ bool StorageManager_Constructor(struct StorageManager* self)
 	return true;
 }
 
-void StorageManager_Destructor(struct StorageManager *self)
+void StorageManager_Destructor(StorageManager *self)
 {
 	printf("StorageManager: Destructing\n");
 
@@ -35,7 +37,7 @@ void StorageManager_Destructor(struct StorageManager *self)
 	uint32_t i, num_drives = LinkedList_Size(&self->Drives);
 	for (i=0; i<num_drives; i++)
 	{
-		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives, i);
+		SMDrive* drive = (SMDrive*)LinkedList_At(&self->Drives, i);
 		SMDrive_Destructor(drive);
 	}
 	LinkedList_FreeAllData(&self->Drives);
@@ -45,37 +47,40 @@ void StorageManager_Destructor(struct StorageManager *self)
 	uint32_t num_ram_disks = LinkedList_Size(&self->RamDisks);
 	for (i=0; i<num_ram_disks; i++)
 	{
-		struct RamDisk* rd = (struct RamDisk*)LinkedList_At(&self->RamDisks, i);
+		RamDisk* rd = (RamDisk*)LinkedList_At(&self->RamDisks, i);
 		RamDisk_Destructor(rd);
 	}
 	LinkedList_FreeAllData(&self->RamDisks);
 	LinkedList_Destructor(&self->RamDisks);
+
+	LinkedList_FreeAllData(&self->OpenFiles);
+	LinkedList_Destructor(&self->OpenFiles);
 }
 
-void StorageManager_SetupRamDisk0(struct StorageManager* self)
+void StorageManager_SetupRamDisk0(StorageManager* self)
 {
-	struct RamDisk* rd = (struct RamDisk*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof (struct RamDisk));
+	RamDisk* rd = (RamDisk*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof (RamDisk));
 	LinkedList_PushBack(&self->RamDisks, rd);
 	RamDisk_Constructor(rd, RAMDISK_SIZE_1MB*10);
 
-	struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+	SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
 	LinkedList_PushBack(&self->Drives, drive);
 	SMDrive_RamDiskConstructor(drive,0);
 }
 
-bool StorageManager_ProbeATADrives(struct StorageManager* self)
+bool StorageManager_ProbeATADrives(StorageManager* self)
 {
 	uint8_t i;
 	for (i=0; i<SM_MAX_ATA_DRIVES; i++)
 	{
-		struct ATA_IDEDevice* device = &_Kernel.ATA.IDEDevices[i];
+		ATA_IDEDevice* device = &_Kernel.ATA.IDEDevices[i];
 		if(device->reserved && device->type == ATA_DEVICE_TYPE_ATA)
 		{
 			if (self->Debug)
 			{
 				printf("StorageManager: Initialising ATA Drive %d %s\n", i, device->model);
 			}
-			struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+			SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
 			LinkedList_PushBack(&self->Drives,drive);
 			SMDrive_ATAConstructor(drive, i);
 		}
@@ -84,26 +89,26 @@ bool StorageManager_ProbeATADrives(struct StorageManager* self)
 	return true;
 }
 
-bool StorageManager_ProbeFloppyDrives(struct StorageManager* self)
+bool StorageManager_ProbeFloppyDrives(StorageManager* self)
 {
 	if (FloppyDriver_MasterPresent(&_Kernel.Floppy))
 	{
 		printf("StorageManager: Initialising Floppy 0 (Master)\n");
-		struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+		SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
 		LinkedList_PushBack(&self->Drives, drive);
 		SMDrive_FloppyConstructor(drive, 0);
 	}
 	if (FloppyDriver_SlavePresent(&_Kernel.Floppy))
 	{
 		printf("StorageManager: Initialising Floppy 1 (Slave)\n");
-		struct SMDrive* drive = (struct SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(struct SMDrive));
+		SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
 		LinkedList_PushBack(&self->Drives, drive);
 		SMDrive_FloppyConstructor(drive, 1);
 	}
 	return true;
 }
 
-void StorageManager_ListDrives(struct StorageManager* self)
+void StorageManager_ListDrives(StorageManager* self)
 {
 	printf("StorageManager: Drives\n");
 
@@ -111,7 +116,7 @@ void StorageManager_ListDrives(struct StorageManager* self)
 
 	for (i=0; i<count; i++)
 	{
-		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		SMDrive* drive = (SMDrive*)LinkedList_At(&self->Drives,i);
 		if (drive->Exists)
 		{
 			enum SMDriveType type = SMDrive_GetDriveType(drive);
@@ -140,12 +145,12 @@ void StorageManager_ListDrives(struct StorageManager* self)
 	}
 }
 
-struct SMDrive* StorageManager_GetATADrive(struct StorageManager* self, uint8_t drive_id)
+SMDrive* StorageManager_GetATADrive(StorageManager* self, uint8_t drive_id)
 {
 	uint32_t i, count = LinkedList_Size(&self->Drives);
 	for (i=0; i<count; i++)
 	{
-		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		SMDrive* drive = (SMDrive*)LinkedList_At(&self->Drives,i);
 		if (drive->AtaIndex == drive_id && drive->Exists)
 		{
 			return drive;
@@ -154,12 +159,12 @@ struct SMDrive* StorageManager_GetATADrive(struct StorageManager* self, uint8_t 
 	return 0;
 }
 
-struct SMDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8_t drive_id)
+SMDrive* StorageManager_GetFloppyDrive(StorageManager* self, uint8_t drive_id)
 {
 	uint32_t i, count = LinkedList_Size(&self->Drives);
 	for (i=0; i<count; i++)
 	{
-		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		SMDrive* drive = (SMDrive*)LinkedList_At(&self->Drives,i);
 		if (drive->FloppyIndex == drive_id && drive->Exists)
 		{
 			return drive;
@@ -168,12 +173,12 @@ struct SMDrive* StorageManager_GetFloppyDrive(struct StorageManager* self, uint8
 	return 0;
 }
 
-struct SMDrive* StorageManager_GetRamDiskDrive(struct StorageManager* self, uint8_t drive_id)
+SMDrive* StorageManager_GetRamDiskDrive(StorageManager* self, uint8_t drive_id)
 {
 	uint32_t i, count = LinkedList_Size(&self->Drives);
 	for (i=0; i<count; i++)
 	{
-		struct SMDrive* drive = (struct SMDrive*)LinkedList_At(&self->Drives,i);
+		SMDrive* drive = (SMDrive*)LinkedList_At(&self->Drives,i);
 		if (drive->RamDiskIndex == drive_id && drive->Exists)
 		{
 			return drive;
@@ -182,13 +187,13 @@ struct SMDrive* StorageManager_GetRamDiskDrive(struct StorageManager* self, uint
 	return 0;
 }
 
-bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* dir, const char* path_str)
+bool StorageManager_Open(StorageManager* self, SMDirectoryEntry* dir, const char* path_str)
 {
 	if (self->Debug) 
 	{
 		printf("StorageManager: Opening file %s\n",path_str);
 	}
-	struct SMPath path;
+	SMPath path;
 	if (SMPath_ConstructAndParse(&path,path_str))
 	{
 		bool retval = StorageManager_OpenPath(self,dir,&path);
@@ -202,12 +207,12 @@ bool StorageManager_Open(struct StorageManager* self, struct SMDirectoryEntry* d
 	return false;
 }
 
-bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntry* dir, struct SMPath* path)
+bool StorageManager_OpenPath(StorageManager* self, SMDirectoryEntry* dir, SMPath* path)
 {
 	printf("StorageManager: Opening Path\n");
 	SMPath_Debug(path);
 
-	struct SMDrive* drive = 0;
+	SMDrive* drive = 0;
 	if (path->DriveType == DRIVE_TYPE_ATA)
 	{
 		if (self->Debug) printf("StorageManager: Opening file on ATA Drive\n");
@@ -235,7 +240,7 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 		return false;
 	}
 
-	struct SMVolume* volume = SMDrive_GetVolume(drive,path->VolumeIndex);
+	SMVolume* volume = SMDrive_GetVolume(drive,path->VolumeIndex);
 	if (!volume) 
 	{
 		printf("StorageManager: Failed to get volume %d\n",path->VolumeIndex);
@@ -276,77 +281,16 @@ bool StorageManager_OpenPath(struct StorageManager* self, struct SMDirectoryEntr
 	return retval;
 }
 
-bool StorageManager_Test(struct StorageManager* self)
+FILE* StorageManager_RequestFilePointer(StorageManager* self)
 {
-	printf("\n\nStorageManager: Testing StorageManager\n");
-	StorageManager_ListDrives(self);
-	struct SMDrive* drive0 = StorageManager_GetATADrive(self, 0);
+	if (self->Debug) printf("StorageManager: Requesting File Pointer\nn");
+	FILE* f = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(FILE));
+	LinkedList_PushBack(&self->OpenFiles, f);
+	return f;
+}
 
-	if (drive0)
-	{
-		printf("StorageManager: Got Drive 0 from StorageManager\n");
-		SMDrive_ATAListVolumes(drive0);
-		struct SMVolume* ata0v0 = SMDrive_GetVolume(drive0,0);
-		if (ata0v0)
-		{
-			printf("StorageManager: Got ata0p0 \n");
-		}
-		else
-		{
-			printf("StorageManager: Error getting ata0p0");
-		}
-		
-	}
-
-	SMPath_TestParser();
-
-	// Floppy
-	char* fdd_file_path = "fdd0://HELP.HL_";
-	struct SMDirectoryEntry fdd_file;
-
-	if(StorageManager_Open(self, &fdd_file, fdd_file_path))
-	{
-		if (SMDirectoryEntry_IsFile(&fdd_file))
-		{
-			printf("StorageManager: StorageManager has opened the file at %s\n", fdd_file_path);
-		}
-		else
-		{
-			printf("StorageManager: Directory %s is not a file\n", fdd_file_path);
-		}
-	}
-	else 
-	{
-		printf("StorageManager: StorageManager has FAILED to open the file at %s\n", fdd_file_path);
-	}
-
-	// ATA
-	char* ata_file_path = "ata0p0://STL_FILE/SquirrelChess.rar";
-	//char* ata_file_path = "ata0p0://test.txt";
-	struct SMDirectoryEntry ata_file;
-
-	if(StorageManager_Open(self, &ata_file, ata_file_path))
-	{
-		if (SMDirectoryEntry_IsFile(&ata_file))
-		{
-			printf("StorageManager: StorageManager has opened the file at %s\n", ata_file_path);
-
-			#define test_buf_sz 10000
-			#define test_offset 1234304
-			SMDirectoryEntry_SetFileOffset(&ata_file, test_offset);
-			uint8_t buf[test_buf_sz];
-			SMDirectoryEntry_Read(&ata_file, test_buf_sz, buf);
-			FatVolume_DebugSector(buf);
-		}
-		else
-		{
-			printf("StorageManager: Directory %s is not a file\n", ata_file_path);
-		}
-	}
-	else
-	{
-		printf("StorageManager: StorageManager has FAILED to open the file at %s\n", ata_file_path);
-	}
-	
-	return true;
+void StorageManager_CloseFilePointer(StorageManager* self, FILE* f)
+{
+	LinkedList_Delete(&self->OpenFiles, f);
+	MemoryDriver_Free(&_Kernel.Memory, f);
 }

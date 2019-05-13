@@ -6,7 +6,7 @@
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/IO/IODriver.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 bool InterruptDriver_Constructor(struct InterruptDriver* self)
 {

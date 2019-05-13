@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <stdint.h>
+#include "../stdio/FILE.h"
 
 #define BUFSIZ 64
 #define EOF (-1)
@@ -15,16 +16,14 @@
 #define _IOFBF 0
 #define _IOLBF 0
 
+
 enum flags 
 {
 	PAD_ZERO	= 1,
 	PAD_RIGHT	= 2,
 };
 
-typedef struct
-{
-    uint32_t p;
-} FILE;
+
 
 static FILE* stdin;
 static FILE* stdout;

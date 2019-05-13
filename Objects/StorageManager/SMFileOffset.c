@@ -1,7 +1,7 @@
 #include "SMFileOffset.h"
 #include <stdio.h>
 
-void SMFileOffset_Debug(struct SMFileOffset* self)
+void SMFileOffset_Debug(SMFileOffset* self)
 {
     printf(
         "SMFileOffset:\n"

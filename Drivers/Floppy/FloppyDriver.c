@@ -9,7 +9,7 @@
 #include <Drivers/Interrupt/InterruptDriver.h>
 #include <Drivers/PS2/PS2Driver.h>
 
-extern struct Kernel _Kernel;
+extern Kernel _Kernel;
 
 // https://forum.osdev.org/viewtopic.php?f=1&t=13538
 

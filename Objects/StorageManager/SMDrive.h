@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <Objects/StorageManager/SMVolume.h>
-#include <Objects/MBR/MBR.h>
+#include "SMVolume.h"
+#include "MBR/MBR.h"
 #include <Objects/LinkedList/LinkedList.h>
 
 #define SM_DRIVE_MAX_VOLUMES 4
