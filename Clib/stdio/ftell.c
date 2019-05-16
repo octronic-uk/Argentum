@@ -4,5 +4,6 @@
 
 long int ftell(FILE* stream)
 {
+    printf("ftell:\n");
     return stream->DirectoryEntry->FileOffset.ByteOffset;
 }

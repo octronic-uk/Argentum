@@ -2,6 +2,6 @@
 #include <stdio.h>
 double log (double x)
 {
-    printf("stdlib: log\n");
+    printf("log\n");
     return 0.0;
 }

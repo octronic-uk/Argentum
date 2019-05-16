@@ -16,9 +16,9 @@ struct SMDirectoryEntry
     SMVolume* Volume;
     FatDirectoryListing FatListing;
     FatDirectoryEntrySummary FatDirectoryEntrySummary;
-    LinkedList ClusterList;
     SMFileOffset FileOffset;
-    uint32_t FirstSector;
+    enum FatType FatType;
+    uint16_t FirstCluster;
 };
 
 typedef struct SMDirectoryEntry SMDirectoryEntry;
@@ -27,9 +27,12 @@ typedef struct SMDirectoryEntry SMDirectoryEntry;
 bool SMDirectoryEntry_Constructor(SMDirectoryEntry* self, SMVolume* volume, FatDirectoryEntrySummary* entry);
 void SMDirectoryEntry_Destructor(SMDirectoryEntry* self);
 bool SMDirectoryEntry_IsFile(SMDirectoryEntry* self);
-void SMDirectoryEntry_PopulateClusterList(SMDirectoryEntry* self, enum FatType type, uint16_t first_cluster);
-void SMDirectoryEntry_PopulateClusterListFat12(SMDirectoryEntry* sself, uint16_t first_cluster);
-void SMDirectoryEntry_PopulateClusterListFat16(SMDirectoryEntry* sself, uint16_t first_cluster);
+
+
 uint32_t SMDirectoryEntry_SetFileOffset(SMDirectoryEntry* self, uint32_t offset);
 uint32_t SMDirectoryEntry_Read(SMDirectoryEntry* self, uint32_t offset, uint8_t* buffer);
 uint32_t SMDirectoryEntry_Write(SMDirectoryEntry* self, uint32_t offset, uint8_t* buffer);
+
+uint16_t SMDirectoryEntry_GetNextCluster(SMDirectoryEntry* self, uint16_t cluster);
+uint16_t SMDirectoryEntry_GetNextClusterFat12(SMDirectoryEntry* sself, uint16_t cluster);
+uint16_t SMDirectoryEntry_GetNextClusterFat16(SMDirectoryEntry* sself, uint16_t cluster);

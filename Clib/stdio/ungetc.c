@@ -3,6 +3,6 @@
 int ungetc(int character, FILE* stream)
 {
 
-    printf("stdlib: ungetc\n");
+    printf("ungetc\n");
     return 0;
 }

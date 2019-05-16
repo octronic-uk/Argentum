@@ -2,6 +2,6 @@
 #include <stdio.h>
 double acos(double x)
 {
-    printf("stdlib: acos\n");
+    printf("acos\n");
     return 0.0;
 }

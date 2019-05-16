@@ -2,6 +2,6 @@
 #include <stdio.h>
 struct lconv* localeconv ()
 {
-    printf("stdlib: localeconv\n");
+    printf("localeconv\n");
     return 0;
 }

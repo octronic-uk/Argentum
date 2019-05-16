@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/IO/IODriver.h>
 #include <Drivers/Interrupt/InterruptDriver.h>
@@ -18,6 +20,7 @@ bool VgaDriver_Constructor(VgaDriver* self)
 {
 	printf("VgaDriver: Constructing\n");
 	memset(self,0,sizeof(VgaDriver));
+	self->Debug = true;
 	return true;
 }
 
@@ -111,43 +114,72 @@ void VgaDriver_ReadRegs(VgaDriver* self, uint8_t *regs)
 	IO_WritePort8b(VGA_ATTRIB_CTRL_INDEX, 0x20);
 }
 
-void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColor color)
+void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColorRGB color)
 {
+	if (self->Debug) printf("VgaDriver: Setting Palette of color %d r=%d, g=%d, b=%d\n",address, color.Red, color.Green, color.Blue);
 	// Disable Interrupts
 	InterruptDriver_Disable_CLI(&_Kernel.Interrupt);
+
 	// Write Address
-	IO_WritePort8b(VGA_DAC_WRITE_INDEX, address);
+	IO_WritePort8b(VGA_DAC_WRITE, address);
+
 	// Write Color
 	IO_WritePort8b(VGA_DAC_DATA, color.Red);
 	IO_WritePort8b(VGA_DAC_DATA, color.Green);
 	IO_WritePort8b(VGA_DAC_DATA, color.Blue);
+
 	// Enable Interrupts
 	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
+
+	// Check
+	VgaColorRGB result = VgaDriver_ReadDacColor(self,address);
+
+	if (!VgaColorRGB_EqualTo(result, color))
+	{
+		printf("VgaDriver: Error writing palette color to DAC %d\n",address);
+		abort();
+	}
 }
 
-VgaColor VgaDriver_ReadDacColor(VgaDriver* self, uint8_t address)
+VgaColorRGB VgaDriver_ReadDacColor(VgaDriver* self, uint8_t address)
 {
-	VgaColor color;
+	//printf("VgaDriver: Reading color from DAC\n");
+	VgaColorRGB color;
 	// Disable Interrupts
 	InterruptDriver_Disable_CLI(&_Kernel.Interrupt);
+
 	// Write Address
-	IO_WritePort8b(VGA_DAC_READ_INDEX, address);
-	// Write Color
+	IO_WritePort8b(VGA_DAC_READ, address);
+
+	// Read Color
 	color.Red = IO_ReadPort8b(VGA_DAC_DATA);
 	color.Green = IO_ReadPort8b(VGA_DAC_DATA);
 	color.Blue = IO_ReadPort8b(VGA_DAC_DATA);
+
 	// Enable Interrupts
 	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 	return color;
 }
 
-void VgaDriver_WriteColorPalette(VgaDriver* self, VgaColor* colors, uint8_t size)
+uint8_t VgaDriver_ReadDacState(VgaDriver* self)
 {
-	uint8_t base_address = 0;
+	// Disable Interrupts
+	InterruptDriver_Disable_CLI(&_Kernel.Interrupt);
+	// Read State
+	uint8_t state = IO_ReadPort8b(VGA_DAC_STATE);
+	// Enable Interrupts
+	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
+	return state;
+
+}
+
+void VgaDriver_WriteColorPalette(VgaDriver* self, VgaColorRGB* colors, uint8_t size)
+{
+	if (self->Debug) printf("VgaDriver: Setting Palette of %d colors\n",size);
 	uint8_t i;
 	for (i=0;i<size;i++)
 	{
-		VgaDriver_WriteDacColor(self,base_address+i,colors[i]);
+		VgaDriver_WriteDacColor(self,i,colors[i]);
 	}
 }
 
@@ -346,21 +378,23 @@ void VgaDriver_WritePixel2(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c)
 
 void VgaDriver_WritePixel4p(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c)
 {
-	uint32_t wd_in_bytes, off, mask, p, pmask;
+	//printf("VgaDriver: 4-Plane mode, setting pixel (%d,%d) to index %d\n",x,y,c);
 
-	wd_in_bytes = self->Width / 8;
-	off = wd_in_bytes * y + x / 8;
+	uint32_t plane_width_in_bytes = self->Width / 8;
+	uint32_t plane_offset = (plane_width_in_bytes * y) + (x / 8);
 	x = (x & 7) * 1;
-	mask = 0x80 >> x;
-	pmask = 1;
-	for(p = 0; p < 4; p++)
+	uint32_t mask = 0x80 >> x;
+	uint32_t plane_mask = 1;
+
+	uint32_t plane;
+	for(plane = 0; plane < 4; plane++)
 	{
-		VgaDriver_SetPlane(self, p);
-		if(pmask & c)
-			VgaDriver_vpokeb(self,off, VgaDriver_vpeekb(self, off) | mask);
+		VgaDriver_SetPlane(self, plane);
+		if(plane_mask & c)
+			VgaDriver_vpokeb(self, plane_offset, VgaDriver_vpeekb(self, plane_offset) | mask);
 		else
-			VgaDriver_vpokeb(self,off, VgaDriver_vpeekb(self, off) & ~mask);
-		pmask <<= 1;
+			VgaDriver_vpokeb(self, plane_offset, VgaDriver_vpeekb(self, plane_offset) & ~mask);
+		plane_mask <<= 1;
 	}
 }
 
@@ -540,7 +574,7 @@ void VgaDriver_DemoGraphics(VgaDriver* self)
 	VgaDriver_SetScreenMode(self,VGA_MODE_TEXT_40_25);
 }
 
-uint8_t VgaDriver_ReverseBits(VgaDriver* self, uint8_t arg)
+uint8_t VgaDriver_ReverseBits(uint8_t arg)
 {
 	uint8_t ret_val = 0;
 	if(arg & 0x01) ret_val |= 0x80;
@@ -608,7 +642,7 @@ void VgaDriver_Font512(VgaDriver* self)
 	{
 		for(j = 0; j < font_height; j++)
 		{
-			VgaDriver_vpokeb(self,16384u * 1 + 32 * i + j,VgaDriver_ReverseBits(self,g_8x16_font[font_height * i + j]));
+			VgaDriver_vpokeb(self,16384u * 1 + 32 * i + j,VgaDriver_ReverseBits(g_8x16_font[font_height * i + j]));
 		}
 	}
 

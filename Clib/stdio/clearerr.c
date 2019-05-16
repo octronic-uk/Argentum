@@ -2,5 +2,5 @@
 
 void clearerr ( FILE * stream )
 {
-    printf("stdlib: clearerr \n");
+    printf("clearerr \n");
 }

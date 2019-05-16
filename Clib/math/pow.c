@@ -2,6 +2,6 @@
 #include <stdio.h>
 double pow (double base, double exponent)
 {
-    printf("stdlib: pow\n");
+    printf("pow\n");
     return 0.0;
 }

@@ -2,6 +2,6 @@
 
 int ferror(FILE* stream)
 {
-    printf("stdlib: ferror\n");
+    printf("ferror\n");
     return 0;
 }

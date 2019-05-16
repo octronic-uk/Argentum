@@ -2,6 +2,6 @@
 
 int feof(FILE* stream)
 {
-    printf("stdlib: feof\n");
+    printf("feof\n");
     return 0;
 }

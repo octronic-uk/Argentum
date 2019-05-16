@@ -7,14 +7,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
-struct VgaColor
-{
-    uint8_t Red;
-    uint8_t Green;
-    uint8_t Blue;
-};
-typedef struct VgaColor VgaColor;
+#include "VgaColorRGB.h"
 
 enum VgaScreenMode
 {
@@ -29,6 +22,7 @@ typedef enum VgaScreenMode VgaScreenMode;
 
 struct VgaDriver
 {
+    bool Debug;
     void (*WritePixelFunction)(struct VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
     VgaScreenMode ScreenMode;
     uint32_t Width;
@@ -57,10 +51,12 @@ void VgaDriver_DrawX(VgaDriver* self);
 void VgaDriver_DumpState(VgaDriver* self);
 void VgaDriver_SetTextMode(VgaDriver* self, bool hi_res);
 void VgaDriver_DemoGraphics(VgaDriver* self);
-uint8_t VgaDriver_ReverseBits(VgaDriver* self, uint8_t arg);
+uint8_t VgaDriver_ReverseBits(uint8_t arg);
+uint8_t VgaDriver_ReadDacState(VgaDriver* self);
 void VgaDriver_Font512(VgaDriver* self);
 void VgaDriver_Main(VgaDriver* self);
 void VgaDriver_SetScreenMode(VgaDriver* self, VgaScreenMode mode);
-void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColor color);
-VgaColor VgaDriver_ReadDacColor(VgaDriver* self, uint8_t address);
-void VgaDriver_WriteColorPalette(VgaDriver* self, VgaColor* colors, uint8_t size);
+void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColorRGB color);
+VgaColorRGB VgaDriver_ReadDacColor(VgaDriver* self, uint8_t address);
+void VgaDriver_WriteColorPalette(VgaDriver* self, VgaColorRGB* colors, uint8_t size);
+void VgaDriver_ClearScreen(VgaDriver* self);

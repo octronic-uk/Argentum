@@ -14,7 +14,7 @@ extern Kernel _Kernel;
 bool SMVolume_ATAConstructor(SMVolume* self, SMDrive* parent, uint8_t volume_index, uint32_t first_sector, uint32_t sectors_in_partition)
 {
     memset(self,0,sizeof(SMVolume));
-    self->Debug = false;
+    self->Debug = true;
     self->Exists = true;
     self->ParentDrive = parent;
     self->VolumeIndex = volume_index;

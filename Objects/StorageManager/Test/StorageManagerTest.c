@@ -1,6 +1,7 @@
 #include "StorageManagerTest.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <Objects/StorageManager/StorageManager.h>
 #include <Objects/StorageManager/SMDirectoryEntry.h>
 
@@ -59,12 +60,13 @@ bool StorageManagerTest_RunSuite(StorageManager* self)
 		{
 			printf("StorageManager: StorageManager has opened the file at %s\n", ata_file_path);
 
-			uint32_t test_buf_sz = 0x2890;
-			uint32_t test_offset = 1500;
+			uint32_t test_buf_sz = ata_file.FatDirectoryEntrySummary.FileSize;
+			uint32_t test_offset = 0;
 			SMDirectoryEntry_SetFileOffset(&ata_file, test_offset);
-			uint8_t buf[test_buf_sz];
+			uint8_t* buf = (uint8_t*)malloc(test_buf_sz);
 			SMDirectoryEntry_Read(&ata_file, test_buf_sz, buf);
 			StorageManagerTest_DebugData(buf,test_buf_sz);
+			free(buf);
 		}
 		else
 		{

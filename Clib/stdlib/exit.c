@@ -3,6 +3,6 @@
 
 __attribute__((__noreturn__)) void exit(int status)
 {
-    printf("stdlib: exit(%d)\n",status);
+    printf("exit(%d)\n",status);
     abort();
 }

@@ -2,6 +2,6 @@
 
 int remove(const char* filename)
 {
-    printf("stdlib: remove\n");
+    printf("remove\n");
     return 0;
 }

@@ -3,6 +3,6 @@
 char* tmpnam(char *str)
 {
 
-    printf("stdlib: tmpnam\n");
+    printf("tmpnam\n");
     return 0;
 }

@@ -1,9 +1,11 @@
 #include "SMFileMode.h"
 
 #include <string.h>
+#include <stdio.h>
 
 bool SMFileMode_Constructor(SMFileMode* self, const char* mode)
 {
+    printf("SMFileMode: Constructor\n");
     memset(self,0,sizeof(SMFileMode));
 
     char* ch = (char*)mode;
@@ -30,6 +32,7 @@ bool SMFileMode_Constructor(SMFileMode* self, const char* mode)
             default:
                 return false;
         }
+        ch++;
     }
     return true;
 }

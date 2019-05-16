@@ -2,6 +2,6 @@
 
 int fscanf ( FILE * stream, const char * format, ... )
 {
-    printf("stdio: fscanf\n");
+    printf("fscanf:\n");
     return 0;
 }

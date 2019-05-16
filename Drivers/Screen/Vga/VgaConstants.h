@@ -17,12 +17,16 @@
 #define	VGA_ATTRIB_CTRL_INDEX 0x3C0
 #define	VGA_ATTRIB_CTRL_WRITE 0x3C0
 #define	VGA_ATTRIB_CTRL_READ  0x3C1
+
 #define	VGA_MISC_WRITE        0x3C2
 #define VGA_SEQ_INDEX         0x3C4
 #define VGA_SEQ_DATA          0x3C5
-#define	VGA_DAC_READ_INDEX    0x3C7
-#define	VGA_DAC_WRITE_INDEX	  0x3C8
-#define	VGA_DAC_DATA          0x3C9
+
+#define	VGA_DAC_READ  0x3C7
+#define	VGA_DAC_STATE 0x3C7
+#define	VGA_DAC_WRITE 0x3C8
+#define	VGA_DAC_DATA  0x3C9
+
 #define	VGA_MISC_READ         0x3CC
 #define VGA_GFX_CTRLR_INDEX   0x3CE
 #define VGA_GFX_CTRLR_DATA 	  0x3CF

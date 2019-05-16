@@ -18,7 +18,7 @@ bool StorageManager_Constructor(StorageManager* self)
 	printf("StorageManager: Constructing\n");
 
     memset(self,0,sizeof(StorageManager));
-	self->Debug = false; 
+	self->Debug = true; 
 	LinkedList_Constructor(&self->RamDisks);
 	LinkedList_Constructor(&self->Drives);
 	LinkedList_Constructor(&self->OpenFiles);
@@ -283,8 +283,8 @@ bool StorageManager_OpenPath(StorageManager* self, SMDirectoryEntry* dir, SMPath
 
 FILE* StorageManager_RequestFilePointer(StorageManager* self)
 {
-	if (self->Debug) printf("StorageManager: Requesting File Pointer\nn");
-	FILE* f = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(FILE));
+	if (self->Debug) printf("StorageManager: Requesting File Pointer\n");
+	FILE* f = (FILE*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(FILE));
 	LinkedList_PushBack(&self->OpenFiles, f);
 	return f;
 }

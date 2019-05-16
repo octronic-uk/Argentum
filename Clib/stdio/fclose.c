@@ -2,6 +2,6 @@
 
 int fclose(FILE* stream)
 {
-    printf("stdlib: fclose\n");
+    printf("fclose\n");
     return 0;
 }

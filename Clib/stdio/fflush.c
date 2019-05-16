@@ -2,6 +2,6 @@
 
 int fflush(FILE* stream)
 {
-    printf("stdlib: fflush\n");
+    printf("fflush\n");
     return 0;
 }

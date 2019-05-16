@@ -132,12 +132,12 @@ void Kernel_DestroyDrivers(Kernel* self)
 
 void Kernel_TestDrivers(Kernel* self)
 {
-	MemoryTest_RunSuite(&self->Memory);
-	SerialDriverTest_RunSuite(&self->Serial);
+	//MemoryTest_RunSuite(&self->Memory);
+	//SerialDriverTest_RunSuite(&self->Serial);
 }
 
 void Kernel_TestObjects(Kernel* self)
 {
-	StorageManagerTest_RunSuite(&self->StorageManager);
+	//StorageManagerTest_RunSuite(&self->StorageManager);
 	GraphicsManagerTest_RunSuite(&self->GraphicsManager);
 }

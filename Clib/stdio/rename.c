@@ -2,6 +2,6 @@
 
 int   rename(const char* old_filename, const char* new_filename)
 {
-    printf("stdlib: rename\n");
+    printf("rename\n");
     return 0;
 }

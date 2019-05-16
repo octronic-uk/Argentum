@@ -3,6 +3,6 @@
 
 int fputs ( const char * str, FILE * stream )
 {
-    printf("%s",str);
+    printf("fputs: %s",str);
     return strlen(str);
 }

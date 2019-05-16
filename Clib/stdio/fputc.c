@@ -2,6 +2,6 @@
 
 int fputc ( int character, FILE * stream )
 {
-    printf("stdlib: %s\n",__func__);
+    printf("fputc: %c\n",character);
     return 0;
 }

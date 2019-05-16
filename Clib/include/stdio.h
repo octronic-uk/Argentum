@@ -8,10 +8,12 @@
 
 #define BUFSIZ 64
 #define EOF (-1)
+
 #define L_tmpnam 11
-#define SEEK_SET 0
-#define SEEK_CUR 0
-#define SEEK_END 0
+#define SEEK_SET 1
+#define SEEK_CUR 2
+#define SEEK_END 4
+
 #define _IONBF 0
 #define _IOFBF 0
 #define _IOLBF 0

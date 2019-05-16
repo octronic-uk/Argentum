@@ -5,11 +5,6 @@
 
 #include <Objects/Kernel/Kernel.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
-
 extern Kernel _Kernel;
 
 bool GraphicsManager_Constructor(GraphicsManager* self)

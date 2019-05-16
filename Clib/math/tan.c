@@ -2,6 +2,6 @@
 #include <stdio.h>
 double tan (double x)
 {
-    printf("stdlib: tan\n");
+    printf("tan\n");
     return 0.0;
 }

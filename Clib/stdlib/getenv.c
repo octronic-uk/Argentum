@@ -2,6 +2,6 @@
 #include <stdio.h>
 char* getenv(const char* name)
 {
-    printf("stdlib: getenv %s\n",name);
+    printf("getenv %s\n",name);
     return "env_value";
 }

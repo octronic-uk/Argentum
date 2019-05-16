@@ -3,6 +3,6 @@
 
 FILE* freopen(const char* filename, const char* mode, FILE* stream)
 {
-    printf("stdlib: freopen\n");
+    printf("freopen: filename: %s mode %s\n",filename, mode);
     return 0;
 }

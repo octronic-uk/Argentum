@@ -157,7 +157,7 @@ bool FatVolume_WriteSector(FatVolume* self, uint32_t sector_to_write, uint8_t* b
 
         if (ata_error)
         {
-            printf("FatVolume: Error - ATA Error writing to sector %d.\n",physical_sector);
+            printf("FatVolume: Error - ATA Error writing to sector 0x%x.\n",physical_sector);
             return false;
         }
     } 
@@ -199,7 +199,7 @@ bool FatVolume_ReadSector(FatVolume* self, uint32_t sector_to_read, uint8_t* buf
 
         if (ata_error)
         {
-            printf("FatVolume: Error - ATA Error reading sector %d.\n",physical_sector);
+            printf("FatVolume: Error - ATA Error reading sector 0x%x.\n",physical_sector);
             return false;
         }
     } 

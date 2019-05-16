@@ -3,6 +3,6 @@
 FILE * tmpfile ( void )
 {
 
-    printf("stdlib: tmpfile\n");
+    printf("tmpfile\n");
     return 0;
 }
