@@ -9,9 +9,7 @@
 #include "TextModeConstants.h"
 #include "TextModeColor.h"
 
-
-
-bool TextModeDriver_Constructor(struct TextModeDriver* self)
+bool TextModeDriver_Constructor(TextModeDriver* self)
 {
   self->VideoBasePointer = (uint8_t*)TEXTMODE_VBP;
   self->CurrentRow = 0;
@@ -28,12 +26,12 @@ bool TextModeDriver_Constructor(struct TextModeDriver* self)
 
 // Text Mode ===================================================================
 
-void TextModeDriver_SetColor(struct TextModeDriver* self, uint8_t color)
+void TextModeDriver_SetColor(TextModeDriver* self, uint8_t color)
 {
   self->Color = color;
 }
 
-void TextModeDriver_PutEntryAt(struct TextModeDriver* self,uint8_t c, uint8_t color, uint32_t x, uint32_t y)
+void TextModeDriver_PutEntryAt(TextModeDriver* self,uint8_t c, uint8_t color, uint32_t x, uint32_t y)
 {
   uint32_t index = (y * self->Width * TEXTMODE_BYTES_PER_ELEMENT) + (x*TEXTMODE_BYTES_PER_ELEMENT);
   self->VideoBasePointer[index] = c;
@@ -42,7 +40,7 @@ void TextModeDriver_PutEntryAt(struct TextModeDriver* self,uint8_t c, uint8_t co
   if (!isspace(c)) TextModeDriver_SetFramebufferCursorPosition(self, (y*self->Width) + x);
 }
 
-void TextModeDriver_PutChar(struct TextModeDriver* self, char c)
+void TextModeDriver_PutChar(TextModeDriver* self, char c)
 {
   uint8_t uc = c;
   if (c == '\n')
@@ -81,7 +79,7 @@ void TextModeDriver_PutChar(struct TextModeDriver* self, char c)
   }
 }
 
-void TextModeDriver_SetHeader(struct TextModeDriver* self, const char* data)
+void TextModeDriver_SetHeader(TextModeDriver* self, const char* data)
 {
   for (uint32_t i = 0; i < self->Width; i++)
   {
@@ -90,7 +88,7 @@ void TextModeDriver_SetHeader(struct TextModeDriver* self, const char* data)
   }
 }
 
-void TextModeDriver_Write(struct TextModeDriver* self, const char* data, uint32_t size)
+void TextModeDriver_Write(TextModeDriver* self, const char* data, uint32_t size)
 {
   for (uint32_t i = 0; i < size; i++)
   {
@@ -98,12 +96,12 @@ void TextModeDriver_Write(struct TextModeDriver* self, const char* data, uint32_
   }
 }
 
-void TextModeDriver_WriteString(struct TextModeDriver* self, const char* data)
+void TextModeDriver_WriteString(TextModeDriver* self, const char* data)
 {
   TextModeDriver_Write(self, data, strlen(data));
 }
 
-void TextModeDriver_ClearRow(struct TextModeDriver* self, uint8_t row)
+void TextModeDriver_ClearRow(TextModeDriver* self, uint8_t row)
 {
   for (uint32_t x = 0; x < self->Width; x++)
   {
@@ -111,7 +109,7 @@ void TextModeDriver_ClearRow(struct TextModeDriver* self, uint8_t row)
   }
 }
 
-void TextModeDriver_Clear(struct TextModeDriver* self)
+void TextModeDriver_Clear(TextModeDriver* self)
 {
   for (uint32_t y = 0; y < self->Height; y++)
   {
@@ -121,7 +119,7 @@ void TextModeDriver_Clear(struct TextModeDriver* self)
   self->CurrentRow = 0;
 }
 
-void TextModeDriver_Scroll(struct TextModeDriver* self)
+void TextModeDriver_Scroll(TextModeDriver* self)
 {
   int row;
   for (row = 0; row < self->Height; row++)
@@ -142,13 +140,13 @@ void TextModeDriver_Scroll(struct TextModeDriver* self)
   TextModeDriver_SetFramebufferCursorPosition(self, (self->CurrentRow * self->Width));
 }
 
-void TextModeDriver_SetCursorPosition(struct TextModeDriver* self, uint8_t column, uint8_t row)
+void TextModeDriver_SetCursorPosition(TextModeDriver* self, uint8_t column, uint8_t row)
 {
   self->CurrentColumn = column;
   self->CurrentRow = row;
 }
 
-void TextModeDriver_SetFramebufferCursorPosition(struct TextModeDriver* self, uint16_t position)
+void TextModeDriver_SetFramebufferCursorPosition(TextModeDriver* self, uint16_t position)
 {
   IO_WritePort8b(TEXTMODE_FB_IO_CMD,  TEXTMODE_FB_CURSOR_HI);
   IO_WritePort8b(TEXTMODE_FB_IO_DATA, (position >> 8) & 0x00FF);
@@ -157,17 +155,17 @@ void TextModeDriver_SetFramebufferCursorPosition(struct TextModeDriver* self, ui
   IO_WritePort8b(TEXTMODE_FB_IO_DATA, position & 0x00FF);
 }
 
-void TextModeDriver_SetEcho(struct TextModeDriver* self, bool echo)
+void TextModeDriver_SetEcho(TextModeDriver* self, bool echo)
 {
   self->EnableEcho = echo;
 }
 
-char TextModeDriver_ReadCharacter(struct TextModeDriver* self)
+char TextModeDriver_ReadCharacter(TextModeDriver* self)
 {
 
 }
 
-uint32_t TextModeDriver_ReadString(struct TextModeDriver* self, char* buffer, uint32_t size)
+uint32_t TextModeDriver_ReadString(TextModeDriver* self, char* buffer, uint32_t size)
 {
 
 }

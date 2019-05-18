@@ -8,7 +8,7 @@
 #include <Drivers/IO/IODriver.h>
 #include <Drivers/Memory/MemoryDriver.h>
 #include <Drivers/PS2/PS2Driver.h>
-#include <Objects/LinkedList/LinkedList.h>
+#include <Objects/Common/LinkedList/LinkedList.h>
 
 extern Kernel _Kernel;
 

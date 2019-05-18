@@ -20,14 +20,14 @@ extern Kernel _Kernel;
 //static char FLOPPY_DMA_BUFFER[FLOPPY_DMALEN] __attribute__((aligned(32)));
 extern uint8_t fpy_dma_buf[FLOPPY_DMALEN];
 
-bool FloppyDriver_Constructor(struct FloppyDriver* self)
+bool FloppyDriver_Constructor(FloppyDriver* self)
 {
     printf("Floppy Driver: Constructing (DMA Buffer @ 0x%x)\n",(uint32_t)&fpy_dma_buf[0]);
     // Setup the IRQ6 Interrupt Handler
     InterruptDriver_SetHandlerFunction(&_Kernel.Interrupt, 6, FloppyDriver_InterruptHandler);
 
     // Init the driver object
-    memset(self,0,sizeof(struct FloppyDriver));
+    memset(self,0,sizeof(FloppyDriver));
     self->DebugIO = false;
     self->Debug = false;
     self->InterruptWaiting = false;
@@ -47,7 +47,7 @@ bool FloppyDriver_Constructor(struct FloppyDriver* self)
     return FloppyDriver_Reset(self);
 }
 
-void FloppyDriver_WriteCommand(struct FloppyDriver* self, enum FloppyCommand cmd) 
+void FloppyDriver_WriteCommand(FloppyDriver* self, enum FloppyCommand cmd) 
 {
     if (self->Debug) printf("Floppy: WriteCommand 0x%x\n",cmd);
     int i; // do timeout
@@ -62,7 +62,7 @@ void FloppyDriver_WriteCommand(struct FloppyDriver* self, enum FloppyCommand cmd
     printf("Floppy: Error - Write Command timeout\n");    
 }
 
-uint8_t FloppyDriver_ReadData(struct FloppyDriver* self) 
+uint8_t FloppyDriver_ReadData(FloppyDriver* self) 
 {
     if (self->Debug) printf("Floppy: Read Data\n");
     int i; // do timeout, 60 seconds
@@ -79,7 +79,7 @@ uint8_t FloppyDriver_ReadData(struct FloppyDriver* self)
     return 0; // not reached
 }
 
-void FloppyDriver_CheckInterrupt(struct FloppyDriver* self, int *st0, int *cyl) 
+void FloppyDriver_CheckInterrupt(FloppyDriver* self, int *st0, int *cyl) 
 {
     if (self->Debug) printf("Floppy: Check Interrupt\n");
     FloppyDriver_WriteCommand(self, FLOPPY_CMD_SENSE_INTERRUPT);
@@ -88,7 +88,7 @@ void FloppyDriver_CheckInterrupt(struct FloppyDriver* self, int *st0, int *cyl)
 }
 
 // Move to cylinder 0, which calibrates the drive..
-bool FloppyDriver_Calibrate(struct FloppyDriver* self) 
+bool FloppyDriver_Calibrate(FloppyDriver* self) 
 {
     if (self->Debug) printf("Floppy: Calibrate\n");
     int i, st0, cyl = -1; // set to bogus cylinder
@@ -128,7 +128,7 @@ bool FloppyDriver_Calibrate(struct FloppyDriver* self)
     return false;
 }
 
-bool FloppyDriver_Reset(struct FloppyDriver* self) 
+bool FloppyDriver_Reset(FloppyDriver* self) 
 {
     if (self->Debug) printf("Floppy: Reset\n");
     self->InterruptWaiting = false;
@@ -159,7 +159,7 @@ bool FloppyDriver_Reset(struct FloppyDriver* self)
     return FloppyDriver_Calibrate(self);
 }
 
-void FloppyDriver_IRQWait(struct FloppyDriver* self)
+void FloppyDriver_IRQWait(FloppyDriver* self)
 {
     do
     {
@@ -168,7 +168,7 @@ void FloppyDriver_IRQWait(struct FloppyDriver* self)
     while (!self->InterruptWaiting);
 }
 
-void FloppyDriver_Motor(struct FloppyDriver* self, int onoff) 
+void FloppyDriver_Motor(FloppyDriver* self, int onoff) 
 {
     if (self->Debug) printf("Floppy: Motor %s\n", onoff ? "On":"Off");
     if(onoff) 
@@ -192,7 +192,7 @@ void FloppyDriver_Motor(struct FloppyDriver* self, int onoff)
     }
 }
 
-void FloppyDriver_MotorKill(struct FloppyDriver* self) 
+void FloppyDriver_MotorKill(FloppyDriver* self) 
 {
     if (self->Debug) printf("Floppy: Motor Kill\n");
     FloppyDriver_WriteRegisterDigitalOutput(self, 0x0c);
@@ -203,7 +203,7 @@ void FloppyDriver_MotorKill(struct FloppyDriver* self)
 // THIS SHOULD BE STARTED IN A SEPARATE THREAD.
 //
 //
-void FloppyDriver_Timer(struct FloppyDriver* self) 
+void FloppyDriver_Timer(FloppyDriver* self) 
 {
     while(true) 
     {
@@ -222,7 +222,7 @@ void FloppyDriver_Timer(struct FloppyDriver* self)
 }
 
 // Seek for a given cylinder, with a given head
-int FloppyDriver_Seek(struct FloppyDriver* self, unsigned cyli, int head) 
+int FloppyDriver_Seek(FloppyDriver* self, unsigned cyli, int head) 
 {
     unsigned i, st0, cyl = -1; // set to bogus cylinder
 
@@ -265,11 +265,11 @@ int FloppyDriver_Seek(struct FloppyDriver* self, unsigned cyli, int head)
 void FloppyDriver_InterruptHandler()
 {
     //printf("Floppy: Interrupt\n");
-    struct FloppyDriver* self = &_Kernel.Floppy;
+    FloppyDriver* self = &_Kernel.Floppy;
     self->InterruptWaiting = true;
 }
 
-static void FloppyDriver_DMAInit(struct FloppyDriver* self, enum FloppyDirection dir) 
+static void FloppyDriver_DMAInit(FloppyDriver* self, enum FloppyDirection dir) 
 {
     union 
     {
@@ -323,7 +323,7 @@ static void FloppyDriver_DMAInit(struct FloppyDriver* self, enum FloppyDirection
 // It retries (a lot of times) on all errors except write-protection
 // which is normally caused by mechanical switch on the disk.
 //
-bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector chs, enum FloppyDirection dir) 
+bool FloppyDriver_DoSector(FloppyDriver* self, CylinderHeadSector chs, enum FloppyDirection dir) 
 {
     // transfer command, set below
     unsigned char cmd;
@@ -497,7 +497,7 @@ bool FloppyDriver_DoSector(struct FloppyDriver* self, struct CylinderHeadSector 
 
 }
 
-bool FloppyDriver_ReadSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t* buffer) 
+bool FloppyDriver_ReadSectorLBA(FloppyDriver* self, uint32_t lba, uint8_t* buffer) 
 {
     if (FloppyDriver_ReadSector(self, FloppyDriver_LbaToChs(lba)))
     {
@@ -507,18 +507,18 @@ bool FloppyDriver_ReadSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t
     return false;
 }
 
-bool FloppyDriver_ReadSector(struct FloppyDriver* self, struct CylinderHeadSector chs) 
+bool FloppyDriver_ReadSector(FloppyDriver* self, CylinderHeadSector chs) 
 {
     return FloppyDriver_DoSector(self, chs, floppy_dir_read);
 }
 
-bool FloppyDriver_WriteSectorLBA(struct FloppyDriver* self, uint32_t lba, uint8_t* buffer) 
+bool FloppyDriver_WriteSectorLBA(FloppyDriver* self, uint32_t lba, uint8_t* buffer) 
 {
     memcpy(fpy_dma_buf, buffer,  FAT_SECTOR_SIZE);
     return FloppyDriver_WriteSector(self,FloppyDriver_LbaToChs(lba));
 }
 
-bool FloppyDriver_WriteSector(struct FloppyDriver* self, struct CylinderHeadSector chs) 
+bool FloppyDriver_WriteSector(FloppyDriver* self, CylinderHeadSector chs) 
 {
     return FloppyDriver_DoSector(self, chs, floppy_dir_write);
 }
@@ -548,19 +548,19 @@ enum FloppyType FloppyDriver_GetType(uint8_t data)
     }
 }
 
-bool FloppyDriver_MasterPresent(struct FloppyDriver* self)
+bool FloppyDriver_MasterPresent(FloppyDriver* self)
 {
     return self->Master != FLOPPY_TYPE_NO_DRIVE;
 }
 
-bool FloppyDriver_SlavePresent(struct FloppyDriver* self)
+bool FloppyDriver_SlavePresent(FloppyDriver* self)
 {
     return self->Slave != FLOPPY_TYPE_NO_DRIVE;
 }
 
-struct CylinderHeadSector FloppyDriver_LbaToChs(uint32_t lba)
+CylinderHeadSector FloppyDriver_LbaToChs(uint32_t lba)
 {
-    struct CylinderHeadSector chs;
+    CylinderHeadSector chs;
     chs.Cylinder = lba / (2 * FLOPPY_144_NUM_SECTORS);
     chs.Head     = ((lba % (2 * FLOPPY_144_NUM_SECTORS)) / FLOPPY_144_NUM_SECTORS);
     chs.Sector   = ((lba % (2 * FLOPPY_144_NUM_SECTORS)) % FLOPPY_144_NUM_SECTORS + 1);
@@ -569,86 +569,86 @@ struct CylinderHeadSector FloppyDriver_LbaToChs(uint32_t lba)
 
 // Register Pokers =================================================================================
 
-uint8_t FloppyDriver_ReadRegisterStatusA(struct FloppyDriver* self) 
+uint8_t FloppyDriver_ReadRegisterStatusA(FloppyDriver* self) 
 {
     uint8_t data = IO_ReadPort8b(FLOPPY_REGISTER_STATUS_A);
     if (self->DebugIO) printf("Floppy: Reading Status A 0x%x\n",data);
     return data;
 }
 
-uint8_t FloppyDriver_ReadRegisterStatusB(struct FloppyDriver* self) 
+uint8_t FloppyDriver_ReadRegisterStatusB(FloppyDriver* self) 
 {
     uint8_t data = IO_ReadPort8b(FLOPPY_REGISTER_STATUS_B);
     if (self->DebugIO) printf("Floppy: Reading Status B 0x%x\n",data);
     return data;
 }
 
-uint8_t FloppyDriver_ReadRegisterDigitalOutput(struct FloppyDriver* self)
+uint8_t FloppyDriver_ReadRegisterDigitalOutput(FloppyDriver* self)
 {
     uint8_t data = IO_ReadPort8b(FLOPPY_REGISTER_DIGITAL_OUTPUT);
     if (self->DebugIO) printf("Floppy: Reading Digital Output 0x%x\n",data);
     return data;
 }
 
-void FloppyDriver_WriteRegisterDigitalOutput(struct FloppyDriver* self, uint8_t data)
+void FloppyDriver_WriteRegisterDigitalOutput(FloppyDriver* self, uint8_t data)
 {
     if (self->DebugIO) printf("Floppy: Writing Digital Output 0x%x\n",data);
     IO_WritePort8b(FLOPPY_REGISTER_DIGITAL_OUTPUT, data);
 }
 
-uint8_t FloppyDriver_ReadRegisterTapeDrive(struct FloppyDriver* self)
+uint8_t FloppyDriver_ReadRegisterTapeDrive(FloppyDriver* self)
 {
     uint8_t data = IO_ReadPort8b(FLOPPY_REGISTER_TAPE_DRIVE);
     if (self->DebugIO) printf("Floppy: Reading Tape Register 0x%x\n",data);
     return data;
 }
 
-void FloppyDriver_WriteRegisterTapeDrive(struct FloppyDriver* self, uint8_t data)
+void FloppyDriver_WriteRegisterTapeDrive(FloppyDriver* self, uint8_t data)
 {
     if (self->DebugIO) printf("Floppy: Writing Tape Register 0x%x\n",data);
     IO_WritePort8b(FLOPPY_REGISTER_TAPE_DRIVE, data);
 }
 
-uint8_t FloppyDriver_ReadRegisterMainStatus(struct FloppyDriver* self)
+uint8_t FloppyDriver_ReadRegisterMainStatus(FloppyDriver* self)
 {
     uint8_t status = IO_ReadPort8b(FLOPPY_REGISTER_MAIN_STATUS);
     if (self->DebugIO) printf("Floppy: Read Main Status Register 0x%x\n",status);
     return status;
 }
 
-void FloppyDriver_WriteRegisterDataRateSelect(struct FloppyDriver* self, uint8_t data)
+void FloppyDriver_WriteRegisterDataRateSelect(FloppyDriver* self, uint8_t data)
 {
     if (self->DebugIO) printf("Floppy: Writing Data Rate Select 0x%x\n",data);
     IO_WritePort8b(FLOPPY_REGISTER_DATARATE_SELECT,data);
 }
 
-uint8_t FloppyDriver_ReadRegisterDataFIFO(struct FloppyDriver* self)
+uint8_t FloppyDriver_ReadRegisterDataFIFO(FloppyDriver* self)
 {
     uint8_t data = IO_ReadPort8b(FLOPPY_REGISTER_DATA_FIFO);
     if (self->DebugIO) printf("Floppy: Reading FIFO 0x%x\n",data);
     return data;
 }
 
-void FloppyDriver_WriteRegisterDataFIFO(struct FloppyDriver* self, uint8_t data)
+void FloppyDriver_WriteRegisterDataFIFO(FloppyDriver* self, uint8_t data)
 {
     if (self->DebugIO) printf("Floppy: Writing FIFO 0x%x\n",data);
     IO_WritePort8b(FLOPPY_REGISTER_DATA_FIFO, data);
 }
 
-uint8_t FloppyDriver_ReadRegisterDigitalInput(struct FloppyDriver* self)
+uint8_t FloppyDriver_ReadRegisterDigitalInput(FloppyDriver* self)
 {
     uint8_t data = IO_ReadPort8b(FLOPPY_REGISTER_DIGITAL_INPUT);
     if (self->DebugIO) printf("Floppy: Reading Digital Input 0x%x\n",data);
     return data;
 }
 
-void FloppyDriver_WriteRegisterConfigurationControl(struct FloppyDriver* self, uint8_t data)
+void FloppyDriver_WriteRegisterConfigurationControl(FloppyDriver* self, uint8_t data)
 {
     if (self->DebugIO) printf("Floppy: Reading Config Control 0x%x\n",data);
     IO_WritePort8b(FLOPPY_REGISTER_CONFIGURATION_CONTROL, data);
 }
 
-void FloppyDriver_DebugDMABuffer(struct FloppyDriver* self)
+void FloppyDriver_DebugDMABuffer(FloppyDriver* self)
 {
     int i;
     printf("----------------------------------------");
@@ -663,7 +663,7 @@ void FloppyDriver_DebugDMABuffer(struct FloppyDriver* self)
     printf("\n----------------------------------------\n");
 }
 
-uint8_t* FloppyDriver_GetDMABuffer(struct FloppyDriver* self)
+uint8_t* FloppyDriver_GetDMABuffer(FloppyDriver* self)
 {
     return &fpy_dma_buf[0];
 }

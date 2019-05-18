@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "FILE.h"
-#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include <Objects/HardwareManager/StorageManager/SMDirectoryEntry.h>
 
 uint32_t fread(void* ptr, uint32_t size, uint32_t count, FILE* stream)
 {

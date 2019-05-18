@@ -9,7 +9,7 @@
 extern Kernel _Kernel;
 extern void* endKernel;
 
-bool MemoryDriver_Constructor(struct MemoryDriver* self)
+bool MemoryDriver_Constructor(MemoryDriver* self)
 {
 	self->MultibootInfo = _Kernel.MultibootInfo;
 	self->Debug = false;
@@ -20,15 +20,15 @@ bool MemoryDriver_Constructor(struct MemoryDriver* self)
 	return true;
 }
 
-struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self, uint32_t requested_size)
+MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requested_size)
 {
 	if (self->Debug) 
 	{
 		printf("Memory: Finding a free block\n");
 	}
 
-	struct MemoryBlockHeader* previous_block = 0;
-	struct MemoryBlockHeader* current_block = self->StartBlock;
+	MemoryBlockHeader* previous_block = 0;
+	MemoryBlockHeader* current_block = self->StartBlock;
 
 	// StartBlock, unused
 	if (current_block == self->StartBlock && 
@@ -43,7 +43,7 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 		{
 			printf("Memory: Allocated the StartBlock at 0x%x data size %d, total %d\n",
 					(uint32_t)current_block, requested_size, 
-					sizeof(struct MemoryBlockHeader)+requested_size);
+					sizeof(MemoryBlockHeader)+requested_size);
 		}
 		return current_block;
 	}
@@ -100,10 +100,10 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 					uint32_t old_size = current_block->Size;
 					current_block->Size = requested_size;
 					current_block->InUse = true;
-					current_block->Next = (struct MemoryBlockHeader*)(((uint32_t)current_block) + sizeof(struct MemoryBlockHeader) + space_available);
+					current_block->Next = (MemoryBlockHeader*)(((uint32_t)current_block) + sizeof(MemoryBlockHeader) + space_available);
 
-					void* mem_area = (void*) ((uint32_t)current_block) + sizeof(struct MemoryBlockHeader);
-					memset(mem_area, 0, sizeof(struct MemoryBlockHeader)+space_available);
+					void* mem_area = (void*) ((uint32_t)current_block) + sizeof(MemoryBlockHeader);
+					memset(mem_area, 0, sizeof(MemoryBlockHeader)+space_available);
 
 					if (!MemoryDriver_InsertDummyBlock(self,current_block))
 					{
@@ -129,7 +129,7 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 	// Should always be true
 	if (previous_block)
 	{
-		current_block = (struct MemoryBlockHeader*) ( ((uint32_t)previous_block) + sizeof(struct MemoryBlockHeader) + previous_block->Size );
+		current_block = (MemoryBlockHeader*) ( ((uint32_t)previous_block) + sizeof(MemoryBlockHeader) + previous_block->Size );
 		// Set current to area after the last block
 		current_block->Size = requested_size;
 		current_block->InUse = true;
@@ -139,7 +139,7 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 		{
 			printf("Memory: Reached end of heap, created new block at 0x%x, of size=%d, Totalling=%d\n",
 				(uint32_t)current_block, 
-				requested_size, sizeof(struct MemoryBlockHeader)+requested_size);
+				requested_size, sizeof(MemoryBlockHeader)+requested_size);
 		}
 	}
 	else
@@ -152,10 +152,10 @@ struct MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(struct MemoryDriver* self,
 	return current_block;
 }
 
-struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* self, struct MemoryBlockHeader* resized_header)
+MemoryBlockHeader* MemoryDriver_InsertDummyBlock(MemoryDriver* self, MemoryBlockHeader* resized_header)
 {
 	if (self->Debug) printf("Memory: Attempting to insert dummy block\n");
-	struct MemoryBlockHeader* next = resized_header->Next;
+	MemoryBlockHeader* next = resized_header->Next;
 
 	if (self->Debug) printf("Memory: next block is now 0x%x\n",(uint32_t)next);
 	// No next block to resize to
@@ -165,20 +165,20 @@ struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* sel
 		return 0;
 	}
 
-	uint32_t space_begins = ((uint32_t)resized_header) + sizeof(struct MemoryBlockHeader) + resized_header->Size;
+	uint32_t space_begins = ((uint32_t)resized_header) + sizeof(MemoryBlockHeader) + resized_header->Size;
 	uint32_t space_ends = ((uint32_t)next);
 	int32_t space_available = space_ends - space_begins;
-	int32_t dummy_data_size = space_available - sizeof(struct MemoryBlockHeader);
+	int32_t dummy_data_size = space_available - sizeof(MemoryBlockHeader);
 
 	if (dummy_data_size > 0)
 	{
 		if (self->Debug) printf("Memory: Making dummy at 0x%x in space of %d\n",space_begins, space_available);
-		struct MemoryBlockHeader* dummy_block = (struct MemoryBlockHeader*) ((uint32_t)space_begins);
+		MemoryBlockHeader* dummy_block = (MemoryBlockHeader*) ((uint32_t)space_begins);
 		dummy_block->InUse = 0;
 		dummy_block->Size = dummy_data_size;
 
 		resized_header->Next = dummy_block;
-		dummy_block->Next = (struct MemoryBlockHeader*)space_ends;
+		dummy_block->Next = (MemoryBlockHeader*)space_ends;
 
 		if (self->Debug) printf("Memory: Inserted a dummy block blk=0x%x sz=%d\n",(uint32_t)dummy_block, dummy_data_size);
 		return dummy_block;
@@ -188,18 +188,18 @@ struct MemoryBlockHeader* MemoryDriver_InsertDummyBlock(struct MemoryDriver* sel
 	return 0;
 }
 
-uint32_t MemoryDriver_CheckForUnusedNeighbors(struct MemoryDriver* self, struct MemoryBlockHeader* header, uint32_t requested_size)
+uint32_t MemoryDriver_CheckForUnusedNeighbors(MemoryDriver* self, MemoryBlockHeader* header, uint32_t requested_size)
 {
 	if (self->Debug) 
 	{
 		printf("Memory: Checking 0x%x for unused neighbors\n" ,(uint32_t)header);
 	}
 	uint32_t cumulative_size = header->Size;
-	struct MemoryBlockHeader* next = header->Next;
+	MemoryBlockHeader* next = header->Next;
 	// Next block exists and is not in use
 	while (next && !next->InUse && cumulative_size < requested_size)
 	{
-		cumulative_size += sizeof(struct MemoryBlockHeader) + next->Size;
+		cumulative_size += sizeof(MemoryBlockHeader) + next->Size;
 		next = next->Next;
 	}
 
@@ -210,7 +210,7 @@ uint32_t MemoryDriver_CheckForUnusedNeighbors(struct MemoryDriver* self, struct 
 	return cumulative_size;
 }
 
-void* MemoryDriver_Allocate(struct MemoryDriver* self, uint32_t size)
+void* MemoryDriver_Allocate(MemoryDriver* self, uint32_t size)
 {
 	if (self->Debug) 
 	{
@@ -221,7 +221,7 @@ void* MemoryDriver_Allocate(struct MemoryDriver* self, uint32_t size)
 	if (!size) return 0; 
 
 	uint32_t nextFree = (uint32_t)MemoryDriver_ClaimFreeBlock(self, size);
-	uint32_t mem = nextFree + sizeof(struct MemoryBlockHeader);
+	uint32_t mem = nextFree + sizeof(MemoryBlockHeader);
 	if (self->Debug) printf("Memory: Allocated block=0x%x mem=0x%x\n",nextFree, mem);
 	return (void*) mem;
 }
@@ -253,7 +253,7 @@ void* MemoryDriver_Allocate(struct MemoryDriver* self, uint32_t size)
 		New header should only take up requested size and a dummy block inserted inbetween to 
 		accomodate reallocation of §the remaining space.
 */
-void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t requested_size)
+void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_size)
 {
 	if (self->Debug) 
 		printf("Memory: Reallocate  area=0x%x requested for sz=%d\n", (uint32_t)ptr, requested_size);
@@ -272,7 +272,7 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 		return 0;
 	}
 
-	struct MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,ptr);
+	MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,ptr);
 
 	// Error case Not allocated or previously freed
 	if (!header->InUse)
@@ -297,7 +297,7 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 		{
 			header->Size = old_size;
 		}
-		return (void*) ((uint32_t)header)+sizeof(struct MemoryBlockHeader);
+		return (void*) ((uint32_t)header)+sizeof(MemoryBlockHeader);
 	}
 
 	// Is this at the end of the heap
@@ -315,13 +315,13 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 		if (self->Debug) printf("Memory: There is enough available space to resize the block\n");
 		header->Size = requested_size;
 		header->InUse = true;
-		header->Next = (struct MemoryBlockHeader*)(((uint32_t)header) + sizeof(struct MemoryBlockHeader) + available_space);
+		header->Next = (MemoryBlockHeader*)(((uint32_t)header) + sizeof(MemoryBlockHeader) + available_space);
 		uint32_t old_size = header->Size;
 		if (!MemoryDriver_InsertDummyBlock(self, header))
 		{
 			header->Size = old_size;
 		}
-		return (void*) ((uint32_t)header) + sizeof(struct MemoryBlockHeader);
+		return (void*) ((uint32_t)header) + sizeof(MemoryBlockHeader);
 	}
 
 
@@ -331,7 +331,7 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 		printf("Memory: Could not expand/contract block, allocating new\n");
 	}
 
-	struct MemoryBlockHeader* old_block_header = MemoryDriver_GetHeaderFromValuePointer(self,ptr);
+	MemoryBlockHeader* old_block_header = MemoryDriver_GetHeaderFromValuePointer(self,ptr);
 	uint32_t old_size = old_block_header->Size;
 	uint32_t size_to_copy = old_size < requested_size ? old_size : requested_size;
 	void* new_block = MemoryDriver_Allocate(self, requested_size);
@@ -340,9 +340,9 @@ void* MemoryDriver_Reallocate(struct MemoryDriver* self, void *ptr, uint32_t req
 	return new_block;
 }
 
-struct MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(struct MemoryDriver* self, void* value)
+MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(MemoryDriver* self, void* value)
 {
-	struct MemoryBlockHeader* retval = (struct MemoryBlockHeader*) (((uint32_t)value) - sizeof(struct MemoryBlockHeader));
+	MemoryBlockHeader* retval = (MemoryBlockHeader*) (((uint32_t)value) - sizeof(MemoryBlockHeader));
 
 	if (!MemoryDriver_IsValidBlock(self, retval))
 	{
@@ -352,9 +352,9 @@ struct MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(struct MemoryDr
 	return retval;
 }
 
-bool MemoryDriver_IsValidBlock(struct MemoryDriver* self, struct MemoryBlockHeader* header)
+bool MemoryDriver_IsValidBlock(MemoryDriver* self, MemoryBlockHeader* header)
 {
-	struct MemoryBlockHeader* current = self->StartBlock;
+	MemoryBlockHeader* current = self->StartBlock;
 
 	while (current) 
 	{
@@ -364,9 +364,9 @@ bool MemoryDriver_IsValidBlock(struct MemoryDriver* self, struct MemoryBlockHead
 	return false;
 }
 
-void MemoryDriver_Free(struct MemoryDriver* self, void* addr)
+void MemoryDriver_Free(MemoryDriver* self, void* addr)
 {
-	struct MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,addr);
+	MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,addr);
 
 	if (!header->InUse)
 	{
@@ -382,7 +382,7 @@ void MemoryDriver_Free(struct MemoryDriver* self, void* addr)
 	MemoryDriver_CleanUpHeap(self);
 }
 
-void MemoryDriver_Detect(struct MemoryDriver* self)
+void MemoryDriver_Detect(MemoryDriver* self)
 {
 	if (!self->MultibootInfo)
 	{
@@ -442,7 +442,7 @@ void MemoryDriver_Detect(struct MemoryDriver* self)
 				uint32_t align = (MEMORY_STACK_ALIGN - ((uint32_t)&endKernel % MEMORY_STACK_ALIGN));
 				self->HeapBaseAddress = (uint32_t)&endKernel + align;
 				self->HeapSize = (MEMORY_UPPER_RAM_BASE + self->PhysicalAreas[physicalAreaIndex].Length) - ((uint32_t)&endKernel + align) ;
-				self->StartBlock = (struct MemoryBlockHeader*) self->HeapBaseAddress;
+				self->StartBlock = (MemoryBlockHeader*) self->HeapBaseAddress;
 				// Clear start block
 				self->StartBlock->Size = 0;
 				self->StartBlock->InUse = 0;
@@ -457,19 +457,19 @@ void MemoryDriver_Detect(struct MemoryDriver* self)
 	{
 		printf("Memory: End of kernel at 0x%x\n",(uint32_t)&endKernel);
 		printf("Memory: Heap starts at 0x%x \n",self->HeapBaseAddress);
-		printf("Memory: Memory_BlockHeader header is %d bytes\n",sizeof(struct MemoryBlockHeader));
+		printf("Memory: Memory_BlockHeader header is %d bytes\n",sizeof(MemoryBlockHeader));
 	}
 }
 
-void MemoryDriver_SetMultibootInfo(struct MemoryDriver* self, multiboot_info_t* mbi)
+void MemoryDriver_SetMultibootInfo(MemoryDriver* self, multiboot_info_t* mbi)
 {
 	self->MultibootInfo = mbi;
 }
 
-void MemoryDriver_CleanUpHeap(struct MemoryDriver* self)
+void MemoryDriver_CleanUpHeap(MemoryDriver* self)
 {
-	struct MemoryBlockHeader* block = self->StartBlock;
-	struct MemoryBlockHeader* lastInUse = block;
+	MemoryBlockHeader* block = self->StartBlock;
+	MemoryBlockHeader* lastInUse = block;
 
 	while (1)
 	{
@@ -488,9 +488,9 @@ void MemoryDriver_CleanUpHeap(struct MemoryDriver* self)
 	}
 }
 
-void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self)
+void MemoryDriver_PrintMemoryMap(MemoryDriver* self)
 {
-	struct MemoryBlockHeader* block = self->StartBlock;
+	MemoryBlockHeader* block = self->StartBlock;
 
 	printf("Memory Map\n");
 	printf("+------------+------------+------------+----------+----------+------------+\n");
@@ -500,13 +500,13 @@ void MemoryDriver_PrintMemoryMap(struct MemoryDriver* self)
 	{
 		printf("| 0x%08x | 0x%08x | 0x%08x | %08d | %s | 0x%08x |\n",
 			block,
-			(uint32_t)block+sizeof(struct MemoryBlockHeader),
+			(uint32_t)block+sizeof(MemoryBlockHeader),
 			block->Size,
 			block->Size,
 			block->InUse ? "Yes     " : "No      ",
 			block->Next);	
 
-		if (block->Next != 0 && ((uint32_t)block->Next != (uint32_t)block + sizeof(struct MemoryBlockHeader) + block->Size))
+		if (block->Next != 0 && ((uint32_t)block->Next != (uint32_t)block + sizeof(MemoryBlockHeader) + block->Size))
 		{
 			printf("Contiguous Memory Error!!! \n");
 		}

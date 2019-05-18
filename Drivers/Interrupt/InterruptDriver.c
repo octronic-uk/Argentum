@@ -8,14 +8,14 @@
 
 extern Kernel _Kernel;
 
-bool InterruptDriver_Constructor(struct InterruptDriver* self)
+bool InterruptDriver_Constructor(InterruptDriver* self)
 {
 	printf("Interrupt Driver: Constructing\n");
 	self->Debug = false;
 	InterruptDriver_Disable_CLI(self);
 
 	memset(self->HandlerFunctions,0,sizeof(void*)*INTERRUPT_HANDLER_FUNCTIONS_COUNT);
-    memset(self->DescriptorTable,0,sizeof(struct Interrupt_DescriptorTableEntry)*INTERRUPT_IDT_SIZE);
+    memset(self->DescriptorTable,0,sizeof(InterruptDescriptorTableEntry)*INTERRUPT_IDT_SIZE);
 
 	/* ICW1 - begin initialization */
 	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_CMD_INIT);
@@ -50,17 +50,17 @@ bool InterruptDriver_Constructor(struct InterruptDriver* self)
 	return true;
 }
 
-void InterruptDriver_WriteDescriptorTable(struct InterruptDriver* self)
+void InterruptDriver_WriteDescriptorTable(InterruptDriver* self)
 {
 	if (self->Debug)
 	{
 		printf("Interrupt: Writing Descriptor Table\n");
 	}
 	/* fill the InterruptDescriptorTable descriptor */
-	InterruptDriver_lidt(self, &self->DescriptorTable[0], sizeof(struct Interrupt_DescriptorTableEntry)*INTERRUPT_IDT_SIZE);
+	InterruptDriver_lidt(self, &self->DescriptorTable[0], sizeof(InterruptDescriptorTableEntry)*INTERRUPT_IDT_SIZE);
 }
 
-void InterruptDriver_lidt(struct InterruptDriver* self, void* base, uint16_t size)
+void InterruptDriver_lidt(InterruptDriver* self, void* base, uint16_t size)
 {
 	if (self->Debug) printf("Interrupt: LIDT\n");
     // This function works in 32 and 64bit mode
@@ -72,85 +72,85 @@ void InterruptDriver_lidt(struct InterruptDriver* self, void* base, uint16_t siz
 	__asm__ volatile ( "lidt %0" : : "m"(IDTR) );  // let the compiler choose an addressing mode
 }
 
-void InterruptDriver_Enable_STI(struct InterruptDriver* self)
+void InterruptDriver_Enable_STI(InterruptDriver* self)
 {
 	if (self->Debug) printf("Interrupt: STI\n");
 	//Enables the interrupts , set the interrupt flag
 	__asm__ ("sti");
 }
 
-void InterruptDriver_Disable_CLI(struct InterruptDriver* self)
+void InterruptDriver_Disable_CLI(InterruptDriver* self)
 {
 	if (self->Debug) printf("Interrupt: CLI\n");
 	//Disables interrupts ,clears the interrupt flag
 	__asm__ ("cli");
 }
 
-void InterruptDriver_SetHandlerFunction(struct InterruptDriver* self, uint8_t index, void(*fn)(void))
+void InterruptDriver_SetHandlerFunction(InterruptDriver* self, uint8_t index, void(*fn)(void))
 {
 	if (self->Debug) printf("Interrupt: Set Handler for %d\n",index);
 	self->HandlerFunctions[index] = fn;
 }
 
-void InterruptDriver_SendEOI(struct InterruptDriver* self, uint8_t irq)
+void InterruptDriver_SendEOI(InterruptDriver* self, uint8_t irq)
 {
 	if(irq >= 8) InterruptDriver_SendEOI_PIC2(self);
 	else         InterruptDriver_SendEOI_PIC1(self);
 }
 
-void InterruptDriver_SendEOI_PIC1(struct InterruptDriver* self)
+void InterruptDriver_SendEOI_PIC1(InterruptDriver* self)
 {
 	//if (self->Debug) printf("Interrupt: Sending EOI to PIC1\n");
 	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_EOI);
 }
 
-void InterruptDriver_SendEOI_PIC2(struct InterruptDriver* self)
+void InterruptDriver_SendEOI_PIC2(InterruptDriver* self)
 {
 	if (self->Debug) printf("Interrupt: Sending EOI to PIC2\n");
 	IO_WritePort8b(INTERRUPT_PIC2_COMMAND, INTERRUPT_PIC_EOI);
 }
 
-void InterruptDriver_SetMask_PIC1(struct InterruptDriver* self, uint8_t mask)
+void InterruptDriver_SetMask_PIC1(InterruptDriver* self, uint8_t mask)
 {
 	if (self->Debug) printf("Interrupt: Setting PIC1 mask 0x%x\n",mask);
 	IO_WritePort8b(INTERRUPT_PIC1_DATA, mask);
 }
 
-void InterruptDriver_SetMask_PIC2(struct InterruptDriver* self, uint8_t mask)
+void InterruptDriver_SetMask_PIC2(InterruptDriver* self, uint8_t mask)
 {
 	if (self->Debug) printf("Interrupt: Setting PIC2 mask 0x%x\n",mask);
 	IO_WritePort8b(INTERRUPT_PIC2_DATA, mask);
 }
 
-uint8_t InterruptDriver_ReadISR_PIC1(struct InterruptDriver* self) 
+uint8_t InterruptDriver_ReadISR_PIC1(InterruptDriver* self) 
 {
 	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_READ_ISR);
 	uint8_t isr = IO_ReadPort8b(INTERRUPT_PIC1_COMMAND);
 	return isr;
 }
 
-uint8_t InterruptDriver_ReadISR_PIC2(struct InterruptDriver* self) 
+uint8_t InterruptDriver_ReadISR_PIC2(InterruptDriver* self) 
 {
 	IO_WritePort8b(INTERRUPT_PIC2_COMMAND, INTERRUPT_PIC_READ_ISR);
 	uint8_t isr = IO_ReadPort8b(INTERRUPT_PIC2_COMMAND);
 	return isr;
 }
 
-uint8_t InterruptDriver_ReadIRR_PIC1(struct InterruptDriver* self) 
+uint8_t InterruptDriver_ReadIRR_PIC1(InterruptDriver* self) 
 {
 	IO_WritePort8b(INTERRUPT_PIC1_COMMAND, INTERRUPT_PIC_READ_IRR);
 	uint8_t irr = IO_ReadPort8b(INTERRUPT_PIC1_COMMAND);
 	return irr;
 }
 
-uint8_t InterruptDriver_ReadIRR_PIC2(struct InterruptDriver* self) 
+uint8_t InterruptDriver_ReadIRR_PIC2(InterruptDriver* self) 
 {
 	IO_WritePort8b(INTERRUPT_PIC2_COMMAND, INTERRUPT_PIC_READ_IRR);
 	uint8_t irr = IO_ReadPort8b(INTERRUPT_PIC2_COMMAND);
 	return irr;
 }
 
-void InterruptDriver_SetupDescriptorTable(struct InterruptDriver* self)
+void InterruptDriver_SetupDescriptorTable(InterruptDriver* self)
 {
 	unsigned long irq0_address;
 	unsigned long irq1_address;
@@ -285,6 +285,7 @@ void InterruptDriver_SetupDescriptorTable(struct InterruptDriver* self)
 
 void irq0_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	//if (self->Debug) printf("Interrupt: 0\n");
 	if (self->HandlerFunctions[0])
@@ -292,10 +293,12 @@ void irq0_handler()
 		self->HandlerFunctions[0]();
 	}
     InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
  
 void irq1_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 1\n");
 	if (self->HandlerFunctions[1])
@@ -303,10 +306,12 @@ void irq1_handler()
 		self->HandlerFunctions[1]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq2_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 2\n");
 	if (self->HandlerFunctions[2])
@@ -314,10 +319,12 @@ void irq2_handler()
 		self->HandlerFunctions[2]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq3_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 3\n");
 	if (self->HandlerFunctions[3])
@@ -325,10 +332,12 @@ void irq3_handler()
 		self->HandlerFunctions[3]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq4_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 4\n");
 	if (self->HandlerFunctions[4])
@@ -336,10 +345,12 @@ void irq4_handler()
 		self->HandlerFunctions[4]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq5_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 5\n");
 	if (self->HandlerFunctions[5])
@@ -347,10 +358,12 @@ void irq5_handler()
 		self->HandlerFunctions[5]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq6_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 6\n");
 	if (self->HandlerFunctions[6])
@@ -358,10 +371,12 @@ void irq6_handler()
 		self->HandlerFunctions[6]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq7_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 7\n");
 	if (self->HandlerFunctions[7])
@@ -369,10 +384,12 @@ void irq7_handler()
 		self->HandlerFunctions[7]();
 	}
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq8_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 8\n");
 	if (self->HandlerFunctions[8])
@@ -381,6 +398,7 @@ void irq8_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);          
+	asm("sti");
 }
  
 void irq9_handler() 
@@ -393,10 +411,12 @@ void irq9_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
 
 void irq10_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 10\n");
 	if (self->HandlerFunctions[10])
@@ -405,10 +425,12 @@ void irq10_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
  
 void irq11_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 11\n");
 	if (self->HandlerFunctions[11])
@@ -417,10 +439,12 @@ void irq11_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
  
 void irq12_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 12\n");
 	if (self->HandlerFunctions[12])
@@ -429,10 +453,12 @@ void irq12_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
  
 void irq13_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 13\n");
 	if (self->HandlerFunctions[13])
@@ -441,10 +467,12 @@ void irq13_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
  
 void irq14_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 14\n");
 	if (self->HandlerFunctions[14])
@@ -453,10 +481,12 @@ void irq14_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }
  
 void irq15_handler() 
 {
+	asm("cli");
 	struct InterruptDriver* self = &_Kernel.Interrupt;
 	if (self->Debug) printf("Interrupt: 15\n");
 	if (self->HandlerFunctions[15])
@@ -465,4 +495,5 @@ void irq15_handler()
 	}
 	InterruptDriver_SendEOI_PIC2(self);
 	InterruptDriver_SendEOI_PIC1(self);
+	asm("sti");
 }

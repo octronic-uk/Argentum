@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "KeyboardAction.h"
+#include "Event.h"
 
 #define ACTION_BUFFER_SIZE 128 
 
@@ -23,10 +24,15 @@ struct ScancodeParser
     volatile bool Shift;
     volatile bool Alt;
     volatile bool Ctrl;
+    void(*KeyboardEventCallback)(KeyboardEvent); 
 };
 
-bool ScancodeParser_Constructor(struct ScancodeParser* self);
-void ScancodeParser_ParseScancode(struct ScancodeParser* self, uint8_t byte);
-void ScancodeParser_ClearCurrentAction(struct ScancodeParser* self);
-void ScancodeParser_WaitForKeyPressAction(struct ScancodeParser* self);
-int32_t ScancodeParser_GetChar(struct ScancodeParser* self);
+typedef struct ScancodeParser ScancodeParser;
+
+bool ScancodeParser_Constructor(ScancodeParser* self);
+void ScancodeParser_ParseScancode(ScancodeParser* self, uint8_t byte);
+void ScancodeParser_ClearCurrentAction(ScancodeParser* self);
+void ScancodeParser_WaitForKeyPressAction(ScancodeParser* self);
+int32_t ScancodeParser_GetChar(ScancodeParser* self);
+
+void ScancodeParser_SetEventCallback(ScancodeParser* self, void(*callback)(KeyboardEvent));

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <Boot/multiboot.h>
 
 // Drivers
@@ -14,29 +15,27 @@
 #include <Drivers/Screen/TextMode/TextModeDriver.h>
 #include <Drivers/Serial/SerialDriver.h>
 #include <Drivers/Screen/Vga/VgaDriver.h>
-
-// Objects
-#include <Objects/StorageManager/StorageManager.h>
-#include <Objects/GraphicsManager/GraphicsManager.h>
+#include <Objects/HardwareManager/HardwareManager.h>
 
 struct Kernel
 {
+    // Variables
     multiboot_info_t* MultibootInfo;
+    volatile bool RunLoop;
     // Drivers
     ACPIDriver ACPI;
-    struct ATADriver ATA;
-    struct FloppyDriver Floppy;
-    struct InterruptDriver Interrupt;
-    struct MemoryDriver Memory;
-    struct PCIDriver PCI;
-    struct PITDriver PIT;
-    struct PS2Driver PS2;
-    struct TextModeDriver TextMode;
-    struct VgaDriver Vga;
-    struct SerialDriver Serial;
+    ATADriver ATA;
+    FloppyDriver Floppy;
+    InterruptDriver Interrupt;
+    MemoryDriver Memory;
+    PCIDriver PCI;
+    PITDriver PIT;
+    PS2Driver PS2;
+    TextModeDriver TextMode;
+    VgaDriver Vga;
+    SerialDriver Serial;
     // Objects
-    struct StorageManager StorageManager;
-    struct GraphicsManager GraphicsManager;
+    HardwareManager HardwareManager;
 };
 
 typedef struct Kernel Kernel;
@@ -50,3 +49,5 @@ void Kernel_DestroyDrivers(Kernel* self);
 
 void Kernel_TestDrivers(Kernel* self);
 void Kernel_TestObjects(Kernel* self);
+
+void Kernel_Run(Kernel* self);

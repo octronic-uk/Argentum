@@ -6,7 +6,7 @@
 #include "FAT/FatType.h"
 #include "FAT/FatDirectoryListing.h"
 #include "FAT/FatDirectoryEntrySummary.h"
-#include <Objects/LinkedList/LinkedList.h>
+#include <Objects/Common/LinkedList/LinkedList.h>
 
 typedef struct SMVolume SMVolume;
 

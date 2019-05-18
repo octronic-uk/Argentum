@@ -28,4 +28,4 @@ void   ultoa(unsigned long value, char* str, int base);
 uint32_t strtoul (const char* str, char** endptr, int base);
 int32_t  strtol(const char* nptr, char** endptr, int base);
 
-
+void qsort (void* base, uint32_t num, uint32_t size, int (*compar)(const void*,const void*));

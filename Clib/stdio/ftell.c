@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "FILE.h"
-#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include <Objects/HardwareManager/StorageManager/SMDirectoryEntry.h>
 
 long int ftell(FILE* stream)
 {

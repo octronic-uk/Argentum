@@ -1,10 +1,10 @@
-#include <Objects/Kernel/Kernel.h>
+#include "Kernel.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <Drivers/Memory/Test/MemoryTest.h>
 #include <Drivers/Serial/Test/SerialDriverTest.h>
-#include <Objects/StorageManager/Test/StorageManagerTest.h>
-#include <Objects/GraphicsManager/Test/GraphicsManagerTest.h>
+#include <Objects/HardwareManager/Test/HardwareManagerTest.h>
 
 bool Kernel_Constructor(Kernel* self, multiboot_info_t* mbi)
 {
@@ -76,6 +76,7 @@ bool Kernel_InitDrivers(Kernel* self)
 	InterruptDriver_SetMask_PIC2(&self->Interrupt, 0x00);
 	InterruptDriver_Enable_STI(&self->Interrupt);
 
+
 	if (!ACPIDriver_Constructor(&self->ACPI))
 	{
 		return false;
@@ -101,12 +102,7 @@ bool Kernel_InitDrivers(Kernel* self)
 
 bool Kernel_InitObjects(Kernel* self)
 {
-	if (!StorageManager_Constructor(&self->StorageManager))
-	{
-		return false;
-	}
-
-	if (!GraphicsManager_Constructor(&self->GraphicsManager))
+	if (!HardwareManager_Constructor(&self->HardwareManager))
 	{
 		return false;
 	}
@@ -121,8 +117,7 @@ void Kernel_Destructor(Kernel* self)
 
 void Kernel_DestroyObjects(Kernel* self)
 {
-	StorageManager_Destructor(&self->StorageManager);
-	GraphicsManager_Destructor(&self->GraphicsManager);
+	HardwareManager_Destructor(&self->HardwareManager);
 }
 
 void Kernel_DestroyDrivers(Kernel* self)
@@ -138,6 +133,15 @@ void Kernel_TestDrivers(Kernel* self)
 
 void Kernel_TestObjects(Kernel* self)
 {
-	//StorageManagerTest_RunSuite(&self->StorageManager);
-	GraphicsManagerTest_RunSuite(&self->GraphicsManager);
+	HardwareManagerTest_RunSuite(&self->HardwareManager);
+}
+
+void Kernel_Run(Kernel* self)
+{
+	printf("Kernel: Entering Runloop\n");
+	self->RunLoop = true;
+	while(self->RunLoop)
+	{
+		GraphicsManager_Render(&self->HardwareManager.GraphicsManager);
+	}
 }

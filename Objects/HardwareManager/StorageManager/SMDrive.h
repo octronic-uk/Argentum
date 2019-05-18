@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "SMVolume.h"
 #include "MBR/MBR.h"
-#include <Objects/LinkedList/LinkedList.h>
+#include <Objects/Common/LinkedList/LinkedList.h>
 
 #define SM_DRIVE_MAX_VOLUMES 4
 

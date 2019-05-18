@@ -35,7 +35,7 @@ extern int irq13();
 extern int irq14();
 extern int irq15();
 
-struct Interrupt_DescriptorTableEntry
+struct InterruptDescriptorTableEntry
 {
 	uint16_t OffsetLowerBits;
 	uint16_t Selector;
@@ -43,29 +43,31 @@ struct Interrupt_DescriptorTableEntry
 	uint8_t  TypeAttribute;
 	uint16_t OffsetHigherBits;
 } __attribute__((packed));
+typedef struct InterruptDescriptorTableEntry  InterruptDescriptorTableEntry;
 
 struct InterruptDriver
 {
 	bool Debug;
-	struct Interrupt_DescriptorTableEntry DescriptorTable[INTERRUPT_IDT_SIZE];
+	InterruptDescriptorTableEntry DescriptorTable[INTERRUPT_IDT_SIZE];
 	void(*HandlerFunctions[INTERRUPT_HANDLER_FUNCTIONS_COUNT])(void);
 };
+typedef struct InterruptDriver InterruptDriver;
 
-bool InterruptDriver_Constructor(struct InterruptDriver* self);
-void InterruptDriver_SetHandlerFunction(struct InterruptDriver* self, uint8_t index, void(*fn)(void));
-void InterruptDriver_WriteDescriptorTable(struct InterruptDriver* self);
-void InterruptDriver_lidt(struct InterruptDriver* self, void* base, uint16_t size);
-void InterruptDriver_Enable_STI(struct InterruptDriver* self);
-void InterruptDriver_Disable_CLI(struct InterruptDriver* self);
-void InterruptDriver_SendEOI(struct InterruptDriver* self, uint8_t irq);
-void InterruptDriver_SendEOI_PIC1(struct InterruptDriver* self);
-void InterruptDriver_SendEOI_PIC2(struct InterruptDriver* self);
-void InterruptDriver_SetMask_PIC1(struct InterruptDriver* self, uint8_t mask);
-void InterruptDriver_SetMask_PIC2(struct InterruptDriver* self, uint8_t mask);
-uint8_t InterruptDriver_ReadISR_PIC1(struct InterruptDriver* self);
-uint8_t InterruptDriver_ReadISR_PIC2(struct InterruptDriver* self);
-uint8_t InterruptDriver_ReadIRR_PIC1(struct InterruptDriver* self);
-uint8_t InterruptDriver_ReadIRR_PIC2(struct InterruptDriver* self);
+bool InterruptDriver_Constructor(InterruptDriver* self);
+void InterruptDriver_SetHandlerFunction(InterruptDriver* self, uint8_t index, void(*fn)(void));
+void InterruptDriver_WriteDescriptorTable(InterruptDriver* self);
+void InterruptDriver_lidt(InterruptDriver* self, void* base, uint16_t size);
+void InterruptDriver_Enable_STI(InterruptDriver* self);
+void InterruptDriver_Disable_CLI(InterruptDriver* self);
+void InterruptDriver_SendEOI(InterruptDriver* self, uint8_t irq);
+void InterruptDriver_SendEOI_PIC1(InterruptDriver* self);
+void InterruptDriver_SendEOI_PIC2(InterruptDriver* self);
+void InterruptDriver_SetMask_PIC1(InterruptDriver* self, uint8_t mask);
+void InterruptDriver_SetMask_PIC2(InterruptDriver* self, uint8_t mask);
+uint8_t InterruptDriver_ReadISR_PIC1(InterruptDriver* self);
+uint8_t InterruptDriver_ReadISR_PIC2(InterruptDriver* self);
+uint8_t InterruptDriver_ReadIRR_PIC1(InterruptDriver* self);
+uint8_t InterruptDriver_ReadIRR_PIC2(InterruptDriver* self);
 
 void InterruptDriver_SetupDescriptorTable();
 void irq0_handler();

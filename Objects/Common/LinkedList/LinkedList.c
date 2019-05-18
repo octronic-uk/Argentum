@@ -154,3 +154,22 @@ void LinkedList_FreeAllData(LinkedList* self)
 		current = current->Next;
 	}
 }
+
+void* LinkedList_PopFront(LinkedList* self)
+{
+	LinkedListNode* current = self->Head;
+	void* data = current->Data;
+
+	if (current->Next)
+	{
+		self->Head = current->Next;
+	}
+	else
+	{
+		self->Head = 0;
+	}
+	
+	MemoryDriver_Free(&_Kernel.Memory, current);
+
+	return data;
+}

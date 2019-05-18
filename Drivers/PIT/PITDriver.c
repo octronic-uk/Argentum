@@ -7,7 +7,7 @@
 
 extern Kernel _Kernel;
 
-bool PITDriver_Constructor(struct PITDriver* self)
+bool PITDriver_Constructor(PITDriver* self)
 {
     printf("PIT Driver: Constructing\n");
     self->Ticks = 0;
@@ -15,18 +15,18 @@ bool PITDriver_Constructor(struct PITDriver* self)
     return true;
 }
 
-void PITDriver_IncrementTicks(struct PITDriver* self)
+void PITDriver_IncrementTicks(PITDriver* self)
 {
     self->Ticks++;
 }
 
-void PITDriver_ResetTicks(struct PITDriver* self)
+void PITDriver_ResetTicks(PITDriver* self)
 {
     self->Ticks = 0;
 }
 
 
-void PITDriver_SetInterruptHandlerFunction(struct PITDriver* self)
+void PITDriver_SetInterruptHandlerFunction(PITDriver* self)
 {
     if (self->Debug)
     {
@@ -37,6 +37,6 @@ void PITDriver_SetInterruptHandlerFunction(struct PITDriver* self)
 
 void PITDriver_InterruptHandler()
 {
-    struct PITDriver* self = &_Kernel.PIT;
+    PITDriver* self = &_Kernel.PIT;
     PITDriver_IncrementTicks(self);
 }

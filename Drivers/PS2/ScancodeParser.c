@@ -5,10 +5,10 @@
 #include <unistd.h>
 #include "Scancode.h"
 
-bool ScancodeParser_Constructor(struct ScancodeParser* self)
+bool ScancodeParser_Constructor(ScancodeParser* self)
 {
     printf("ScancodeParser: Constructing\n");
-    memset(self,0,sizeof(struct ScancodeParser));
+    memset(self,0,sizeof(ScancodeParser));
     self->Debug = false;
     self->State = STATE_START;
     self->Shift = false;
@@ -18,7 +18,7 @@ bool ScancodeParser_Constructor(struct ScancodeParser* self)
     return true;
 }
 
-void ScancodeParser_ParseScancode(struct ScancodeParser* self, uint8_t next_byte)
+void ScancodeParser_ParseScancode(ScancodeParser* self, uint8_t next_byte)
 {
     if (self->Debug) printf("ScancodeParser: Parsing 0x%x\n",next_byte);
 
@@ -70,31 +70,39 @@ void ScancodeParser_ParseScancode(struct ScancodeParser* self, uint8_t next_byte
         }
     }
 
-    // Handle modifier keys immediately
     if (self->CurrentAction.Valid)
     {
+        // Handle modifier keys immediately
         if (self->CurrentAction.Scancode == SCANCODE_LEFT_SHIFT || 
             self->CurrentAction.Scancode == SCANCODE_RIGHT_SHIFT)
         {
             self->Shift = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
-            ScancodeParser_ClearCurrentAction(self);
         }
         else if (self->CurrentAction.Scancode == SCANCODE_LEFT_ALT || 
                  self->CurrentAction.Scancode == SCANCODE_RIGHT_ALT_EXT)
         {
             self->Alt = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
-            ScancodeParser_ClearCurrentAction(self);
         }
         else if (self->CurrentAction.Scancode == SCANCODE_LEFT_CTRL || 
                  self->CurrentAction.Scancode == SCANCODE_RIGHT_CTRL_EXT)
         {
             self->Ctrl = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
-            ScancodeParser_ClearCurrentAction(self);
         }
     }
+
+    // Inform Callback listener
+    if (self->KeyboardEventCallback)
+    {
+        KeyboardEvent ke;
+        ke.Character = ScancodeParser_GetChar(self);
+        ke.Pressed = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
+        ke.Scancode = self->CurrentAction.Scancode;
+        self->KeyboardEventCallback(ke);
+    }
+    ScancodeParser_ClearCurrentAction(self);
 }
 
-void ScancodeParser_ClearCurrentAction(struct ScancodeParser* self)
+void ScancodeParser_ClearCurrentAction(ScancodeParser* self)
 {
     if (self->Debug) printf("ScancodeParser: Clearing Current Action\n");
     self->CurrentAction.KeyState = KEY_STATE_NONE;
@@ -102,7 +110,7 @@ void ScancodeParser_ClearCurrentAction(struct ScancodeParser* self)
     self->CurrentAction.Valid = false;
 }
 
-int32_t ScancodeParser_GetChar(struct ScancodeParser* self)
+int32_t ScancodeParser_GetChar(ScancodeParser* self)
 {
     if (!self->CurrentAction.Valid) return -1;
 
@@ -227,7 +235,13 @@ int32_t ScancodeParser_GetChar(struct ScancodeParser* self)
     return -1;
 }
 
-void ScancodeParser_WaitForKeyPressAction(struct ScancodeParser* self)
+void ScancodeParser_WaitForKeyPressAction(ScancodeParser* self)
 {
     while (self->CurrentAction.KeyState != KEY_STATE_PRESSED) {}
+}
+
+
+void ScancodeParser_SetEventCallback(ScancodeParser* self, void(*callback)(KeyboardEvent))
+{
+    self->KeyboardEventCallback = callback;
 }

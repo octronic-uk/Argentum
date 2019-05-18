@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <Objects/StorageManager/StorageManager.h>
-#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include "../StorageManager.h"
+#include "../SMDirectoryEntry.h"
 
 bool StorageManagerTest_RunSuite(StorageManager* self)
 {

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <Objects/LinkedList/LinkedList.h>
+#include <Objects/Common/LinkedList/LinkedList.h>
 #include <Drivers/ACPI/ACPIConstants.h>
 #include <Drivers/ACPI/ACPITableTypes.h>
 

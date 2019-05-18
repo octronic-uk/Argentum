@@ -9,7 +9,7 @@
 #include "../MBR/MBR.h"
 #include "FatDirectoryEntryData.h"
 #include "FatLfnCluster.h"
-#include <Objects/LinkedList/LinkedList.h>
+#include <Objects/Common/LinkedList/LinkedList.h>
 
 extern Kernel _Kernel;
 
@@ -173,7 +173,7 @@ bool FatVolume_WriteSector(FatVolume* self, uint32_t sector_to_write, uint8_t* b
     // Write to RamDisk 
     else if (self->RamDiskIndex >= 0)
     {
-        RamDisk* rd = (RamDisk*)LinkedList_At(&_Kernel.StorageManager.RamDisks,self->RamDiskIndex);
+        RamDisk* rd = (RamDisk*)LinkedList_At(&_Kernel.HardwareManager.StorageManager.RamDisks,self->RamDiskIndex);
         if (!RamDisk_WriteSectorLBA(rd, physical_sector,buffer))
         {
             printf("FatVolume: Error - RamDisk Error writing sector %d.\n",physical_sector);
@@ -215,7 +215,7 @@ bool FatVolume_ReadSector(FatVolume* self, uint32_t sector_to_read, uint8_t* buf
     // Read from RamDisk 
     else if (self->RamDiskIndex >= 0)
     {
-        RamDisk* rd = (RamDisk*)LinkedList_At(&_Kernel.StorageManager.RamDisks,self->RamDiskIndex);
+        RamDisk* rd = (RamDisk*)LinkedList_At(&_Kernel.HardwareManager.StorageManager.RamDisks,self->RamDiskIndex);
         if (!RamDisk_ReadSectorLBA(rd, physical_sector,buffer))
         {
             printf("FatVolume: Error - RamDisk Error reading sector %d.\n",physical_sector);

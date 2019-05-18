@@ -5,7 +5,7 @@
 
 #include "SMDrive.h"
 #include "SMPath.h"
-#include <Objects/LinkedList/LinkedList.h>
+#include <Objects/Common/LinkedList/LinkedList.h>
 
 #define SM_MAX_FLOPPY_DRIVES 2
 #define SM_MAX_ATA_DRIVES    4
