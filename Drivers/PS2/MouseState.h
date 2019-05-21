@@ -10,13 +10,13 @@ struct MouseState
 {
     bool    Debug;
     // Positions
-    int32_t PositionX;
+    volatile int32_t PositionX;
     int32_t PositionXMax;
-    int32_t PositionY;
+    volatile int32_t PositionY;
     int32_t PositionYMax;
     // Buttons
     uint8_t NumButtons;
-    bool    Button[3];
+    volatile bool    Button[3];
     // Buffer
     uint8_t DataBuffer[3];
     uint8_t DataBufferIndex;

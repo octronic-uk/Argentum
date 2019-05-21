@@ -47,8 +47,8 @@ void MouseState_ParseDataBuffer(MouseState* self)
         return;
     }
 
-	self->PositionX += ((state & 0x10) != 0) ? (delta_x | 0xFFFFFF00) : delta_x;
-	self->PositionY += ((state & 0x20) != 0) ? (delta_y | 0xFFFFFF00) : delta_y;
+	self->PositionX += delta_x - ((state << 4) & 0x100);
+	self->PositionY -= delta_y - ((state << 3) & 0x100);
 
     // X Clamping
     if (self->PositionX < 0) self->PositionX = 0;

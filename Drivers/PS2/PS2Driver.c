@@ -9,7 +9,6 @@
 #include <Objects/Kernel/Kernel.h>
 
 extern Kernel _Kernel;
-#define io_pause usleep(5);
 
 bool PS2Driver_Constructor(PS2Driver* self)
 {
@@ -77,14 +76,10 @@ uint8_t PS2Driver_ReadResponseFromSecondPort(PS2Driver* self)
     return 0;
 }
 
-bool PS2Driver_WriteCommandToSecondPort(PS2Driver* self, uint8_t cmd)
+bool PS2Driver_WaitForDataInBuffer(PS2Driver* self)
 {
-    if(self->Debug) printf("PS2: > Write command to second port\n");
-    PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_TO_SECOND_IN_BUFFER);
-    io_pause
-
     int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0 )
+    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
     {
         usleep(PS2_WAIT_FOR);
         wait++;
@@ -94,23 +89,38 @@ bool PS2Driver_WriteCommandToSecondPort(PS2Driver* self, uint8_t cmd)
             return false;
         }
     }
+    return true;
+}
 
-    // Send command
-    PS2Driver_WriteDataPort(self, cmd);
-    io_pause
-
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
+bool PS2Driver_WaitForDataBufferClear(PS2Driver* self)
+{
+    int wait = 0;
+    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0 )
     {
+        PS2Driver_ReadDataPort(self);
         usleep(PS2_WAIT_FOR);
         wait++;
         if (wait > PS2_TIMEOUT) 
         {
-            printf("PS2: Error - Timeout waiting for ack on port 2\n");
+            printf("PS2: Error - Timeout waiting for ok to write port 2\n");
             return false;
         }
     }
+    return true;
+}
+
+bool PS2Driver_WriteCommandToSecondPort(PS2Driver* self, uint8_t cmd)
+{
+    if(self->Debug) printf("PS2: > Write command to second port\n");
+    PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_TO_SECOND_IN_BUFFER);
+
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
+
+    // Send command
+    PS2Driver_WriteDataPort(self, cmd);
+
     // Read response
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     uint8_t response = PS2Driver_ReadDataPort(self);
     return (response == PS2_CMD_RESPONSE_ACK);
 }
@@ -122,9 +132,7 @@ void PS2Driver_FlushDataBuffer(PS2Driver* self)
     do
     {
         PS2Driver_ReadDataPort(self);
-        io_pause
         uint8_t status = PS2Driver_ReadStatusRegister(self);
-        io_pause
         if ((status & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0)
         {
             wait++;
@@ -162,7 +170,6 @@ void PS2Driver_WriteDataPort(PS2Driver* self, uint8_t data)
 uint8_t PS2Driver_ReadStatusRegister(PS2Driver* self)
 {
     uint8_t retval =  IO_ReadPort8b(PS2_STATUS_REGISTER_R);
-    io_pause
     if (self->Debug) printf("PS2: Read status register 0x%x\n",retval);
     return retval;
 }
@@ -179,7 +186,6 @@ void PS2Driver_CMD_EnableFirstPort(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Enabling First Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_ENABLE_FIRST_PORT);
-    io_pause
     if (self->Debug) printf("PS2: = OK Enabling First Port\n");
 }
 
@@ -187,7 +193,6 @@ void PS2Driver_CMD_DisableFirstPort(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Disabling First Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_DISABLE_FIRST_PORT);
-    io_pause
     if (self->Debug) printf("PS2: = OK Disabling First Port\n");
 }
 
@@ -195,7 +200,6 @@ void PS2Driver_CMD_EnableSecondPort(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Enabling Second Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_ENABLE_SECOND_PORT);
-    io_pause
     if (self->Debug) printf("PS2: = OK Enabling Second Port\n");
 }
 
@@ -203,32 +207,18 @@ void PS2Driver_CMD_DisableSecondPort(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Disabling Second Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_DISABLE_SECOND_PORT);
-    io_pause
     if (self->Debug) printf("PS2: = OK Disabling Second Port\n");
 }
 
-uint8_t PS2Driver_CMD_TestController(PS2Driver* self)
+bool PS2Driver_CMD_TestController(PS2Driver* self)
 {
     // Write command
     if (self->Debug) printf("PS2: > Testing PS/2 Controller\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_TEST_CONTROLLER);
-    io_pause
     // Wait for result to appear
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Unable to test controller\n");
-            abort();
-            return 0;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return 0;
     // Read Result
     uint8_t result = PS2Driver_ReadDataPort(self);
-    io_pause
     // Test Result
     if ((result & PS2_TEST_RESULT_PASSED) == PS2_TEST_RESULT_PASSED) 
     {
@@ -247,64 +237,43 @@ uint8_t PS2Driver_CMD_TestController(PS2Driver* self)
     }
 }
 
-uint8_t PS2Driver_CMD_TestFirstPort(PS2Driver* self)
+bool PS2Driver_CMD_TestFirstPort(PS2Driver* self)
 {
     // Write command
     if (self->Debug) printf("PS2: > Testing First Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_TEST_FIRST_PORT);
-    io_pause
+
     // Wait for result to appear
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT)
-        {
-            printf("PS2: Error - Test first port timeout\n");
-            abort();
-            return false;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+
     // Read Result
     uint8_t result = PS2Driver_ReadDataPort(self);
-    io_pause
+
     // Test Result
-     
     if (result == 0 || result == PS2_TEST_RESULT_PASSED) 
     {
         if (self->Debug) printf("PS2: Testing First Port PASSED\n");
-        return 1;
+        return true;
     }
     else 
     {
         if (self->Debug) printf("PS2: Testing First Port FAILED with 0x%x\n",result);
-        return 0;
+        return false;
     }
 }
 
-uint8_t PS2Driver_CMD_TestSecondPort(PS2Driver* self)
+bool PS2Driver_CMD_TestSecondPort(PS2Driver* self)
 {
     // Write command
     if (self->Debug) printf("PS2: > Testing Second Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_TEST_SECOND_PORT);
-    io_pause
+
     // Wait for result to appear
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT)
-        {
-            printf("PS2: Error - Timeout testing second port\n");
-            abort();
-            return 0;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+    
     // Read Result
     uint8_t result = PS2Driver_ReadDataPort(self);
-    io_pause
+
     // Test Result
     if (result == 0) 
     {
@@ -318,41 +287,21 @@ uint8_t PS2Driver_CMD_TestSecondPort(PS2Driver* self)
     }
 }
 // Device Commands
-void PS2Driver_DeviceCMD_ResetFirstPort(PS2Driver* self)
+bool PS2Driver_DeviceCMD_ResetFirstPort(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Resetting First Port\n");
     // Wait for register to clear
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0)
-    {
-        PS2Driver_ReadDataPort(self);
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT)
-        {
-            printf("PS2: Error - Timeout resetting first port 1 \n");
-            abort();
-            break;
-        }
-    }
-    // Read Result
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
+
+    // Reset Device
     PS2Driver_WriteDataPort(self, PS2_DEVICE_RESET);
-    io_pause
+
     // Wait for response
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT)
-        {
-            printf("PS2: Error - Timeout resetting first port 2\n");
-            abort();
-            return;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+
+    // Read result
     uint8_t result = PS2Driver_ReadDataPort(self);
-    io_pause
+
     // Test Result
     if (result == PS2_DEVICE_RESET_SUCCESS) 
     {
@@ -362,25 +311,14 @@ void PS2Driver_DeviceCMD_ResetFirstPort(PS2Driver* self)
     {
         if (self->Debug) printf("PS2: Got 0xAA...\n");
         // Wait for response
-        wait = 0;
-        while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-        {
-            usleep(PS2_WAIT_FOR);
-            wait++;
-            if (wait > PS2_TIMEOUT)
-            {
-                printf("PS2: Error - Timeout reading first port 2\n");
-                abort();
-                return;
-            }
-        }
+        if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+        // Read next byte
         result = PS2Driver_ReadDataPort(self);
-        io_pause
         if (result == PS2_DEVICE_RESET_SUCCESS)
         {
             if (self->Debug) printf("PS2: Reset finally succeeded on first port\n");
+            return true;
         }
-
     }
     else if (result == PS2_DEVICE_RESET_FAILURE)
     {
@@ -390,110 +328,64 @@ void PS2Driver_DeviceCMD_ResetFirstPort(PS2Driver* self)
     {
         if (self->Debug) printf("PS2: Reset first port FAILED with weird result 0x%x\n",result);
     }
+    return false;
 }
-void PS2Driver_DeviceCMD_ResetSecondPort(PS2Driver* self)
+
+bool PS2Driver_DeviceCMD_ResetSecondPort(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Resetting Second Port\n");
     PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_TO_SECOND_IN_BUFFER);
-    io_pause
+
     // Wait for register to clear
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0)
-    {
-        PS2Driver_ReadDataPort(self);
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT)
-        {
-            printf("PS2: Error - Timeout resetting second port 1 \n");
-            abort();
-            break;
-        }
-    }
-    // Read Result
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
+
+    // Write reset cmd 
     PS2Driver_WriteDataPort(self, PS2_DEVICE_RESET);
-    io_pause
+
     // Wait for response
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT)
-        {
-            printf("PS2: Error - Timeout resetting second port 2\n");
-            abort();
-            return;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+
+    // Read result
     uint8_t result = PS2Driver_ReadDataPort(self);
-    io_pause
+    
     // Test Result
     if (result == PS2_DEVICE_RESET_SUCCESS) 
     {
         // Wait for response
-        wait = 0;
-        while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-        {
-            usleep(PS2_WAIT_FOR);
-            wait++;
-            if (wait > PS2_TIMEOUT)
-            {
-                printf("PS2: Error - Timeout reading second port 3\n");
-                abort();
-                return;
-            }
-        }
+        if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+        // Read next
         result = PS2Driver_ReadDataPort(self);
-        io_pause
+        
         if (result == 0xAA)
         {
             if (self->Debug) printf("PS2: Reset in progress 0xAA\n");
             // Wait for response
-            wait = 0;
-            while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-            {
-                usleep(PS2_WAIT_FOR);
-                wait++;
-                if (wait > PS2_TIMEOUT)
-                {
-                    printf("PS2: Error - Timeout reading second port 3\n");
-                    abort();
-                    return;
-                }
-            }
+            if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+            // Read Next
             result = PS2Driver_ReadDataPort(self);
-            io_pause
+            
             if (result == 0x00)
             {
                 if (self->Debug) printf("PS2: Looks good 0x00\n");
-                return;
+                return true;
             }
         } 
 
         if (self->Debug) printf("PS2: Reset second port successfully\n");
+        return true;
     }
     else if (result == 0xAA)
     {
         if (self->Debug) printf("PS2: Got 0xAA...\n");
         // Wait for response
-        wait = 0;
-        while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-        {
-            usleep(PS2_WAIT_FOR);
-            wait++;
-            if (wait > PS2_TIMEOUT)
-            {
-                printf("PS2: Error - Timeout reading second port 3\n");
-                abort();
-                return;
-            }
-        }
+        if (!PS2Driver_WaitForDataInBuffer(self)) return false;
+        // Read Next
         result = PS2Driver_ReadDataPort(self);
-        io_pause
+        
         if (result == PS2_DEVICE_RESET_SUCCESS)
         {
             if (self->Debug) printf("PS2: Reset finally succeeded on second port\n");
+            return true;
         }
     }
     else if (result == PS2_DEVICE_RESET_FAILURE)
@@ -504,30 +396,19 @@ void PS2Driver_DeviceCMD_ResetSecondPort(PS2Driver* self)
     {
         if (self->Debug) printf("PS2: Reset second port FAILED with weird result 0x%x\n",result);
     }
+    return false;
 }
 
-void PS2Driver_WriteInitialConfigurationByte(PS2Driver* self)
+bool PS2Driver_WriteInitialConfigurationByte(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Writing INITIAL config byte\n");
     
     PS2Driver_WriteCommandRegister(self, PS2_CMD_READ_RAM_BYTE_ZERO);
-    io_pause
 
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout Writing Configuration byte 1\n");
-            abort();
-            break;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self )) return false;
+
     // Read Result
     uint8_t currentConfig = PS2Driver_ReadDataPort(self); 
-    io_pause
 
     if (self->Debug) printf("PS2: Current config byte 0x%x\n",currentConfig);
 
@@ -540,45 +421,21 @@ void PS2Driver_WriteInitialConfigurationByte(PS2Driver* self)
     // disable all IRQs and disable translation (clear bits 0, 1 and 6).
     currentConfig &= ~(1 | 1<<1 | 1<<5);
 
-    PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_RAM_BYTE_ZERO);
-    io_pause
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
 
-    wait = 0;
-    // was PS2_STATUS_REG_INPUT_IS_CMD
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_INPUT_IS_CMD) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout writing configuration byte 2\n");
-            abort();
-            break;
-        }
-    }
+    PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_RAM_BYTE_ZERO);
 
     if (self->Debug) printf("PS2: Writing new config byte 0x%x\n",currentConfig);
 
     PS2Driver_WriteDataPort(self, currentConfig);
-    io_pause
+
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
 
     // Check
-
     PS2Driver_WriteCommandRegister(self, PS2_CMD_READ_RAM_BYTE_ZERO);
-    io_pause
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout Writing Configuration byte 1\n");
-            abort();
-            break;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;    
+
     // Read Result
     uint8_t writtenConfig = PS2Driver_ReadDataPort(self); 
 
@@ -591,99 +448,44 @@ void PS2Driver_WriteInitialConfigurationByte(PS2Driver* self)
     if (self->Debug) printf("PS2: = OK Writing config byte\n",currentConfig);
 }
 
-void PS2Driver_IdentifyPort1(PS2Driver* self)
+bool PS2Driver_IdentifyPort1(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Identify Port 1\n");
     
     PS2Driver_WriteDataPort(self, PS2_CMD_DISABLE_SCANNING);
-    io_pause
 
     uint8_t data;
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for disable scanning ack on port 1\n");
-            abort();
-            break;
-        }
-    }
-
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     data = PS2Driver_ReadDataPort(self);
-    io_pause
-
+    
     if (data != PS2_CMD_RESPONSE_ACK)
     {
         printf("PS2Driver Error - Port 1 Didn't get the ole ACK got 0x%x\n",data);
-        return;
+        return false;
     }
-
 
     PS2Driver_WriteDataPort(self, PS2_CMD_IDENTIFY);
-    io_pause
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 1\n");
-            abort();
-            break;
-        }
-    }
-
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     data = PS2Driver_ReadDataPort(self);
-    io_pause
 
     if (data != PS2_CMD_RESPONSE_ACK)
     {
         printf("PS2Driver Error - Port 1 Didn't get the ole ACK got 0x%x\n",data);
-        return;
+        return false;
     }
     else
     {
         if (self->Debug) printf("PS2: waiting for port 1 ID data...\n");
     }
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 1\n");
-            return;
-        }
-    }
-
     uint8_t id_data[3];
-
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     id_data[0] = PS2Driver_ReadDataPort(self);
-    io_pause
     if (self->Debug) printf("PS2: Port 1 got ack byte 1 0x%x\n",data);
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 1\n");
-            return;
-        }
-    }
-
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     id_data[1] = PS2Driver_ReadDataPort(self);
-    io_pause
-
     if (self->Debug) printf("PS2: Port 1 got ack byte 2 0x%x\n",data);
 
     if (id_data[0] == 0xAB && id_data[1] == 0x83)
@@ -691,163 +493,72 @@ void PS2Driver_IdentifyPort1(PS2Driver* self)
         printf("PS2: = First Device identified as MF2 Keyboard\n");
     }
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 1\n");
-            return;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     PS2Driver_FlushDataBuffer(self);
+    return true;
 }
 
-void PS2Driver_IdentifyPort2(PS2Driver* self)
+bool PS2Driver_IdentifyPort2(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Identify Port 2\n");
 
     // Address port 2
-    
     PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_TO_SECOND_IN_BUFFER);
-    io_pause
-
-    uint8_t data;
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ok to write port 2\n");
-            break;
-        }
-    }
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
 
     // Send command
-
     PS2Driver_WriteDataPort(self, PS2_CMD_DISABLE_SCANNING);
-    io_pause
-
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for disable scanning ack on port 2\n");
-            abort();
-            break;
-        }
-    }
 
     // Read response
-
+    uint8_t data;
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     data = PS2Driver_ReadDataPort(self);
-    io_pause
+    
 
     if (data != PS2_CMD_RESPONSE_ACK)
     {
         printf("PS2Driver Error - Port2 Didn't get the ole ACK got 0x%x\n",data);
-        return;
+        return false;
     }
 
     // Address port 2
-
     PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_TO_SECOND_IN_BUFFER);
-    io_pause
-
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) != 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ok to write port 2\n");
-            break;
-        }
-    }
+    if(!PS2Driver_WaitForDataBufferClear(self)) return false;
 
     // Write Command
-
     PS2Driver_WriteDataPort(self, PS2_CMD_IDENTIFY);
-    io_pause
-
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 2\n");
-            abort();
-            break;
-        }
-    }
 
     // Read response
-
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     data = PS2Driver_ReadDataPort(self);
-    io_pause
 
     if (data != PS2_CMD_RESPONSE_ACK)
     {
         printf("PS2Driver Error - Port2 Didn't get the ole ACK got 0x%x\n",data);
-        return;
+        return false;
     }
     else
     {
         if (self->Debug) printf("PS2: waiting for port 2 ID data...\n");
     }
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 2\n");
-            return;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
 
     // Get ID
     uint8_t id_data[2];
-
     id_data[0] = PS2Driver_ReadDataPort(self);
-    io_pause
     if (self->Debug) printf("PS2: Port2 got ack byte 1 0x%x\n",id_data[0]);
 
     if (id_data[0] == 0x00)
     {
         printf("PS2: = Second Device identified as Standard PS/2 Mouse\n");
         PS2Driver_FlushDataBuffer(self);
-        return;
     }
 
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Timeout waiting for ack after identifyon port 2\n");
-            return;
-        }
-    }
-
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     id_data[1] = PS2Driver_ReadDataPort(self);
-    io_pause
-
     if (self->Debug) printf("PS2: Port2 got ack byte 2 0x%x\n",id_data[1]);
+    return true;
 }
 
 
@@ -866,26 +577,11 @@ bool PS2Driver_MouseEnable(PS2Driver* self)
 bool PS2Driver_EnableInterrupts(PS2Driver* self)
 {
     if (self->Debug) printf("PS2: > Enabling Interrupts\n");
-    
     PS2Driver_WriteCommandRegister(self, PS2_CMD_READ_RAM_BYTE_ZERO);
-    io_pause
 
-    int wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Unable enable interrupts\n");
-            abort();
-            return false;
-        }
-    }
-    io_pause
     // Read Result
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
     uint8_t currentConfig = PS2Driver_ReadDataPort(self); 
-    io_pause
 
     if (self->Debug) printf("PS2: Current config byte 0x%x\n",currentConfig);
 
@@ -895,49 +591,19 @@ bool PS2Driver_EnableInterrupts(PS2Driver* self)
     {
         currentConfig |= PS2_SECOND_PORT_INTERRUPT;
     }
-
+    currentConfig &= ~0x40; // Disable translation
     PS2Driver_WriteCommandRegister(self, PS2_CMD_WRITE_RAM_BYTE_ZERO);
-    io_pause
-
-    wait = 0;
-    // was PS2_STATUS_REG_INPUT_IS_CMD
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_INPUT_IS_CMD) == 0 )
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Unable to enable interrupts 2\n");
-            abort();
-            return false;
-        }
-    }
-
+    
+    if (!PS2Driver_WaitForDataBufferClear(self)) return false;
     if (self->Debug) printf("PS2: Writing new config byte 0x%x\n",currentConfig);
-
     PS2Driver_WriteDataPort(self, currentConfig);
-    io_pause
 
     // Check new conf
     PS2Driver_WriteCommandRegister(self, PS2_CMD_READ_RAM_BYTE_ZERO);
-    io_pause
-
-    wait = 0;
-    while ((PS2Driver_ReadStatusRegister(self) & PS2_STATUS_REG_OUTPUT_BUFFER_READY) == 0)
-    {
-        usleep(PS2_WAIT_FOR);
-        wait++;
-        if (wait > PS2_TIMEOUT) 
-        {
-            printf("PS2: Error - Unable enable interrupts\n");
-            abort();
-            return false;
-        }
-    }
+    if (!PS2Driver_WaitForDataInBuffer(self)) return false;
 
     // Read Result
     uint8_t newConfig = PS2Driver_ReadDataPort(self); 
-    io_pause
     if(self->Debug) printf("PS2: = Config is now 0x%x\n",newConfig);
     return true;
 }
@@ -986,7 +652,6 @@ void PS2Driver_SecondPortInterruptHandler()
     }
 }
 
-
 void PS2Driver_SetKeyboardEventCallback(PS2Driver* self, void(*callback)(KeyboardEvent))
 {
     ScancodeParser_SetEventCallback(&self->ScancodeParser, callback);
@@ -995,4 +660,15 @@ void PS2Driver_SetKeyboardEventCallback(PS2Driver* self, void(*callback)(Keyboar
 void PS2Driver_SetMouseEventCallback(PS2Driver* self, void(*callback)(MouseEvent))
 {
     MouseState_SetEventCallback(&self->MouseState, callback);
+}
+
+bool PS2Driver_MouseSetSampleRate(PS2Driver* self)
+{
+    if(self->Debug) printf("PS2: > Mouse Set Sample Rate\n");
+    if (!PS2Driver_WriteCommandToSecondPort(self, PS2_MOUSE_CMD_SET_SAMPLE_RATE))
+    {
+        printf("PS2: Error - unable to send sample rate command\n");
+        return false;
+    }
+    return false;
 }

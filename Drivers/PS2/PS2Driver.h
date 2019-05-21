@@ -110,29 +110,31 @@ uint8_t PS2Driver_ReadStatusRegister(PS2Driver* self);
 void    PS2Driver_WriteCommandRegister(PS2Driver* self, uint8_t cmd);
 
 // PS/2 Controller Commands
-uint8_t PS2Driver_CMD_TestController(PS2Driver* self);
-uint8_t PS2Driver_CMD_TestFirstPort(PS2Driver* self);
-uint8_t PS2Driver_CMD_TestSecondPort(PS2Driver* self);
+bool PS2Driver_CMD_TestController(PS2Driver* self);
+bool PS2Driver_CMD_TestFirstPort(PS2Driver* self);
+bool PS2Driver_CMD_TestSecondPort(PS2Driver* self);
 
 void PS2Driver_CMD_EnableFirstPort(PS2Driver* self);
 void PS2Driver_CMD_DisableFirstPort(PS2Driver* self);
-
 void PS2Driver_CMD_EnableSecondPort(PS2Driver* self);
 void PS2Driver_CMD_DisableSecondPort(PS2Driver* self);
 
-void PS2Driver_WriteInitialConfigurationByte(PS2Driver* self);
+bool PS2Driver_WriteInitialConfigurationByte(PS2Driver* self);
 
 // Device Commands
-void PS2Driver_DeviceCMD_ResetFirstPort(PS2Driver* self);
-void PS2Driver_DeviceCMD_ResetSecondPort(PS2Driver* self);
+bool PS2Driver_DeviceCMD_ResetFirstPort(PS2Driver* self);
+bool PS2Driver_DeviceCMD_ResetSecondPort(PS2Driver* self);
 
-void PS2Driver_IdentifyPort1(PS2Driver* self);
-void PS2Driver_IdentifyPort2(PS2Driver* self);
+bool PS2Driver_IdentifyPort1(PS2Driver* self);
+bool PS2Driver_IdentifyPort2(PS2Driver* self);
 
 bool PS2Driver_MouseEnable(PS2Driver* self);
+bool PS2Driver_MouseSetSampleRate(PS2Driver* self);
 uint8_t PS2Driver_ReadFromSecondPort(PS2Driver* self);
 void PS2Driver_WriteToSecondPort(PS2Driver* self, uint8_t data);
 
+bool PS2Driver_WaitForDataInBuffer(PS2Driver* self);
+bool PS2Driver_WaitForDataBufferClear(PS2Driver* self);
 
 // Interrupt Functions
 bool PS2Driver_EnableInterrupts(PS2Driver* self);
@@ -141,7 +143,6 @@ void PS2Driver_SetupInterruptHandlers(PS2Driver* self);
 void PS2Driver_FirstPortInterruptHandler();
 void PS2Driver_SecondPortInterruptHandler();
 
-char PS2Driver_WaitForChar();
 char PS2Driver_ScancodeToChar(uint8_t scancode);
 
 void PS2Driver_SetKeyboardEventCallback(PS2Driver* self, void(*callback)(KeyboardEvent));

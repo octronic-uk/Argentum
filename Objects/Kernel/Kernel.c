@@ -2,9 +2,13 @@
 
 #include <stdio.h>
 #include <unistd.h>
+
+#include <Drivers/FPU/FPUDriver.h>
 #include <Drivers/Memory/Test/MemoryTest.h>
 #include <Drivers/Serial/Test/SerialDriverTest.h>
-#include <Objects/HardwareManager/Test/HardwareManagerTest.h>
+#include <Objects/GraphicsManager/Test/GraphicsManagerTest.h>
+#include <Objects/StorageManager/Test/StorageManagerTest.h>
+#include <Objects/InputManager/Test/InputManagerTest.h>
 
 bool Kernel_Constructor(Kernel* self, multiboot_info_t* mbi)
 {
@@ -30,6 +34,7 @@ bool Kernel_Constructor(Kernel* self, multiboot_info_t* mbi)
 
 bool Kernel_InitDrivers(Kernel* self)
 {
+
 	if(!TextModeDriver_Constructor(&self->TextMode))
 	{
 		return false;
@@ -58,10 +63,13 @@ bool Kernel_InitDrivers(Kernel* self)
 		return false;
 	}
 
+	FPUDriver_EnableFPU();
+
 	if (!PITDriver_Constructor(&self->PIT))
 	{
 		return false;
 	}
+
 	if (!SerialDriver_Constructor(&self->Serial))
 	{
 		return false;
@@ -102,7 +110,17 @@ bool Kernel_InitDrivers(Kernel* self)
 
 bool Kernel_InitObjects(Kernel* self)
 {
-	if (!HardwareManager_Constructor(&self->HardwareManager))
+	if (!StorageManager_Constructor(&self->StorageManager))
+	{
+		return false;
+	}
+
+	if (!GraphicsManager_Constructor(&self->GraphicsManager))
+	{
+		return false;
+	}
+
+    if (!InputManager_Constructor(&self->InputManager))
 	{
 		return false;
 	}
@@ -117,7 +135,9 @@ void Kernel_Destructor(Kernel* self)
 
 void Kernel_DestroyObjects(Kernel* self)
 {
-	HardwareManager_Destructor(&self->HardwareManager);
+	InputManager_Destructor(&self->InputManager);
+	GraphicsManager_Destructor(&self->GraphicsManager);
+	StorageManager_Destructor(&self->StorageManager);
 }
 
 void Kernel_DestroyDrivers(Kernel* self)
@@ -133,7 +153,9 @@ void Kernel_TestDrivers(Kernel* self)
 
 void Kernel_TestObjects(Kernel* self)
 {
-	HardwareManagerTest_RunSuite(&self->HardwareManager);
+	//StorageManagerTest_RunSuite(&self->StorageManager);
+	//InputManagerTest_RunSuite(&self->InputManager);
+	GraphicsManagerTest_RunSuite(&self->GraphicsManager);
 }
 
 void Kernel_Run(Kernel* self)
@@ -142,6 +164,7 @@ void Kernel_Run(Kernel* self)
 	self->RunLoop = true;
 	while(self->RunLoop)
 	{
-		GraphicsManager_Render(&self->HardwareManager.GraphicsManager);
+		InputManager_ProcessEvents(&self->InputManager);
+		GraphicsManager_Render(&self->GraphicsManager);
 	}
 }

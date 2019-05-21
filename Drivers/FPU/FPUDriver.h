@@ -2,4 +2,5 @@
 
 #include <stdint.h>
 
-void FPUDriver_LoadControlWord(const uint16_t control);
+void FPUDriver_EnableFPU();
+void FPUDriver_SetControlWord(const uint16_t cw);

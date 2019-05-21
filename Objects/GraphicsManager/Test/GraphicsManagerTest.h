@@ -16,3 +16,5 @@ void GraphicsManagerTest_LoadBMP(GraphicsManager* gm);
 uint32_t GraphicsManagerTest_WriteImagePalette(Image* img);
 void GraphicsManagerTest_DebugData(uint8_t* data, uint32_t size);
 void GraphicsManagerTest_DebugDataUnformatted(uint8_t* data, uint32_t size);
+
+void GraphicsManagerTest_GuiElements(GraphicsManager* gm);

@@ -7,7 +7,7 @@ struct KeyboardEvent
 {
     bool Pressed;
     uint8_t Character;
-    uint32_t Scancode;
+    int Scancode;
 };
 typedef struct KeyboardEvent KeyboardEvent;
 

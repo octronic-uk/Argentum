@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 #include "FILE.h"
-#include <Objects/HardwareManager/StorageManager/SMFileMode.h>
-#include <Objects/HardwareManager/StorageManager/SMDirectoryEntry.h>
+#include <Objects/StorageManager/SMFileMode.h>
+#include <Objects/StorageManager/SMDirectoryEntry.h>
 
 // TODO - Needs Standard compliance
 int fseek(FILE* stream, long int offset, int origin)

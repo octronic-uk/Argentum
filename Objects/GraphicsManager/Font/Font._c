@@ -1,0 +1,134 @@
+#include "Font.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <Clib/stdio/FILE.h>
+#include <Objects/StorageManager/SMDirectoryEntry.h>
+#include <Objects/StorageManager/FAT/FatDirectoryEntrySummary.h>
+#include <Objects/GraphicsManager/GraphicsManager.h>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#define STBTT_STATIC
+#include "stb_truetype.h"
+
+bool Font_Constructor(Font* self)
+{
+    printf("Font: Constructing\n");
+    memset(self, 0, sizeof(Font));
+    self->Debug = true;
+    return true;
+}
+
+bool Font_Load(Font* self, char* filename)
+{
+    if (self->Debug) printf("Font: Loading front from %s\n",filename);
+    /* load font file */
+    long size;
+    unsigned char* fontBuffer;
+    
+    FILE* fontFile = fopen(filename, "rb");
+    //fseek(fontFile, 0, SEEK_END);
+    //ftell(fontFile); /* how long is the file ? */
+    size = fontFile->DirectoryEntry->FatDirectoryEntrySummary.FileSize;  
+    printf("Font: (Load) got file size %d\n",size);
+    //fseek(fontFile, 0, SEEK_SET); /* reset */
+    
+    fontBuffer = malloc(size);
+    
+    fread(fontBuffer, size, 1, fontFile);
+    fclose(fontFile);
+
+    /* prepare font */
+    if (!stbtt_InitFont(&self->StbInfo, fontBuffer, 0))
+    {
+        printf("Font: Loading failed\n");
+        return false;
+    }
+    
+    self->BitmapWidth  = 512; /* bitmap width */
+    self->BitmapHeight = 128; /* bitmap height */
+    self->LineHeight   = 8; /* line height */
+
+    /* create a bitmap for the phrase */
+    self->Bitmap = malloc(self->BitmapWidth * self->BitmapHeight);
+    
+    /* calculate font scaling */
+    self->Scale = stbtt_ScaleForPixelHeight(&self->StbInfo, self->LineHeight);
+    if(self->Debug)printf("Font: Scale %d\n",self->Scale);
+
+    stbtt_GetFontVMetrics(&self->StbInfo, &self->Ascent, &self->Descent, &self->LineGap);
+    self->Ascent *= self->Scale;
+    self->Descent *= self->Scale;
+
+    if(self->Debug) printf("Font: Ascent %d Descent %d\n",self->Ascent, self->Descent);
+
+    if (self->Debug) printf("Font: Loaded successfuly\n");
+    if (fontBuffer)
+    {
+        free(fontBuffer);
+    }
+    else
+    {
+        printf("Font: FontBuffer was null\n");
+    }
+    return true;
+}
+
+void Font_Destructor(Font* self)
+{
+    printf("Font: Destructing\n");
+    if (self->Bitmap)
+    {
+        free(self->Bitmap);
+    }
+    else
+    {
+        printf("Font: Bitmap was null\n");
+    }
+}
+
+void Font_RenderText(Font* self, GraphicsManager* gm, uint32_t center_x, uint32_t center_y, uint8_t color, char* text)
+{
+    printf("Font: Rendering Text '%s'\n",text);
+    int i, x;
+    int len = strlen(text);
+    for (i = 0; i < len; ++i)
+    {
+        /* get bounding box for character (may be offset to account for chars that dip above or below the line */
+        int c_x1, c_y1, c_x2, c_y2;
+        stbtt_GetCodepointBitmapBox(&self->StbInfo, text[i], self->Scale, self->Scale, &c_x1, &c_y1, &c_x2, &c_y2);
+        
+        /* compute y (different characters have different heights */
+        int y = self->Ascent + c_y1;
+        
+        /* render character (stride and offset is important here) */
+        int byteOffset = x + (y  * self->BitmapWidth);
+        stbtt_MakeCodepointBitmap(&self->StbInfo, self->Bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1, self->BitmapWidth, self->Scale, self->Scale, text[i]);
+        
+        /* how wide is this character */
+        int ax;
+        stbtt_GetCodepointHMetrics(&self->StbInfo, text[i], &ax, 0);
+        x += ax * self->Scale;
+        
+        /* add kerning */
+        int kern;
+        kern = stbtt_GetCodepointKernAdvance(&self->StbInfo, text[i], text[i + 1]);
+        x += kern * self->Scale;
+    }
+
+    if (self->Debug) printf("Font: Drawing\n");
+
+    int draw_x, draw_y;
+    for (draw_y = 0; draw_y < self->BitmapHeight; draw_y++)
+    {
+        for (draw_x = 0; draw_x < self->BitmapWidth; draw_x++)
+        {
+            if (self->Bitmap[(draw_y * self->BitmapWidth) + draw_x] != 0)
+            {
+                GraphicsManager_PutPixel(gm, draw_x, draw_y, color);
+            }
+        }
+    }
+    if (self->Debug) printf("Font: Drawing Done\n");
+}

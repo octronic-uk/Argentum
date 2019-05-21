@@ -9,7 +9,7 @@
 #include <Drivers/Interrupt/InterruptDriver.h>
 #include "VgaConstants.h"
 
-#define	peekb(S,O)		*(uint8_t *)(16uL * (S) + (O))
+#define	peekb(S,O)		    *(uint8_t *)(16uL * (S) + (O))
 #define	pokeb(S,O,V)		*(uint8_t *)(16uL * (S) + (O)) = (V)
 #define	pokew(S,O,V)		*(uint16_t *)(16uL * (S) + (O)) = (V)
 #define	_vmemwr(DS,DO,S,N)	memcpy((char *)((DS) * 16 + (DO)), S, N)
@@ -124,14 +124,15 @@ void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColorRGB color
 	IO_WritePort8b(VGA_DAC_WRITE, address);
 
 	// Write Color
-	IO_WritePort8b(VGA_DAC_DATA, color.Red);
-	IO_WritePort8b(VGA_DAC_DATA, color.Green);
-	IO_WritePort8b(VGA_DAC_DATA, color.Blue);
+	// >> 2 because QEMU uses 6-bit colors? Just QEMU Things(TM)...
+	IO_WritePort8b(VGA_DAC_DATA, color.Red >> 2);
+	IO_WritePort8b(VGA_DAC_DATA, color.Green >> 2);
+	IO_WritePort8b(VGA_DAC_DATA, color.Blue >> 2);
 
 	// Enable Interrupts
 	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 
-	// Check
+/*
 	VgaColorRGB result = VgaDriver_ReadDacColor(self,address);
 
 	if (!VgaColorRGB_EqualTo(result, color))
@@ -139,6 +140,7 @@ void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColorRGB color
 		printf("VgaDriver: Error writing palette color to DAC %d\n",address);
 		abort();
 	}
+	*/
 }
 
 VgaColorRGB VgaDriver_ReadDacColor(VgaDriver* self, uint8_t address)
@@ -277,6 +279,7 @@ uint32_t VgaDriver_GetFramebufferSegment(VgaDriver* self)
 
 void VgaDriver_vmemwr(VgaDriver* self, uint32_t dst_off, uint8_t *src, uint32_t count)
 {
+
 	_vmemwr(VgaDriver_GetFramebufferSegment(self), dst_off, src, count);
 }
 
@@ -396,6 +399,30 @@ void VgaDriver_WritePixel4p(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c)
 			VgaDriver_vpokeb(self, plane_offset, VgaDriver_vpeekb(self, plane_offset) & ~mask);
 		plane_mask <<= 1;
 	}
+}
+
+uint32_t VgaDriver_ReadPixel4p(VgaDriver* self, uint32_t x, uint32_t y)
+{
+	//printf("VgaDriver: 4-Plane mode, setting pixel (%d,%d) to index %d\n",x,y,c);
+
+	uint32_t plane_width_in_bytes = self->Width / 8;
+	uint32_t plane_offset = (plane_width_in_bytes * y) + (x / 8);
+	x = (x & 7) * 1;
+	uint32_t mask = 0x80 >> x;
+	uint32_t plane_mask = 1;
+	uint32_t color = 0;
+	uint32_t plane;
+
+	for(plane = 0; plane < 4; plane++)
+	{
+		VgaDriver_SetPlane(self, plane);
+		uint8_t b = VgaDriver_vpeekb(self, plane_offset);
+		if (b)
+		{
+			color |= (1 << plane);
+		}
+	}
+	return color;
 }
 
 void VgaDriver_WritePixel8(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c)
@@ -541,6 +568,7 @@ void VgaDriver_SetScreenMode(VgaDriver* self, VgaScreenMode mode)
 			self->Width  = 640;
 			self->Height = 480;
 			self->WritePixelFunction = VgaDriver_WritePixel4p;
+			self->ReadPixelFunction = VgaDriver_ReadPixel4p;
 			break;
 	}
 }
@@ -683,10 +711,22 @@ void VgaDriver_Font512(VgaDriver* self)
 	}
 }
 
-void VgaDriver_Main(VgaDriver* self)
+void VgaDriver_WaitForVBlankEnd(VgaDriver* self)
 {
-	VgaDriver_DumpState(self);
-	//VgaDriver_SetTextMode(self, arg_c > 1);
-	VgaDriver_DemoGraphics(self);
-	//VgaDriver_Font512(self);
+	uint8_t result = 0;
+	do
+	{
+		result = IO_ReadPort8b(0x03DA);
+	}
+	while((result & 0x08) == 0);
+}
+
+void VgaDriver_WaitForVBlankStart(VgaDriver* self)
+{
+	uint8_t result = 0;
+	do
+	{
+		result = IO_ReadPort8b(0x03DA);
+	}
+	while((result & 0x08) != 0);
 }

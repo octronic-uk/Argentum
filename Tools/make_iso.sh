@@ -11,24 +11,20 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
-DATE=`date +%Y-%m-%d_%H%M`
-ISO=${BASE}/iso
-BOOT=${ISO}/boot
-GRUB=${BOOT}/grub
-OUTPUT=${BASE}/Ag_${DATE}.iso
 
-rm -rf ${BASE}/${ISO}
-mkdir -p ${ISO} ${BOOT} ${GRUB}
+
+rm -rf ${ISO_BASE}/${ISO_DIR}
+mkdir -p ${ISO_DIR} ${ISO_BOOT} ${ISO_GRUB}
 cd ${BOOT} 
 
-cat << EOF > ${GRUB}/grub.cfg
+cat << EOF > ${ISO_GRUB}/grub.cfg
 
-menuentry "Argentum ${DATE}" {
+menuentry "Argentum ${ISO_DATE}" {
     multiboot /boot/Ag
 }
 EOF
 
-cp ${KERNEL} ${BOOT}
+cp ${KERNEL} ${ISO_BOOT}
 
-echo Creating ISO ${OUTPUT}
-i386-elf-grub-mkrescue -o ${OUTPUT} ${ISO}
+echo Creating ISO ${ISO_OUTPUT}
+i386-elf-grub-mkrescue -o ${ISO_OUTPUT} ${ISO_DIR}

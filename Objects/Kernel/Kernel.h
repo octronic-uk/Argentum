@@ -15,7 +15,9 @@
 #include <Drivers/Screen/TextMode/TextModeDriver.h>
 #include <Drivers/Serial/SerialDriver.h>
 #include <Drivers/Screen/Vga/VgaDriver.h>
-#include <Objects/HardwareManager/HardwareManager.h>
+#include <Objects/StorageManager/StorageManager.h>
+#include <Objects/GraphicsManager/GraphicsManager.h>
+#include <Objects/InputManager/InputManager.h>
 
 struct Kernel
 {
@@ -35,7 +37,9 @@ struct Kernel
     VgaDriver Vga;
     SerialDriver Serial;
     // Objects
-    HardwareManager HardwareManager;
+    StorageManager  StorageManager;
+    GraphicsManager GraphicsManager;
+    InputManager    InputManager;
 };
 
 typedef struct Kernel Kernel;

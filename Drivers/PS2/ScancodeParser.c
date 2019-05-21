@@ -73,18 +73,15 @@ void ScancodeParser_ParseScancode(ScancodeParser* self, uint8_t next_byte)
     if (self->CurrentAction.Valid)
     {
         // Handle modifier keys immediately
-        if (self->CurrentAction.Scancode == SCANCODE_LEFT_SHIFT || 
-            self->CurrentAction.Scancode == SCANCODE_RIGHT_SHIFT)
+        if (self->CurrentAction.Scancode == SCANCODE_LEFT_SHIFT || self->CurrentAction.Scancode == SCANCODE_RIGHT_SHIFT)
         {
             self->Shift = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
         }
-        else if (self->CurrentAction.Scancode == SCANCODE_LEFT_ALT || 
-                 self->CurrentAction.Scancode == SCANCODE_RIGHT_ALT_EXT)
+        else if (self->CurrentAction.Scancode == SCANCODE_LEFT_ALT || self->CurrentAction.Scancode == SCANCODE_RIGHT_ALT_EXT)
         {
             self->Alt = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
         }
-        else if (self->CurrentAction.Scancode == SCANCODE_LEFT_CTRL || 
-                 self->CurrentAction.Scancode == SCANCODE_RIGHT_CTRL_EXT)
+        else if (self->CurrentAction.Scancode == SCANCODE_LEFT_CTRL || self->CurrentAction.Scancode == SCANCODE_RIGHT_CTRL_EXT)
         {
             self->Ctrl = self->CurrentAction.KeyState == KEY_STATE_PRESSED;
         }
@@ -110,12 +107,17 @@ void ScancodeParser_ClearCurrentAction(ScancodeParser* self)
     self->CurrentAction.Valid = false;
 }
 
-int32_t ScancodeParser_GetChar(ScancodeParser* self)
+uint8_t ScancodeParser_GetChar(ScancodeParser* self)
 {
-    if (!self->CurrentAction.Valid) return -1;
+    if (!self->CurrentAction.Valid) 
+    {
+        if (self->Debug) printf("GetChar, action is invalid\n");
+        return 0;
+    }
 
     if (self->Shift)
     {
+        if (self->Debug) printf("GetChar, shifted\n");
         switch (self->CurrentAction.Scancode)
         {
             // Alpha
@@ -175,6 +177,7 @@ int32_t ScancodeParser_GetChar(ScancodeParser* self)
     }
     else
     {
+        if (self->Debug) printf("GetChar, NOT shifted\n");
         switch (self->CurrentAction.Scancode)
         {
             // Alpha
@@ -232,14 +235,8 @@ int32_t ScancodeParser_GetChar(ScancodeParser* self)
             case SCANCODE_TAB:          return '\t';
         }
     }
-    return -1;
+    return 0;
 }
-
-void ScancodeParser_WaitForKeyPressAction(ScancodeParser* self)
-{
-    while (self->CurrentAction.KeyState != KEY_STATE_PRESSED) {}
-}
-
 
 void ScancodeParser_SetEventCallback(ScancodeParser* self, void(*callback)(KeyboardEvent))
 {

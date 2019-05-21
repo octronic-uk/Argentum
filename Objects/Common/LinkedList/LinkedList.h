@@ -30,3 +30,4 @@ void LinkedList_FreeAllData(LinkedList* self);
 uint32_t LinkedList_Size(LinkedList* self);
 bool LinkedList_IsEmpty(LinkedList* self);
 void* LinkedList_At(LinkedList* self, uint32_t index);
+void* LinkedList_PopFront(LinkedList* self);

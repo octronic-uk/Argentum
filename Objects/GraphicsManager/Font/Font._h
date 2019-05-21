@@ -1,0 +1,27 @@
+#pragma once
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "stb_truetype.h"
+
+typedef struct GraphicsManager GraphicsManager;
+
+struct Font
+{
+    bool Debug;
+    float Scale;
+    uint8_t* Bitmap;
+    uint32_t BitmapWidth;
+    uint32_t BitmapHeight;
+    uint32_t LineHeight;
+    int Ascent;
+    int Descent;
+    int LineGap;
+    stbtt_fontinfo StbInfo;
+};
+typedef struct Font Font;
+
+bool Font_Constructor(Font* self);
+void Font_Destructor(Font* self);
+bool Font_Load(Font* self, char* filename);
+void Font_RenderText(Font* self, GraphicsManager* gm, uint32_t center_x, uint32_t center_y, uint8_t color, char* text);

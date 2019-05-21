@@ -24,6 +24,7 @@ struct VgaDriver
 {
     bool Debug;
     void (*WritePixelFunction)(struct VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
+    uint32_t (*ReadPixelFunction)(struct VgaDriver* self, uint32_t x, uint32_t y);
     VgaScreenMode ScreenMode;
     uint32_t Width;
     uint32_t Height;
@@ -42,11 +43,19 @@ void VgaDriver_vmemwr(VgaDriver* self, uint32_t dst_off, uint8_t *src, uint32_t 
 void VgaDriver_vpokeb(VgaDriver* self, uint32_t off, uint32_t val);
 uint32_t VgaDriver_vpeekb(VgaDriver* self, uint32_t off);
 void VgaDriver_WriteFont(VgaDriver* self, uint8_t *buf, uint32_t font_height);
+
 void VgaDriver_WritePixel1(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
+
 void VgaDriver_WritePixel2(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
+
 void VgaDriver_WritePixel4p(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
+uint32_t VgaDriver_ReadPixel4p(VgaDriver* self, uint32_t x, uint32_t y);
+
 void VgaDriver_WritePixel8(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
+
 void VgaDriver_WritePixel8x(VgaDriver* self, uint32_t x, uint32_t y, uint32_t c);
+
+
 void VgaDriver_DrawX(VgaDriver* self);
 void VgaDriver_DumpState(VgaDriver* self);
 void VgaDriver_SetTextMode(VgaDriver* self, bool hi_res);
@@ -54,9 +63,10 @@ void VgaDriver_DemoGraphics(VgaDriver* self);
 uint8_t VgaDriver_ReverseBits(uint8_t arg);
 uint8_t VgaDriver_ReadDacState(VgaDriver* self);
 void VgaDriver_Font512(VgaDriver* self);
-void VgaDriver_Main(VgaDriver* self);
 void VgaDriver_SetScreenMode(VgaDriver* self, VgaScreenMode mode);
 void VgaDriver_WriteDacColor(VgaDriver* self, uint8_t address, VgaColorRGB color);
 VgaColorRGB VgaDriver_ReadDacColor(VgaDriver* self, uint8_t address);
 void VgaDriver_WriteColorPalette(VgaDriver* self, VgaColorRGB* colors, uint8_t size);
 void VgaDriver_ClearScreen(VgaDriver* self);
+void VgaDriver_WaitForVBlankStart(VgaDriver* self);
+void VgaDriver_WaitForVBlankEnd(VgaDriver* self);

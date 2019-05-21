@@ -13,3 +13,8 @@ export RUN_GDB="${GDB_BIN} $PWD/Ag -tui"
 export RUN_MAKE="${MAKE_BIN} ${MAKEOPTS}"
 export RUN_QEMU="${QEMU_BIN} -m ${MEMORY} -kernel ${KERNEL} -drive format=raw,if=ide,file=${TEST_DISK} -drive format=raw,if=floppy,file=${TEST_FLOPPY} -serial stdio"
 export RUN_QEMU_DEBUG="${RUN_QEMU} -s -S"
+export ISO_DATE=`date +%Y-%m-%d_%H%M`
+export ISO_DIR=${BASE}/iso
+export ISO_BOOT=${ISO}/boot
+export ISO_GRUB=${BOOT}/grub
+export ISO_OUTPUT=${BASE}/Ag.iso

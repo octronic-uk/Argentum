@@ -32,7 +32,6 @@ typedef struct ScancodeParser ScancodeParser;
 bool ScancodeParser_Constructor(ScancodeParser* self);
 void ScancodeParser_ParseScancode(ScancodeParser* self, uint8_t byte);
 void ScancodeParser_ClearCurrentAction(ScancodeParser* self);
-void ScancodeParser_WaitForKeyPressAction(ScancodeParser* self);
-int32_t ScancodeParser_GetChar(ScancodeParser* self);
+uint8_t ScancodeParser_GetChar(ScancodeParser* self);
 
 void ScancodeParser_SetEventCallback(ScancodeParser* self, void(*callback)(KeyboardEvent));

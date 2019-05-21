@@ -2,8 +2,8 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <Objects/HardwareManager/StorageManager/SMFileMode.h>
-#include <Objects/HardwareManager/StorageManager/SMDirectoryEntry.h>
+#include <Objects/StorageManager/SMFileMode.h>
+#include <Objects/StorageManager/SMDirectoryEntry.h>
 #include <Objects/Kernel/Kernel.h>
 
 extern Kernel _Kernel;

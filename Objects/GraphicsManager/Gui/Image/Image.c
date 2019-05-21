@@ -20,7 +20,7 @@ bool Image_Constructor(Image* self)
 
 bool Image_LoadFile(Image* self, char* image_path)
 {
-    printf("Image: LoadGile\n");
+    printf("Image: LoadFile\n");
 
     FILE* f = fopen(image_path,"rb");
 
@@ -69,7 +69,7 @@ void Image_Destructor(Image* self)
 {
     printf("Image: Destructing\n");
     LinkedList_Destructor(&self->Palette);
-    stbi_image_free((uint8_t*)self->ImageData);
+    if (self->ImageData != 0) stbi_image_free((uint8_t*)self->ImageData);
     self->ImageData = 0;
 }
 
