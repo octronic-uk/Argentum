@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/ATA/ATATypes.h>
@@ -33,7 +34,7 @@ bool SMDrive_ATAConstructor(struct SMDrive* self, uint8_t ata_device_id)
         struct MBRPartitionEntry* pe = SMDrive_ATAGetMBRPartitionEntry(&self->MasterBootRecord, volume_id);
         if (pe->Status == 0x80)
         {
-            struct SMVolume* vol = (struct SMVolume*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof(struct SMVolume));
+            struct SMVolume* vol = (struct SMVolume*)malloc(sizeof(struct SMVolume));
             SMVolume_ATAConstructor(vol, self, volume_id, pe->LBAFirstSector, pe->SectorsInPartition);
             LinkedList_PushBack(&self->Volumes,vol);
         }
@@ -50,7 +51,7 @@ bool SMDrive_FloppyConstructor(struct SMDrive* self, uint8_t floppy_drive_id)
     self->FloppyIndex = floppy_drive_id;
     self->RamDiskIndex = -1;
     self->Exists = true;
-    struct SMVolume* vol = (struct SMVolume*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof(struct SMVolume));
+    struct SMVolume* vol = (struct SMVolume*)malloc(sizeof(struct SMVolume));
     SMVolume_FloppyConstructor(vol, self, self->FloppyIndex);
     LinkedList_PushBack(&self->Volumes,vol);
 } 
@@ -65,7 +66,7 @@ bool SMDrive_RamDiskConstructor(struct SMDrive* self, uint8_t ram_disk_id)
     self->FloppyIndex = -1;
     self->RamDiskIndex = ram_disk_id;
     self->Exists = true;
-    struct SMVolume* vol = (struct SMVolume*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof(struct SMVolume));
+    struct SMVolume* vol = (struct SMVolume*)malloc(sizeof(struct SMVolume));
     SMVolume_RamDiskConstructor(vol, self, self->RamDiskIndex);
     LinkedList_PushBack(&self->Volumes,vol);
 } 

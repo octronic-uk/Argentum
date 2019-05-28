@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <Objects/Kernel/Kernel.h>
 #include "SMVolume.h"
 #include "FAT/FatVolume.h"
@@ -157,10 +158,10 @@ uint32_t SMDirectoryEntry_Read(SMDirectoryEntry* self, uint32_t size, uint8_t* b
     int32_t  bytes_remaining = size;
     uint32_t bytes_read = 0;
 
-    uint8_t* sector_buffer = MemoryDriver_Allocate(&_Kernel.Memory, bytes_per_sector);
+    uint8_t* sector_buffer = malloc(bytes_per_sector);
     memset(sector_buffer, 0, bytes_per_sector);
 
-    uint8_t* read_buffer = MemoryDriver_Allocate(&_Kernel.Memory, bytes_required);
+    uint8_t* read_buffer = malloc(bytes_required);
     memset(read_buffer, 0, bytes_required);
 
     uint32_t i;
@@ -170,7 +171,7 @@ uint32_t SMDirectoryEntry_Read(SMDirectoryEntry* self, uint32_t size, uint8_t* b
             FatVolume_GetFirstSectorOfCluster(&self->Volume->FatVolume, self->FileOffset.Cluster) + 
             self->FileOffset.SectorOffsetInCluster;
 
-        if(self->Debug) printf("SMDirectoryEntry: Target Sector %d (0x%x)\n", target_sector, target_sector);
+        if(self->Debug) printf("\nSMDirectoryEntry: Target Sector %d (0x%x)\n", target_sector, target_sector);
 
         if(FatVolume_ReadSector(&self->Volume->FatVolume, target_sector, sector_buffer))
         {
@@ -193,17 +194,24 @@ uint32_t SMDirectoryEntry_Read(SMDirectoryEntry* self, uint32_t size, uint8_t* b
         }
         else
         {
-            printf("SMDirectoryEntry: Error whilie Reading file data...\n");
-            MemoryDriver_Free(&_Kernel.Memory, read_buffer);
-            MemoryDriver_Free(&_Kernel.Memory, sector_buffer);
+            printf("SMDirectoryEntry: Error whilie Reading file data\n");
+            free(read_buffer);
+            free(sector_buffer);
             return 0;
         }
     }
+    if (self->Debug) printf("SMDirectoryEntry: Read loop is done, freeing buffers\n");
 
     // Copy into the caller's buffer
+    if(self->Debug) printf("SMDirectoryEntry: Copying into return buffer\n");
     memcpy(buffer, read_buffer, read_buffer_offset);
-    MemoryDriver_Free(&_Kernel.Memory, sector_buffer);
-    MemoryDriver_Free(&_Kernel.Memory, read_buffer);
+
+    if(self->Debug) printf("SMDirectoryEntry: Freeing sector buffer\n");
+    free(sector_buffer);
+
+    if(self->Debug) printf("SMDirectoryEntry: Freeing read buffer\n");
+    free(read_buffer);
+    if(self->Debug) printf("SMDirectoryEntry: Read is returning\n");
     return read_buffer_offset;
 }
 

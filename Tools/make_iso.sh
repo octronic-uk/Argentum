@@ -13,14 +13,17 @@ fi
 
 
 
-rm -rf ${ISO_BASE}/${ISO_DIR}
+rm -rf ${ISO_DIR}
 mkdir -p ${ISO_DIR} ${ISO_BOOT} ${ISO_GRUB}
-cd ${BOOT} 
 
 cat << EOF > ${ISO_GRUB}/grub.cfg
 
+set timeout=1
+
 menuentry "Argentum ${ISO_DATE}" {
     multiboot /boot/Ag
+    set gfxpayload=800x600x32
+    boot
 }
 EOF
 

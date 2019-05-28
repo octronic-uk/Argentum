@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 extern Kernel _Kernel;
 
@@ -51,7 +52,7 @@ void InputManager_OnMouseEvent(MouseEvent event)
 
     if(self->Debug) printf("InputManager: Got Mouse Event\n");
 
-    MouseEvent *e = (MouseEvent*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(MouseEvent));
+    MouseEvent *e = (MouseEvent*)malloc(sizeof(MouseEvent));
     memcpy(e,&event,sizeof(MouseEvent));
     LinkedList_PushBack(&self->MouseEvents, e);
 }
@@ -62,7 +63,7 @@ void InputManager_OnKeyboardEvent(KeyboardEvent event)
 
     if(self->Debug) printf("InputManager: Got Keyboard Event\n");
 
-    KeyboardEvent *e = (KeyboardEvent*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(KeyboardEvent));
+    KeyboardEvent *e = (KeyboardEvent*)malloc(sizeof(KeyboardEvent));
     memcpy(e,&event,sizeof(KeyboardEvent));
     LinkedList_PushBack(&self->KeyboardEvents, e);
 }
@@ -83,7 +84,7 @@ void InputManager_ProcessMouseEvents(InputManager* self)
         MouseEvent* e = LinkedList_PopFront(mouse_event_list);
         _Kernel.GraphicsManager.CurrentMouseEvent = *e;
         GraphicsManager_MouseEventToActiveGuiElement(&_Kernel.GraphicsManager, *e);
-        MemoryDriver_Free(&_Kernel.Memory,e);
+        free(e);
         InterruptDriver_Enable_STI(&_Kernel.Interrupt);
     }
 }
@@ -98,7 +99,7 @@ void InputManager_ProcessKeyboardEvents(InputManager* self)
         KeyboardEvent* e = LinkedList_PopFront(event_list);
         _Kernel.GraphicsManager.CurrentKeyboardEvent = *e;
         GraphicsManager_KeyboardEventToActiveGuiElement(&_Kernel.GraphicsManager, *e);
-        MemoryDriver_Free(&_Kernel.Memory,e);
+        free(e);
         InterruptDriver_Enable_STI(&_Kernel.Interrupt);
     }
 }

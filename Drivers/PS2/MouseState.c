@@ -3,14 +3,18 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <Objects/Kernel/Kernel.h>
+
+extern Kernel _Kernel;
+
 bool MouseState_Constructor(MouseState* self)
 {
     printf("MouseState: Constructor\n");
     memset(self,0,sizeof(MouseState));
     self->Debug        = false;
     self->NumButtons   = 3;
-    self->PositionXMax = 640;
-    self->PositionYMax = 480;
+    self->PositionXMax = _Kernel.Vga.FramebufferWidth;
+    self->PositionYMax = _Kernel.Vga.FramebufferHeight;
     return true;
 }
 

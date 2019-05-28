@@ -2,6 +2,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "FatVolume.h"
 #include "FatLfnCluster.h"
 #include "FatDirectoryEntryData.h"
@@ -95,7 +97,7 @@ bool FatDirectoryListing_Constructor(FatDirectoryListing* self, FatVolume* volum
                         );
                     }
 
-                    FatDirectoryEntrySummary* entry = MemoryDriver_Allocate(&_Kernel.Memory,sizeof(FatDirectoryEntrySummary));
+                    FatDirectoryEntrySummary* entry = malloc(sizeof(FatDirectoryEntrySummary));
                     LinkedList_PushBack(&self->Entries,entry);
 
                     FatDirectoryEntrySummary_Constructor(
@@ -150,7 +152,7 @@ bool FatDirectoryListing_Constructor(FatDirectoryListing* self, FatVolume* volum
                         );
                     }
 
-                    FatDirectoryEntrySummary* entry = MemoryDriver_Allocate(&_Kernel.Memory,sizeof(FatDirectoryEntrySummary));
+                    FatDirectoryEntrySummary* entry = malloc(sizeof(FatDirectoryEntrySummary));
                     LinkedList_PushBack(&self->Entries,entry);
 
                     FatDirectoryEntrySummary_Constructor(

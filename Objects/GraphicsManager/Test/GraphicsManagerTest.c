@@ -7,12 +7,14 @@
 
 #include <Objects/Kernel/Kernel.h>
 #include <Drivers/Screen/Vga/VgaDriver.h>
-#include <Drivers/Screen/Vga/VgaColorRGB.h>
 #include <Objects/Common/LinkedList/LinkedList.h>
 #include <Objects/GraphicsManager/GraphicsManager.h>
 #include <Objects/StorageManager/SMDirectoryEntry.h>
 #include <Objects/GraphicsManager/Gui/Image/Image.h>
 #include <Objects/GraphicsManager/Gui/Button/Button.h>
+#include <Objects/GraphicsManager/Gui/Text/Text.h>
+#include <Objects/GraphicsManager/Gui/TextBox/TextBox.h>
+#include "../RGB.h"
 
 extern Kernel _Kernel;
 
@@ -20,17 +22,17 @@ void GraphicsManagerTest_RunSuite(GraphicsManager* gm)
 {
     //GraphicsManagerTest_LowLevelTest(gm);
     //GraphicsManagerTest_LoadBMP(gm);
+    //GraphicsManagerTest_LoadImage(gm);
     GraphicsManagerTest_GuiElements(gm);
 }
 
 void GraphicsManagerTest_LowLevelTest(GraphicsManager* gm)
 {
     printf("GfxManTest: Low Level Test\n");
-    //VgaDriver_SetScreenMode(&_Kernel.Vga,VGA_MODE_PX_640_480_16);
 
     uint8_t n_colors = 8;
-    VgaColorRGB palette_array[8];        
-    memset(palette_array,0,sizeof(VgaColorRGB)*n_colors);
+    RGB palette_array[8];        
+    memset(palette_array,0,sizeof(RGB)*n_colors);
 
     uint8_t i;
     for (i=0; i<n_colors; i++)
@@ -39,49 +41,34 @@ void GraphicsManagerTest_LowLevelTest(GraphicsManager* gm)
         palette_array[i].Green = (i & 0x02) == 0x02 ? 255 : 0;
         palette_array[i].Blue  = (i & 0x04) == 0x04 ? 255 : 0;
     }
-    VgaDriver_WriteColorPalette(&_Kernel.Vga, palette_array, n_colors);
 
     printf("Drawing\n");
     int draw_x, draw_y;
-    for (draw_y=0; draw_y<480; draw_y++)
+    for (draw_y=0; draw_y < _Kernel.Vga.FramebufferHeight; draw_y++)
     {
-        for (draw_x=0; draw_x<640; draw_x++)
+        for (draw_x=0; draw_x< _Kernel.Vga.FramebufferWidth; draw_x++)
         {
-		    _Kernel.Vga.WritePixelFunction(&_Kernel.Vga, draw_x, draw_y, (draw_x + draw_y) % n_colors);
+		    VgaDriver_WritePixel(&_Kernel.Vga, draw_x, draw_y, (draw_x + draw_y) % n_colors);
         }
     }
     printf("Drawing done\n");
 }
 
-void GraphicsManagerTest_LoadBMP(GraphicsManager* gm)
+void GraphicsManagerTest_DrawImage(GraphicsManager* gm)
 {
-    printf("GMT: LoadBMP\n");
-    char* image_path = "ata0p0://IMG/LAND3.BMP";
+    printf("GMT: LoadImage\n");
+    char* image_path = "ata0p0://BEACH.BMP";
     Image img;
     Image_Constructor(&img);
     if (Image_LoadFile(&img, image_path))
     {
-        VgaDriver_SetScreenMode(&_Kernel.Vga,VGA_MODE_PX_640_480_16);
-        GraphicsManagerTest_WriteImagePalette(&img);
-        //VgaDriver_ClearScreen(&_Kernel.Vga);
-        Image_Draw(&img,0,0);
+        GraphicsManager_DrawImage(gm, &img,0,0);
+    }
+    else
+    {
+        printf("GMT: Error loading image\n");
     }
     Image_Destructor(&img);
-}
-
-
-uint32_t GraphicsManagerTest_WriteImagePalette(Image* image)
-{
-    int size = LinkedList_Size(&image->Palette);
-    int i;
-
-    for (i=0; i<size; i++)
-    {
-        if (i >= 16) break;
-        VgaColorRGB* data = (VgaColorRGB*)LinkedList_At(&image->Palette, i);
-        VgaDriver_WriteDacColor(&_Kernel.Vga, i, *data);
-    }
-    return LinkedList_Size(&image->Palette);
 }
 
 void GraphicsManagerTest_DebugData(uint8_t* data, uint32_t size)
@@ -125,8 +112,6 @@ void GraphicsManagerTest_GuiElements(GraphicsManager* gm)
 
     Button* button1 = (Button*)malloc(sizeof(Button));
     Button_Constructor(button1);
-    button1->GuiElement.Area.W = 100;
-    button1->GuiElement.Area.H = 20;
     button1->GuiElement.Area.Y = 10;
     button1->GuiElement.Area.X = 10;
     Button_SetText(button1,"Button 1");
@@ -134,8 +119,6 @@ void GraphicsManagerTest_GuiElements(GraphicsManager* gm)
 
     Button* button2 = (Button*)malloc(sizeof(Button));
     Button_Constructor(button2);
-    button2->GuiElement.Area.W = 100;
-    button2->GuiElement.Area.H = 20;
     button2->GuiElement.Area.Y = 40;
     button2->GuiElement.Area.X = 10;
     Button_SetText(button2,"Button 2");
@@ -143,13 +126,23 @@ void GraphicsManagerTest_GuiElements(GraphicsManager* gm)
 
     Button* button3 = (Button*)malloc(sizeof(Button));
     Button_Constructor(button3);
-    button3->GuiElement.Area.W = 100;
-    button3->GuiElement.Area.H = 20;
     button3->GuiElement.Area.Y = 70;
     button3->GuiElement.Area.X = 10;
     Button_SetText(button3,"Button 3");
     GraphicsManager_AddGuiElement(gm, (GuiElement*)button3);
 
+    Text* text1 = (Text*)malloc(sizeof(Text));
+    Text_Constructor(text1);
+    text1->GuiElement.Area.Y = 200;
+    text1->GuiElement.Area.X = 100;
+    Text_SetText(text1, "Test Text");
+    GraphicsManager_AddGuiElement(gm, (GuiElement*)text1);
 
+    TextBox* textbox1 = (TextBox*)malloc(sizeof(TextBox));
+    TextBox_Constructor(textbox1);
+    textbox1->GuiElement.Area.Y = 200;
+    textbox1->GuiElement.Area.X = 200;
+    TextBox_SetText(textbox1, "Test Text");
+    GraphicsManager_AddGuiElement(gm, (GuiElement*)textbox1);
 
 }

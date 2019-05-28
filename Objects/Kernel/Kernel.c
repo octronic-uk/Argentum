@@ -1,25 +1,30 @@
 #include "Kernel.h"
 
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <Drivers/FPU/FPUDriver.h>
-#include <Drivers/Memory/Test/MemoryTest.h>
 #include <Drivers/Serial/Test/SerialDriverTest.h>
 #include <Objects/GraphicsManager/Test/GraphicsManagerTest.h>
 #include <Objects/StorageManager/Test/StorageManagerTest.h>
 #include <Objects/InputManager/Test/InputManagerTest.h>
+#include <Objects/Lua/lua.h>
 
 bool Kernel_Constructor(Kernel* self, multiboot_info_t* mbi)
 {
+	memset(self,0,sizeof(Kernel));
 	self->MultibootInfo = mbi;
+	return true;
+}
+
+bool Kernel_Init(Kernel* self)
+{
 	if(!Kernel_InitDrivers(self))
 	{
 		printf("Kernel: FATAL - Failed to init drivers\n");
 		return false;
 	}
-
-	Kernel_TestDrivers(self);
 
 	if (!Kernel_InitObjects(self))
 	{
@@ -27,15 +32,19 @@ bool Kernel_Constructor(Kernel* self, multiboot_info_t* mbi)
 		return false;
 	}
 
-	Kernel_TestObjects(self);
-
 	return true;
 }
 
+
+
 bool Kernel_InitDrivers(Kernel* self)
 {
-
 	if(!TextModeDriver_Constructor(&self->TextMode))
+	{
+		return false;
+	}
+
+	if (!SerialDriver_Constructor(&self->Serial))
 	{
 		return false;
 	}
@@ -44,10 +53,6 @@ bool Kernel_InitDrivers(Kernel* self)
 	{
 		return false;
 	}
-
-	VgaDriver_SetScreenMode(&self->Vga, VGA_MODE_TEXT_90_60);
-	self->TextMode.Width = 90;
-	self->TextMode.Height = 60;
 
 	InterruptDriver_Disable_CLI(&self->Interrupt);
 	InterruptDriver_SetMask_PIC1(&self->Interrupt, 0xFF);
@@ -66,11 +71,6 @@ bool Kernel_InitDrivers(Kernel* self)
 	FPUDriver_EnableFPU();
 
 	if (!PITDriver_Constructor(&self->PIT))
-	{
-		return false;
-	}
-
-	if (!SerialDriver_Constructor(&self->Serial))
 	{
 		return false;
 	}
@@ -115,15 +115,16 @@ bool Kernel_InitObjects(Kernel* self)
 		return false;
 	}
 
+    if (!InputManager_Constructor(&self->InputManager))
+	{
+		return false;
+	}
+
 	if (!GraphicsManager_Constructor(&self->GraphicsManager))
 	{
 		return false;
 	}
 
-    if (!InputManager_Constructor(&self->InputManager))
-	{
-		return false;
-	}
 	return true;
 }
 
@@ -145,16 +146,21 @@ void Kernel_DestroyDrivers(Kernel* self)
 	ACPIDriver_Destructor(&self->ACPI);
 }
 
+void Kernel_Test(Kernel* self)
+{
+	Kernel_TestDrivers(self);
+	Kernel_TestObjects(self);
+}
+
 void Kernel_TestDrivers(Kernel* self)
 {
-	//MemoryTest_RunSuite(&self->Memory);
-	//SerialDriverTest_RunSuite(&self->Serial);
+	SerialDriverTest_RunSuite(&self->Serial);
 }
 
 void Kernel_TestObjects(Kernel* self)
 {
-	//StorageManagerTest_RunSuite(&self->StorageManager);
-	//InputManagerTest_RunSuite(&self->InputManager);
+	StorageManagerTest_RunSuite(&self->StorageManager);
+	InputManagerTest_RunSuite(&self->InputManager);
 	GraphicsManagerTest_RunSuite(&self->GraphicsManager);
 }
 

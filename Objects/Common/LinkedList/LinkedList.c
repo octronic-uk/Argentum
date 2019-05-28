@@ -1,11 +1,10 @@
 #include "LinkedList.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-
 #include <Objects/Kernel/Kernel.h>
-#include <Drivers/Memory/MemoryDriver.h>
 
 extern Kernel _Kernel;
 
@@ -21,7 +20,7 @@ void LinkedList_Destructor(LinkedList* self)
 	while(current != 0)
 	{
 		next = current->Next;
-		MemoryDriver_Free(&_Kernel.Memory, current);
+		free(current);
 		current = next;
 	}
 }
@@ -71,7 +70,7 @@ void LinkedList_Delete(LinkedList* self, void* data)
 			{
 				self->Head = current->Next;
 			}
-			MemoryDriver_Free(&_Kernel.Memory, current);
+			free(current);
 			return;
 		}
 		previous = current;
@@ -118,7 +117,7 @@ void* LinkedList_At(LinkedList* self, uint32_t index)
 
 LinkedListNode* LinkedList_CreateNode(LinkedList* self, void* data)
 {
-	LinkedListNode* newNode = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(LinkedListNode));
+	LinkedListNode* newNode = malloc(sizeof(LinkedListNode));
 	if (!newNode)
 	{
 		return 0;
@@ -150,7 +149,7 @@ void LinkedList_FreeAllData(LinkedList* self)
 	LinkedListNode* current = self->Head;
 	while(current)
 	{
-		MemoryDriver_Free(&_Kernel.Memory, current->Data);
+		free(current->Data);
 		current = current->Next;
 	}
 }
@@ -169,7 +168,7 @@ void* LinkedList_PopFront(LinkedList* self)
 		self->Head = 0;
 	}
 	
-	MemoryDriver_Free(&_Kernel.Memory, current);
+	free(current);
 
 	return data;
 }

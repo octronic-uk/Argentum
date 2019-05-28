@@ -19,11 +19,13 @@ struct GuiElement
     void (*UpdateFunction)(struct GuiElement* self, GraphicsManager* gm);
     void (*DrawFunction)(struct GuiElement* self, GraphicsManager* gm);
 
+    // Mouse
     void (*OnMouseEnterFunction)(struct GuiElement* self, GraphicsManager* gm);
     void (*OnMouseExitFunction)(struct GuiElement* self, GraphicsManager* gm);
-
     void (*OnMouseClickFunction)(struct GuiElement* self, GraphicsManager* gm);
     void (*OnMouseReleaseFunction)(struct GuiElement* self, GraphicsManager* gm);
+    // Keyboard
+    void (*OnKeyboardEventFunction)(struct GuiElement* self, GraphicsManager* gm, KeyboardEvent e);
 };
 
 typedef struct GuiElement GuiElement;

@@ -1,7 +1,6 @@
 DRIVERS = $(shell find ../Drivers -type f -name "*.o")
 OBJECTS = $(shell find ../Objects -type f -name "*.o") 
-LUA     = $(shell find ../Lua     -type f -name "*.o")
-CLIB    = $(shell find ../Clib    -type f -name "*.o")
+CLIB    = $(shell find ../LibC    -type f -name "*.o")
 
 KBIN=../Ag
 

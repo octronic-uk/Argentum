@@ -11,7 +11,7 @@ typedef struct Image Image;
 void GraphicsManagerTest_RunSuite(GraphicsManager* gm);
 
 void GraphicsManagerTest_LowLevelTest(GraphicsManager* gm);
-void GraphicsManagerTest_LoadBMP(GraphicsManager* gm);
+void GraphicsManagerTest_DrawImage(GraphicsManager* gm);
 
 uint32_t GraphicsManagerTest_WriteImagePalette(Image* img);
 void GraphicsManagerTest_DebugData(uint8_t* data, uint32_t size);

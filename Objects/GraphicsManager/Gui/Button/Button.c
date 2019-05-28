@@ -11,6 +11,11 @@ bool Button_Constructor(Button* self)
     memset(self,0,sizeof(Button));
     GuiElement_Constructor(&self->GuiElement);
     self->Debug = false;
+
+    // Default Dimensions
+    self->GuiElement.Area.W = BUTTON_DEFAULT_WIDTH;
+    self->GuiElement.Area.H = BUTTON_DEFAULT_HEIGHT;
+
     // Set callback functions
     self->GuiElement.DrawFunction = Button_OnDraw;
     self->GuiElement.UpdateFunction = Button_OnUpdate;
@@ -19,8 +24,8 @@ bool Button_Constructor(Button* self)
     self->GuiElement.OnMouseEnterFunction = Button_OnMouseEnter;
     self->GuiElement.OnMouseExitFunction = Button_OnMouseExit;
 
-    self->BackgroundColor = PALETTE_INDEX_UI_BACKGROUND;
-    self->ForegroundColor = PALETTE_INDEX_WHITE;
+    self->Color = DEFAULT_PALETTE_LIGHT_GREY;
+    self->HoverColor = DEFAULT_PALETTE_WHITE;
     self->GuiElement.NeedsRedraw = true;
     return true;
 }
@@ -32,14 +37,13 @@ void Button_Destructor(Button* self)
 
 void Button_SetText(Button* self, char* text)
 {
-    strncpy(&self->Text[0],text,BUTTON_TEXT_SIZE);
+    strncpy(&self->Text[0],text,BUTTON_TEXT_BUFFER_SIZE);
 }
 
 void Button_OnDraw(GuiElement* self, GraphicsManager* gm)
 {
     Button* self_button = (Button*)self;
-    //printf("Button: Drawing button with text %s\n",self_button->Text);
-    //GraphicsManager_PutRect(gm, self->Area.X+1, self->Area.Y+1, self->Area.W-1, self->Area.H-1, self_button->BackgroundColor);
+    if(self_button->Debug) printf("Button: Drawing button with text %s\n",self_button->Text);
 
     // Borders
     int x, y, border_max_x, border_max_y;
@@ -47,24 +51,24 @@ void Button_OnDraw(GuiElement* self, GraphicsManager* gm)
     border_max_x = self->Area.X + self->Area.W;
     border_max_y = self->Area.Y + self->Area.H;
 
-    uint8_t border_color = self->MouseInside ? PALETTE_INDEX_BORDER_HOVER_COLOR : PALETTE_INDEX_BORDER_COLOR;
+    uint32_t color = self->MouseInside ? self_button->HoverColor : self_button->Color;
 
     // Horizontal Border
     for (x=self->Area.X; x<=border_max_x; x++)
     {
-        GraphicsManager_PutPixelToFramebuffer(gm, x, self->Area.Y, border_color);
-        GraphicsManager_PutPixelToFramebuffer(gm, x, border_max_y, border_color);
+        GraphicsManager_WritePixelToFramebuffer(gm, x, self->Area.Y, color);
+        GraphicsManager_WritePixelToFramebuffer(gm, x, border_max_y, color);
     }
     // Vertical Border
     for (y=self->Area.Y; y<=border_max_y; y++)
     {
-        GraphicsManager_PutPixelToFramebuffer(gm, self->Area.X, y, border_color);
-        GraphicsManager_PutPixelToFramebuffer(gm, border_max_x, y, border_color);
+        GraphicsManager_WritePixelToFramebuffer(gm, self->Area.X, y, color);
+        GraphicsManager_WritePixelToFramebuffer(gm, border_max_x, y, color);
     }
     
     uint32_t text_length = strlen(self_button->Text) * 9;
     uint32_t x_pad = (self->Area.W - text_length) / 2;
-    GraphicsManager_PutText(gm, self->Area.X+x_pad, self->Area.Y+4, border_color, self_button->Text);
+    GraphicsManager_DrawText(gm, self->Area.X+x_pad, self->Area.Y+4, color, self_button->Text);
     self->NeedsRedraw = false;
 }
 

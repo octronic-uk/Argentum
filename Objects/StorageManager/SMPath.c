@@ -3,6 +3,7 @@
 #include <Objects/Kernel/Kernel.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 extern Kernel _Kernel;
 
@@ -107,7 +108,7 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
 
 
     // Allocate new name
-    char* current_name = MemoryDriver_Allocate(&_Kernel.Memory, FAT_LFN_NAME_SIZE);
+    char* current_name = malloc(FAT_LFN_NAME_SIZE);
     memset(current_name, 0, FAT_LFN_NAME_SIZE);
     LinkedList_PushBack(&self->Directories, current_name);
 
@@ -121,7 +122,7 @@ bool SMPath_Parse(struct SMPath* self, const char* address)
             if (name_char_index) 
             {
                 // Allocate new name
-                current_name = MemoryDriver_Allocate(&_Kernel.Memory, FAT_LFN_NAME_SIZE);
+                current_name = malloc(FAT_LFN_NAME_SIZE);
                 memset(current_name, 0, FAT_LFN_NAME_SIZE);
                 LinkedList_PushBack(&self->Directories, current_name);
                 path_count_index++;

@@ -1,4 +1,4 @@
-#include <Drivers/Memory/MemoryDriver.h>
+#include "MemoryDriver.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,16 +11,18 @@ extern void* endKernel;
 
 bool MemoryDriver_Constructor(MemoryDriver* self)
 {
+	printf("MemoryDriver: Constructing\n");
 	self->MultibootInfo = _Kernel.MultibootInfo;
 	self->Debug = false;
 	self->HeapSize = 0;
 	self->HeapBaseAddress = 0;
 	self->StartBlock = 0;
+	self->ShowSizeSet = false;
 	MemoryDriver_Detect(self);
 	return true;
 }
 
-MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requested_size)
+MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requested_size, char* file, uint32_t line)
 {
 	if (self->Debug) 
 	{
@@ -37,7 +39,11 @@ MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requ
 	{
 		current_block->InUse = true;
 		current_block->Size = requested_size;
+		if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 		current_block->Next = 0; 
+		current_block->Line = line;	
+		memcpy(current_block->File,file,strlen(file));
+		current_block->File[strlen(file)] = 0;	
 
 		if (self->Debug)
 		{
@@ -64,6 +70,7 @@ MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requ
 			}
 			previous_block = current_block;
 			current_block = current_block->Next;
+			continue;
 		}
 		// Previously free'd block
 		else
@@ -81,11 +88,16 @@ MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requ
 				}
 				uint32_t old_size = current_block->Size;
 				current_block->Size = requested_size;
+				if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 				current_block->InUse = true;
-				// Restore old size
-				if (!MemoryDriver_InsertDummyBlock(self,current_block))
+				current_block->Line = line;
+				memcpy(current_block->File, file, strlen(file));
+				current_block->File[strlen(file)] = 0;	
+				// Restore old size if no dummy was inserted
+				if (!MemoryDriver_InsertDummyBlock(self,current_block, file, line))
 				{
 					current_block->Size = old_size;
+					if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 				}
 				return current_block;
 			}
@@ -99,17 +111,28 @@ MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requ
 					// Resize
 					uint32_t old_size = current_block->Size;
 					current_block->Size = requested_size;
+					if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 					current_block->InUse = true;
-					current_block->Next = (MemoryBlockHeader*)(((uint32_t)current_block) + sizeof(MemoryBlockHeader) + space_available);
+					current_block->Next = 
+						(MemoryBlockHeader*)(
+							((uint32_t)current_block) + 
+							sizeof(MemoryBlockHeader) + 
+							space_available
+						);
+					current_block->Line = line;
+					memcpy(current_block->File, file, strlen(file));
+					current_block->File[strlen(file)] = 0;	
 
 					void* mem_area = (void*) ((uint32_t)current_block) + sizeof(MemoryBlockHeader);
-					memset(mem_area, 0, sizeof(MemoryBlockHeader)+space_available);
+					memset(mem_area, 0, /*sizeof(MemoryBlockHeader)+*/space_available);
 
-					if (!MemoryDriver_InsertDummyBlock(self,current_block))
+					// Unable to insert dummy block
+					if (!MemoryDriver_InsertDummyBlock(self,current_block, file, line))
 					{
 						if (current_block != self->StartBlock)
 						{
 							current_block->Size = old_size;
+							if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 						}
 					}
 
@@ -132,8 +155,12 @@ MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requ
 		current_block = (MemoryBlockHeader*) ( ((uint32_t)previous_block) + sizeof(MemoryBlockHeader) + previous_block->Size );
 		// Set current to area after the last block
 		current_block->Size = requested_size;
+		if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 		current_block->InUse = true;
 		current_block->Next = 0;
+		current_block->Line = line;
+		memcpy(current_block->File, file, strlen(file));
+		current_block->File[strlen(file)] = 0;	
 		previous_block->Next = current_block;
 		if (self->Debug)
 		{
@@ -152,7 +179,8 @@ MemoryBlockHeader* MemoryDriver_ClaimFreeBlock(MemoryDriver* self, uint32_t requ
 	return current_block;
 }
 
-MemoryBlockHeader* MemoryDriver_InsertDummyBlock(MemoryDriver* self, MemoryBlockHeader* resized_header)
+MemoryBlockHeader* MemoryDriver_InsertDummyBlock
+(MemoryDriver* self, MemoryBlockHeader* resized_header, char* file, uint32_t line)
 {
 	if (self->Debug) printf("Memory: Attempting to insert dummy block\n");
 	MemoryBlockHeader* next = resized_header->Next;
@@ -176,7 +204,10 @@ MemoryBlockHeader* MemoryDriver_InsertDummyBlock(MemoryDriver* self, MemoryBlock
 		MemoryBlockHeader* dummy_block = (MemoryBlockHeader*) ((uint32_t)space_begins);
 		dummy_block->InUse = 0;
 		dummy_block->Size = dummy_data_size;
-
+		if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
+		memcpy(dummy_block->File,file,strlen(file));
+		dummy_block->Line = line;
+		dummy_block->File[strlen(file)] = 0;	
 		resized_header->Next = dummy_block;
 		dummy_block->Next = (MemoryBlockHeader*)space_ends;
 
@@ -210,19 +241,25 @@ uint32_t MemoryDriver_CheckForUnusedNeighbors(MemoryDriver* self, MemoryBlockHea
 	return cumulative_size;
 }
 
-void* MemoryDriver_Allocate(MemoryDriver* self, uint32_t size)
+void* MemoryDriver_Allocate(MemoryDriver* self, uint32_t size, char* file, uint32_t line)
 {
+	InterruptDriver_Disable_CLI(&_Kernel.Interrupt);
 	if (self->Debug) 
 	{
-		printf("Memory: Allocate requested for size %d\n", size);
+		printf("Memory: Allocate requested for size %d %s:%d\n", size, file, line);
 	}
 
 	// Ignore zero allocations
-	if (!size) return 0; 
+	if (!size) 
+	{
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
+		return 0; 
+	}
 
-	uint32_t nextFree = (uint32_t)MemoryDriver_ClaimFreeBlock(self, size);
+	uint32_t nextFree = (uint32_t)MemoryDriver_ClaimFreeBlock(self, size, file, line);
 	uint32_t mem = nextFree + sizeof(MemoryBlockHeader);
-	if (self->Debug) printf("Memory: Allocated block=0x%x mem=0x%x\n",nextFree, mem);
+	if (self->Debug) printf("Memory: Allocated block=0x%x mem=0x%x %s:%d\n",nextFree, mem, file, line);
+	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 	return (void*) mem;
 }
 
@@ -253,31 +290,38 @@ void* MemoryDriver_Allocate(MemoryDriver* self, uint32_t size)
 		New header should only take up requested size and a dummy block inserted inbetween to 
 		accomodate reallocation of §the remaining space.
 */
-void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_size)
+void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_size, char* file, uint32_t line)
 {
+	InterruptDriver_Disable_CLI(&_Kernel.Interrupt);
 	if (self->Debug) 
-		printf("Memory: Reallocate  area=0x%x requested for sz=%d\n", (uint32_t)ptr, requested_size);
+	{
+		printf("Memory: Reallocate  area=0x%x requested for sz=%d %s:%d\n", (uint32_t)ptr, requested_size, file, line);
+	}
 
 	// Case d
 	if (!ptr)
 	{
 		if (self->Debug) printf("Memory: Realloc pointer is 0, calling MemoryDriver_Allocate\n");
-		return MemoryDriver_Allocate(self,requested_size);
+		void* retval = MemoryDriver_Allocate(self,requested_size, file, line);
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
+		return retval;
 	}
 
 	// case e
 	if (!requested_size)
 	{
 		if (self->Debug) printf("Memory: Realloc error - requested size is 0\n");
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 		return 0;
 	}
 
-	MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,ptr);
+	MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,ptr,__LINE__);
 
 	// Error case Not allocated or previously freed
 	if (!header->InUse)
 	{
 		if (self->Debug) printf("Memory: Realloc error - memory was not allocated or previously free'd\n");
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 		return 0;
 	}
 
@@ -293,10 +337,16 @@ void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_
 		uint32_t old_size = header->Size;
 		header->InUse = true;
 		header->Size = requested_size;
-		if (!MemoryDriver_InsertDummyBlock(self,header))
+		if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
+		memcpy(header->File,file,strlen(file));
+		header->Line = line;
+		header->File[strlen(file)] = 0;	
+		if (!MemoryDriver_InsertDummyBlock(self,header, file, line))
 		{
 			header->Size = old_size;
+			if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 		}
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 		return (void*) ((uint32_t)header)+sizeof(MemoryBlockHeader);
 	}
 
@@ -305,6 +355,8 @@ void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_
 	{
 		if (self->Debug) printf("Memory: Block is at the end of the heap, resizing\n");
 		header->Size = requested_size;
+		if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 		return ptr;
 	}
 
@@ -314,13 +366,20 @@ void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_
 	{
 		if (self->Debug) printf("Memory: There is enough available space to resize the block\n");
 		header->Size = requested_size;
+		if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 		header->InUse = true;
 		header->Next = (MemoryBlockHeader*)(((uint32_t)header) + sizeof(MemoryBlockHeader) + available_space);
+		memcpy(header->File,file,strlen(file));
+		header->Line = line;
+		header->File[strlen(file)] = 0;	
+
 		uint32_t old_size = header->Size;
-		if (!MemoryDriver_InsertDummyBlock(self, header))
+		if (!MemoryDriver_InsertDummyBlock(self, header, file, line))
 		{
 			header->Size = old_size;
+		    if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 		}
+		InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 		return (void*) ((uint32_t)header) + sizeof(MemoryBlockHeader);
 	}
 
@@ -331,22 +390,23 @@ void* MemoryDriver_Reallocate(MemoryDriver* self, void *ptr, uint32_t requested_
 		printf("Memory: Could not expand/contract block, allocating new\n");
 	}
 
-	MemoryBlockHeader* old_block_header = MemoryDriver_GetHeaderFromValuePointer(self,ptr);
+	MemoryBlockHeader* old_block_header = MemoryDriver_GetHeaderFromValuePointer(self,ptr,__LINE__);
 	uint32_t old_size = old_block_header->Size;
 	uint32_t size_to_copy = old_size < requested_size ? old_size : requested_size;
-	void* new_block = MemoryDriver_Allocate(self, requested_size);
+	void* new_block = MemoryDriver_Allocate(self, requested_size, file, line);
 	memcpy(new_block, ptr, size_to_copy);
-	MemoryDriver_Free(self, ptr);
+	MemoryDriver_Free(self, ptr, file, line);
+	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 	return new_block;
 }
 
-MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(MemoryDriver* self, void* value)
+MemoryBlockHeader* MemoryDriver_GetHeaderFromValuePointer(MemoryDriver* self, void* value, uint32_t line)
 {
 	MemoryBlockHeader* retval = (MemoryBlockHeader*) (((uint32_t)value) - sizeof(MemoryBlockHeader));
 
 	if (!MemoryDriver_IsValidBlock(self, retval))
 	{
-		printf("Memory: Requested an invalid block header 0x%x\n",(uint32_t)retval);
+		printf("Memory: Requested an invalid block header 0x%x called from line %d\n",(uint32_t)retval, line);
 		abort();
 	}
 	return retval;
@@ -364,22 +424,30 @@ bool MemoryDriver_IsValidBlock(MemoryDriver* self, MemoryBlockHeader* header)
 	return false;
 }
 
-void MemoryDriver_Free(MemoryDriver* self, void* addr)
+void MemoryDriver_Free(MemoryDriver* self, void* addr, char* file, uint32_t line)
 {
-	MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,addr);
+	InterruptDriver_Disable_CLI(&_Kernel.Interrupt);
+	if(self->Debug) printf("MemoryDriver: Free %s:%d\n",file,line);
+	if (addr == 0) return;
+
+	MemoryBlockHeader* header = MemoryDriver_GetHeaderFromValuePointer(self,addr,__LINE__);
 
 	if (!header->InUse)
 	{
-		printf("Memory: Attempted to double free block header=0x%x addr=0x%x\n",(uint32_t)header,(uint32_t)addr);
+		printf("Memory: Attempted to double free block header=0x%x addr=0x%x:%s %d\n",(uint32_t)header,(uint32_t)addr, file, line);
 		abort();
 	}
 
 	if (self->Debug) 
 	{
-		printf("Memory: Freeing Memory hdr=0x%x, block=0x%x, size=%d\n",(uint32_t)header,(uint32_t)addr,header->Size);
+		printf("Memory: Freeing Memory hdr=0x%x, block=0x%x, size=%d %s:%d\n",(uint32_t)header,(uint32_t)addr,header->Size, file, line);
 	}
 	header->InUse = 0;
+	memcpy(header->File,file,strlen(file));
+	header->Line = line;
+	header->File[strlen(file)] = 0;	
 	MemoryDriver_CleanUpHeap(self);
+	InterruptDriver_Enable_STI(&_Kernel.Interrupt);
 }
 
 void MemoryDriver_Detect(MemoryDriver* self)
@@ -445,6 +513,7 @@ void MemoryDriver_Detect(MemoryDriver* self)
 				self->StartBlock = (MemoryBlockHeader*) self->HeapBaseAddress;
 				// Clear start block
 				self->StartBlock->Size = 0;
+				if (self->ShowSizeSet) printf("MD: size set at %d\n",__LINE__);
 				self->StartBlock->InUse = 0;
 				self->StartBlock->Next = 0;
 				heapSet = true;
@@ -493,25 +562,28 @@ void MemoryDriver_PrintMemoryMap(MemoryDriver* self)
 	MemoryBlockHeader* block = self->StartBlock;
 
 	printf("Memory Map\n");
-	printf("+------------+------------+------------+----------+----------+------------+\n");
-	printf("| Block      | Pointer    | Size       | Size     | In use   | Next       |\n");
-	printf("+------------+------------+------------+----------+----------+------------+\n");
+	printf("+------------+------------+----------+--------+------------+\n");
+	printf("| Block      | Pointer    | Size     | In use | Next       | Allocated By\n");
+	printf("+------------+------------+----------+--------+------------+\n");
+
 	while(block)
 	{
-		printf("| 0x%08x | 0x%08x | 0x%08x | %08d | %s | 0x%08x |\n",
+		printf("| 0x%08x | 0x%08x | %08d | %s | 0x%08x | %s:%d\n",
 			block,
 			(uint32_t)block+sizeof(MemoryBlockHeader),
 			block->Size,
-			block->Size,
-			block->InUse ? "Yes     " : "No      ",
-			block->Next);	
+			block->InUse ? "Yes   " : "No    ",
+			block->Next,
+			block->File,
+			block->Line);	
 
-		if (block->Next != 0 && ((uint32_t)block->Next != (uint32_t)block + sizeof(MemoryBlockHeader) + block->Size))
+		uint32_t start_of_next = (uint32_t)block + sizeof(MemoryBlockHeader) + block->Size;
+		if (block->Next != 0 && (uint32_t)block->Next != start_of_next)
 		{
-			printf("Contiguous Memory Error!!! \n");
+			printf("Contiguous Memory Error: Expected 0x%x, Got 0x%x\n", start_of_next, (uint32_t)block->Next);
 		}
 
 		block = block->Next;
 	}
-	printf("+------------+------------+------------+----------+----------+------------+\n");
+	printf("+------------+------------+----------+--------+------------+\n");
 }

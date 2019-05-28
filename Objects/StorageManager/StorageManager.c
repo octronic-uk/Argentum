@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <Drivers/Floppy/FloppyDriver.h>
 #include <Objects/Kernel/Kernel.h>
@@ -9,7 +10,7 @@
 #include "RamDisk/RamDisk.h"
 #include "SMDrive.h"
 #include "SMDirectoryEntry.h"
-#include <Clib/stdio/FILE.h>
+#include <LibC/stdio/FILE.h>
 
 extern Kernel _Kernel;
 
@@ -23,8 +24,8 @@ bool StorageManager_Constructor(StorageManager* self)
 	LinkedList_Constructor(&self->Drives);
 	LinkedList_Constructor(&self->OpenFiles);
 
-	StorageManager_SetupRamDisk0(self);
-	StorageManager_ProbeFloppyDrives(self);
+	//StorageManager_SetupRamDisk0(self);
+	//StorageManager_ProbeFloppyDrives(self);
 	StorageManager_ProbeATADrives(self);
 	return true;
 }
@@ -59,11 +60,11 @@ void StorageManager_Destructor(StorageManager *self)
 
 void StorageManager_SetupRamDisk0(StorageManager* self)
 {
-	RamDisk* rd = (RamDisk*)MemoryDriver_Allocate(&_Kernel.Memory,sizeof (RamDisk));
+	RamDisk* rd = (RamDisk*)malloc(sizeof(RamDisk));
 	LinkedList_PushBack(&self->RamDisks, rd);
 	RamDisk_Constructor(rd, RAMDISK_SIZE_1MB*10);
 
-	SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
+	SMDrive* drive = (SMDrive*)malloc(sizeof(SMDrive));
 	LinkedList_PushBack(&self->Drives, drive);
 	SMDrive_RamDiskConstructor(drive,0);
 }
@@ -80,7 +81,7 @@ bool StorageManager_ProbeATADrives(StorageManager* self)
 			{
 				printf("StorageManager: Initialising ATA Drive %d %s\n", i, device->model);
 			}
-			SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
+			SMDrive* drive = (SMDrive*)malloc(sizeof(SMDrive));
 			LinkedList_PushBack(&self->Drives,drive);
 			SMDrive_ATAConstructor(drive, i);
 		}
@@ -94,14 +95,14 @@ bool StorageManager_ProbeFloppyDrives(StorageManager* self)
 	if (FloppyDriver_MasterPresent(&_Kernel.Floppy))
 	{
 		printf("StorageManager: Initialising Floppy 0 (Master)\n");
-		SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
+		SMDrive* drive = (SMDrive*)malloc(sizeof(SMDrive));
 		LinkedList_PushBack(&self->Drives, drive);
 		SMDrive_FloppyConstructor(drive, 0);
 	}
 	if (FloppyDriver_SlavePresent(&_Kernel.Floppy))
 	{
 		printf("StorageManager: Initialising Floppy 1 (Slave)\n");
-		SMDrive* drive = (SMDrive*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(SMDrive));
+		SMDrive* drive = (SMDrive*)malloc(sizeof(SMDrive));
 		LinkedList_PushBack(&self->Drives, drive);
 		SMDrive_FloppyConstructor(drive, 1);
 	}
@@ -252,7 +253,7 @@ bool StorageManager_OpenPath(StorageManager* self, SMDirectoryEntry* dir, SMPath
 
 	// Read root directory
 	// TODO leaky leaky
-	uint8_t* root_sector_buffer = MemoryDriver_Allocate(&_Kernel.Memory, root_buffer_size);
+	uint8_t* root_sector_buffer = malloc(root_buffer_size);
 	memset(root_sector_buffer, 0, root_buffer_size);
 
 	if (self->Debug)
@@ -266,7 +267,7 @@ bool StorageManager_OpenPath(StorageManager* self, SMDirectoryEntry* dir, SMPath
 		if(!FatVolume_ReadSector(&volume->FatVolume, volume->FatVolume.RootDirSectorNumber+i, &root_sector_buffer[FAT_SECTOR_SIZE*i]))
 		{
 			printf("StorageManager: Error unable to read sector %d of volume\n",i);
-			MemoryDriver_Free(&_Kernel.Memory,root_sector_buffer);
+			free(root_sector_buffer);
 			return false;
 		}
 	}
@@ -277,14 +278,14 @@ bool StorageManager_OpenPath(StorageManager* self, SMDirectoryEntry* dir, SMPath
 		printf("StorageManager: Starting GetDirectory Recursion\n");
 	}
 	bool retval =  SMVolume_GetDirectory(volume, dir, root_sector_buffer, sector_count, path);
-	MemoryDriver_Free(&_Kernel.Memory,root_sector_buffer);
+	free(root_sector_buffer);
 	return retval;
 }
 
 FILE* StorageManager_RequestFilePointer(StorageManager* self)
 {
 	if (self->Debug) printf("StorageManager: Requesting File Pointer\n");
-	FILE* f = (FILE*)MemoryDriver_Allocate(&_Kernel.Memory, sizeof(FILE));
+	FILE* f = (FILE*)malloc(sizeof(FILE));
 	LinkedList_PushBack(&self->OpenFiles, f);
 	return f;
 }
@@ -292,5 +293,5 @@ FILE* StorageManager_RequestFilePointer(StorageManager* self)
 void StorageManager_CloseFilePointer(StorageManager* self, FILE* f)
 {
 	LinkedList_Delete(&self->OpenFiles, f);
-	MemoryDriver_Free(&_Kernel.Memory, f);
+	free(f);
 }

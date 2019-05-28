@@ -19,7 +19,7 @@
 #include <Objects/GraphicsManager/GraphicsManager.h>
 #include <Objects/InputManager/InputManager.h>
 
-struct Kernel
+typedef struct Kernel
 {
     // Variables
     multiboot_info_t* MultibootInfo;
@@ -40,17 +40,19 @@ struct Kernel
     StorageManager  StorageManager;
     GraphicsManager GraphicsManager;
     InputManager    InputManager;
-};
-
-typedef struct Kernel Kernel;
+} Kernel;
 
 bool Kernel_Constructor(Kernel* self, multiboot_info_t* mbi);
+
+bool Kernel_Init(Kernel* self);
 bool Kernel_InitDrivers(Kernel* self);
 bool Kernel_InitObjects(Kernel* self);
+
 void Kernel_Destructor(Kernel* self);
 void Kernel_DestroyObjects(Kernel* self);
 void Kernel_DestroyDrivers(Kernel* self);
 
+void Kernel_Test(Kernel* self);
 void Kernel_TestDrivers(Kernel* self);
 void Kernel_TestObjects(Kernel* self);
 

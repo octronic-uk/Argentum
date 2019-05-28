@@ -380,7 +380,7 @@ void SerialDriver_SetupInterruptHandlerForPort1(SerialDriver* self)
 void SerialDriver_Port1InterruptHandler()
 {
     SerialDriver* self = &_Kernel.Serial;
-     SerialPortDescriptor* desc = &SerialPort1_8N1;
+    SerialPortDescriptor* desc = &SerialPort1_8N1;
     if (self->Debug) 
     {
         printf("Serial: Interrupt on Port 1\n");

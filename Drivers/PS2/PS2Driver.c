@@ -441,7 +441,7 @@ bool PS2Driver_WriteInitialConfigurationByte(PS2Driver* self)
 
     if (writtenConfig != currentConfig)
     {
-        printf("PS2: Error writing initial config, result did not match\n");
+        printf("PS2: Error writing initial config, result did not match, wanted 0x%x, got 0x%x\n", currentConfig, writtenConfig);
         abort();
     }
 

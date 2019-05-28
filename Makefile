@@ -2,7 +2,7 @@
 
 # Compiler
 export CC=i386-elf-gcc
-export CFLAGS=-g -I$(PWD) -I$(PWD)/Clib/include -m32 -nostdinc  -nostdlib -nostartfiles -fno-omit-frame-pointer
+export CFLAGS=-g -I$(PWD) -I$(PWD)/LibC/include -m32 -nostdinc  -nostdlib -nostartfiles -fno-omit-frame-pointer
 
 # Linker
 export LD=i386-elf-ld
@@ -10,10 +10,10 @@ export LDFLAGS=--no-omagic -nostdlib -nostartfiles
 
 #Assembler
 export AS=i386-elf-as
-export ASFLAGS=-g
+export ASFLAGS=
 
 # Boot must be last
-SUBDIRS = Drivers Objects Clib Boot
+SUBDIRS = Drivers Objects LibC Boot
 
 .PHONY: all clean
 

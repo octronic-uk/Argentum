@@ -2,9 +2,8 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <stdlib.h>
 #include <Objects/Kernel/Kernel.h>
-#include <Drivers/Memory/MemoryDriver.h>
 #include "../RamDisk/RamDisk.h"
 #include "../MBR/MBR.h"
 #include "FatDirectoryEntryData.h"
@@ -89,7 +88,7 @@ bool FatVolume_RamDiskConstructor(FatVolume* self,  uint8_t device_index)
 
 void FatVolume_Destructor(FatVolume* self)
 {
-    MemoryDriver_Free(&_Kernel.Memory, self->FileAllocationTableData);
+    free(self->FileAllocationTableData);
 }
 
 bool FatVolume_ReadBPB(FatVolume* self)
@@ -237,7 +236,7 @@ bool FatVolume_ReadFileAllocationTableData(FatVolume* self)
     uint32_t fat_start_sector = self->BiosParameterBlock.ReservedSectorCount;
     uint32_t fat_size_in_sectors = self->BiosParameterBlock.TableSize16;
     uint32_t data_size = fat_size_in_sectors * FAT_SECTOR_SIZE;
-    self->FileAllocationTableData = MemoryDriver_Allocate(&_Kernel.Memory, data_size);
+    self->FileAllocationTableData = malloc(data_size);
     memset(self->FileAllocationTableData,0,data_size);
 
     if (self->FileAllocationTableData)
@@ -249,7 +248,7 @@ bool FatVolume_ReadFileAllocationTableData(FatVolume* self)
             if (!FatVolume_ReadSector(self, fat_start_sector + i, &self->FileAllocationTableData[i*FAT_SECTOR_SIZE]))
             {
                 printf("FatVolume: Error reading FileAllocationTable\n");
-                MemoryDriver_Free(&_Kernel.Memory, self->FileAllocationTableData);
+                free(self->FileAllocationTableData);
                 return false;
             }
         }

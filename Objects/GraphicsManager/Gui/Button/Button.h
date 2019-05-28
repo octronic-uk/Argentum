@@ -4,15 +4,17 @@
 #include <stdbool.h>
 #include "../GuiElement.h"
 
-#define BUTTON_TEXT_SIZE 32
+#define BUTTON_TEXT_BUFFER_SIZE 32
+#define BUTTON_DEFAULT_WIDTH  100 
+#define BUTTON_DEFAULT_HEIGHT 20 
 
 struct Button
 {
     GuiElement GuiElement;
     bool Debug;
-    char Text[BUTTON_TEXT_SIZE];
-    uint8_t ForegroundColor;
-    uint8_t BackgroundColor;
+    char Text[BUTTON_TEXT_BUFFER_SIZE];
+    uint32_t Color;
+    uint32_t HoverColor;
 };
 typedef struct Button Button;
 

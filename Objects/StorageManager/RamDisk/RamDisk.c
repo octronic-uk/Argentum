@@ -3,6 +3,7 @@
 #include <Objects/Kernel/Kernel.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "RD_FatHeader.h"
 
 extern Kernel _Kernel;
@@ -15,7 +16,7 @@ bool RamDisk_Constructor(RamDisk* self, uint32_t size_b)
     self->Exists = true;
     self->Debug = true;
     self->Size = size_b;
-    self->Block = MemoryDriver_Allocate(&_Kernel.Memory, sizeof(uint8_t)*self->Size);
+    self->Block = malloc(sizeof(uint8_t)*self->Size);
     memset(self->Block,0,sizeof(uint8_t)*self->Size);
     self->Index = index_seed++;
     if (self->Debug)
@@ -32,7 +33,7 @@ bool RamDisk_Constructor(RamDisk* self, uint32_t size_b)
 void RamDisk_Destructor(RamDisk* self)
 {
     printf("RamDisk: Destructing disk %d\n",self->Index);
-    MemoryDriver_Free(&_Kernel.Memory, self->Block);
+    free(self->Block);
 }
 
 bool RamDisk_ReadSectorLBA(RamDisk* self, uint32_t lba, uint8_t* buffer)
