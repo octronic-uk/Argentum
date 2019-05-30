@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 #define MEMORY_UPPER_RAM_BASE   0x0100000
-#define MEMORY_STACK_ALIGN 0x10
 #define MEMORY_PHYSICAL_AREA_TABLE_SIZE 16
 #define FILE_BUFFER_SZ 128
 
@@ -30,8 +29,8 @@ MemoryBlockHeader;
 typedef struct MemoryDriver
 {
 	uint8_t Debug;
-	bool ShowSizeSet;
 	multiboot_info_t* MultibootInfo;
+	uint16_t Alignment;
 	uint32_t HeapBaseAddress;
 	uint32_t HeapSize;
 	MemoryBlockHeader* StartBlock;
@@ -59,3 +58,5 @@ bool MemoryDriver_IsValidBlock(MemoryDriver* self, MemoryBlockHeader* header);
 
 // Debug
 void MemoryDriver_PrintMemoryMap(MemoryDriver* self);
+void MemoryDriver_ContiguousCheck(MemoryDriver* self, MemoryBlockHeader* block, uint32_t line);
+uint32_t MemoryDriver_GetHeaderSizeAligned(MemoryDriver* self);

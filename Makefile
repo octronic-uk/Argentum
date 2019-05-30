@@ -2,7 +2,7 @@
 
 # Compiler
 export CC=i386-elf-gcc
-export CFLAGS=-g -I$(PWD) -I$(PWD)/LibC/include -m32 -nostdinc  -nostdlib -nostartfiles -fno-omit-frame-pointer
+export CFLAGS=-g -I$(PWD) -I$(PWD)/External/musl/include -m32 -nostdinc  -nostdlib -nostartfiles -fno-omit-frame-pointer
 
 # Linker
 export LD=i386-elf-ld

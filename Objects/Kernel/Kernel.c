@@ -120,10 +120,12 @@ bool Kernel_InitObjects(Kernel* self)
 		return false;
 	}
 
+	/*
 	if (!GraphicsManager_Constructor(&self->GraphicsManager))
 	{
 		return false;
 	}
+	*/
 
 	return true;
 }
@@ -167,10 +169,13 @@ void Kernel_TestObjects(Kernel* self)
 void Kernel_Run(Kernel* self)
 {
 	printf("Kernel: Entering Runloop\n");
+	lua_runner();
+	/*
 	self->RunLoop = true;
 	while(self->RunLoop)
 	{
 		InputManager_ProcessEvents(&self->InputManager);
 		GraphicsManager_Render(&self->GraphicsManager);
 	}
+	*/
 }

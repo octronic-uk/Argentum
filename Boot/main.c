@@ -14,6 +14,12 @@ void kmain(multiboot_info_t* mbi)
         abort();
     }
 
+    if (!Kernel_Init(&_Kernel))
+    {
+        printf("Ag: Fatal Error - Kernel Init Failed\n");
+        abort();
+    }
+
     Kernel_Run(&_Kernel);
 
     Kernel_Destructor(&_Kernel);

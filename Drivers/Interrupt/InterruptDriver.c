@@ -11,7 +11,7 @@ extern Kernel _Kernel;
 bool InterruptDriver_Constructor(InterruptDriver* self)
 {
 	printf("Interrupt Driver: Constructing\n");
-	self->Debug = false;
+	self->Debug = true;
 	InterruptDriver_Disable_CLI(self);
 
 	memset(self->HandlerFunctions,0,sizeof(void*)*INTERRUPT_HANDLER_FUNCTIONS_COUNT);
